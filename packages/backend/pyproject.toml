@@ -1,0 +1,17 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Backend for Harvest Hound"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.11.7",
+]
+
+[dependency-groups]
+lint = [
+    "mypy>=1.16.1",
+]
+test = [
+    "pytest>=8.4.1",
+]
