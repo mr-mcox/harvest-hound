@@ -1,148 +1,123 @@
 import uuid
 from datetime import datetime
+from typing import List, Union
+
+import pytest
 
 from app.events import IngredientCreated, InventoryItemAdded, StoreCreated
 from app.models import Ingredient, InventoryStore
 
 
-def test_inventory_store_creation_generates_store_created_event():
-    """Test that InventoryStore creation generates StoreCreated event"""
-    # Arrange
-    store_id = uuid.uuid4()
-    name = "CSA Box"
-    description = "Weekly vegetable delivery"
-    infinite_supply = False
+class TestInventoryStoreCreation:
+    """Test inventory store creation behavior and event generation."""
 
-    # Act
-    _, events = InventoryStore.create(
-        store_id=store_id,
-        name=name,
-        description=description,
-        infinite_supply=infinite_supply,
-    )
+    def test_generates_single_store_created_event(self) -> None:
+        """Store creation generates exactly one StoreCreated event."""
+        _, events = InventoryStore.create(uuid.uuid4(), "CSA Box")
 
-    # Assert
-    assert len(events) == 1
-    event = events[0]
-    assert isinstance(event, StoreCreated)
-    assert event.store_id == store_id
-    assert event.name == name
-    assert event.description == description
-    assert event.infinite_supply == infinite_supply
-    assert isinstance(event.created_at, datetime)
+        assert len(events) == 1
+        assert isinstance(events[0], StoreCreated)
 
+    def test_roundtrip_preserves_store_data(self) -> None:
+        """Store can be perfectly reconstructed from its creation event."""
+        original_store, events = InventoryStore.create(
+            uuid.uuid4(), "CSA Box", "Weekly delivery", infinite_supply=True
+        )
 
-def test_adding_inventory_item_generates_inventory_item_added_event():
-    """Test that adding inventory item to store generates InventoryItemAdded event"""
-    # Arrange
-    store_id = uuid.uuid4()
-    ingredient_id = uuid.uuid4()
-    store, _ = InventoryStore.create(
-        store_id=store_id,
-        name="CSA Box",
-        description="Test store",
-        infinite_supply=False,
-    )
+        reconstructed_store = InventoryStore.from_events(events)
+        assert reconstructed_store == original_store
 
-    # Act
-    _, events = store.add_inventory_item(
-        ingredient_id=ingredient_id,
-        quantity=2.0,
-        unit="lbs",
-        notes="Fresh carrots",
-    )
+    @pytest.mark.parametrize("infinite_supply", [True, False])
+    def test_infinite_supply_setting_preserved(self, infinite_supply: bool) -> None:
+        """Infinite supply setting is preserved through event roundtrip."""
+        _, events = InventoryStore.create(
+            uuid.uuid4(), "Test Store", infinite_supply=infinite_supply
+        )
 
-    # Assert
-    assert len(events) == 1
-    event = events[0]
-    assert isinstance(event, InventoryItemAdded)
-    assert event.store_id == store_id
-    assert event.ingredient_id == ingredient_id
-    assert event.quantity == 2.0
-    assert event.unit == "lbs"
-    assert event.notes == "Fresh carrots"
-    assert isinstance(event.added_at, datetime)
+        reconstructed = InventoryStore.from_events(events)
+        assert reconstructed.infinite_supply == infinite_supply
 
 
-def test_inventory_store_can_be_rebuilt_from_events():
-    """Test that InventoryStore can be rebuilt from sequence of events"""
-    # Arrange - create events that represent the history
-    store_id = uuid.uuid4()
-    ingredient1_id = uuid.uuid4()
-    ingredient2_id = uuid.uuid4()
+class TestInventoryItemAddition:
+    """Test inventory item addition behavior and event generation."""
 
-    store_created_event = StoreCreated(
-        store_id=store_id,
-        name="CSA Box",
-        description="Weekly delivery",
-        infinite_supply=False,
-        created_at=datetime.now(),
-    )
+    @pytest.fixture
+    def sample_store(self) -> InventoryStore:
+        """Create a sample store for testing inventory operations."""
+        store, _ = InventoryStore.create(uuid.uuid4(), "Test Store")
+        return store
 
-    item1_added_event = InventoryItemAdded(
-        store_id=store_id,
-        ingredient_id=ingredient1_id,
-        quantity=2.0,
-        unit="lbs",
-        notes="Carrots",
-        added_at=datetime.now(),
-    )
+    def test_generates_single_inventory_item_added_event(
+        self, sample_store: InventoryStore
+    ) -> None:
+        """Adding inventory item generates exactly one InventoryItemAdded event."""
+        _, events = sample_store.add_inventory_item(
+            uuid.uuid4(), 2.0, "lbs", "Fresh carrots"
+        )
 
-    item2_added_event = InventoryItemAdded(
-        store_id=store_id,
-        ingredient_id=ingredient2_id,
-        quantity=1.0,
-        unit="bunch",
-        notes="Kale",
-        added_at=datetime.now(),
-    )
+        assert len(events) == 1
+        assert isinstance(events[0], InventoryItemAdded)
 
-    events = [store_created_event, item1_added_event, item2_added_event]
+    def test_adds_item_to_store_inventory(self, sample_store: InventoryStore) -> None:
+        """Adding inventory item updates store's inventory list."""
+        ingredient_id = uuid.uuid4()
 
-    # Act
-    store = InventoryStore.from_events(events)
+        updated_store, _ = sample_store.add_inventory_item(
+            ingredient_id, 2.0, "lbs", "Fresh carrots"
+        )
 
-    # Assert
-    assert store.store_id == store_id
-    assert store.name == "CSA Box"
-    assert store.description == "Weekly delivery"
-    assert store.infinite_supply is False
-    assert len(store.inventory_items) == 2
+        assert len(updated_store.inventory_items) == 1
+        assert updated_store.inventory_items[0].ingredient_id == ingredient_id
 
-    # Check first inventory item
-    item1 = store.inventory_items[0]
-    assert item1.ingredient_id == ingredient1_id
-    assert item1.quantity == 2.0
-    assert item1.unit == "lbs"
-    assert item1.notes == "Carrots"
+    def test_complete_store_roundtrip_with_inventory(
+        self, sample_store: InventoryStore
+    ) -> None:
+        """Store with inventory items can be reconstructed from complete event history."""
+        # Get creation events for the sample store
+        creation_event = StoreCreated(
+            store_id=sample_store.store_id,
+            name=sample_store.name,
+            description=sample_store.description,
+            infinite_supply=sample_store.infinite_supply,
+            created_at=datetime.now(),
+        )
 
-    # Check second inventory item
-    item2 = store.inventory_items[1]
-    assert item2.ingredient_id == ingredient2_id
-    assert item2.quantity == 1.0
-    assert item2.unit == "bunch"
-    assert item2.notes == "Kale"
+        # Add multiple inventory items
+        store1, events1 = sample_store.add_inventory_item(
+            uuid.uuid4(), 2.0, "lbs", "Carrots"
+        )
+        store2, events2 = store1.add_inventory_item(uuid.uuid4(), 1.0, "bunch", "Kale")
+
+        # Reconstruct from complete event history
+        all_events: List[Union[StoreCreated, InventoryItemAdded]] = [creation_event] + events1 + events2
+        reconstructed = InventoryStore.from_events(all_events)
+
+        assert reconstructed == store2
+        assert len(reconstructed.inventory_items) == 2
 
 
-def test_ingredient_creation_generates_ingredient_created_event():
-    """Test that Ingredient creation generates IngredientCreated event"""
-    # Arrange
-    ingredient_id = uuid.uuid4()
-    name = "Carrots"
-    default_unit = "lbs"
+class TestIngredientCreation:
+    """Test ingredient creation behavior and event generation."""
 
-    # Act
-    _, events = Ingredient.create(
-        ingredient_id=ingredient_id,
-        name=name,
-        default_unit=default_unit,
-    )
+    def test_generates_single_ingredient_created_event(self) -> None:
+        """Ingredient creation generates exactly one IngredientCreated event."""
+        _, events = Ingredient.create(uuid.uuid4(), "Carrots", "lbs")
 
-    # Assert
-    assert len(events) == 1
-    event = events[0]
-    assert isinstance(event, IngredientCreated)
-    assert event.ingredient_id == ingredient_id
-    assert event.name == name
-    assert event.default_unit == default_unit
-    assert isinstance(event.created_at, datetime)
+        assert len(events) == 1
+        assert isinstance(events[0], IngredientCreated)
+
+    def test_roundtrip_preserves_ingredient_data(self) -> None:
+        """Ingredient data is preserved through event roundtrip."""
+        original_ingredient, events = Ingredient.create(uuid.uuid4(), "Carrots", "lbs")
+
+        # Since Ingredient doesn't have from_events yet, we test event data directly
+        event = events[0]
+        assert isinstance(event, IngredientCreated)
+        reconstructed_ingredient = Ingredient(
+            ingredient_id=event.ingredient_id,
+            name=event.name,
+            default_unit=event.default_unit,
+            created_at=event.created_at,
+        )
+
+        assert reconstructed_ingredient == original_ingredient
