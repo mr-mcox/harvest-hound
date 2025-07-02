@@ -5,7 +5,13 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class StoreCreated(BaseModel):
+class DomainEvent(BaseModel):
+    """Base class for all domain events."""
+
+    pass
+
+
+class StoreCreated(DomainEvent):
     store_id: UUID
     name: str
     description: str
@@ -13,14 +19,14 @@ class StoreCreated(BaseModel):
     created_at: datetime
 
 
-class IngredientCreated(BaseModel):
+class IngredientCreated(DomainEvent):
     ingredient_id: UUID
     name: str
     default_unit: str
     created_at: datetime
 
 
-class InventoryItemAdded(BaseModel):
+class InventoryItemAdded(DomainEvent):
     store_id: UUID
     ingredient_id: UUID
     quantity: float

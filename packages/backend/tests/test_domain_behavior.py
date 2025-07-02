@@ -14,7 +14,7 @@ def test_inventory_store_creation_generates_store_created_event():
     infinite_supply = False
 
     # Act
-    store = InventoryStore.create(
+    store, events = InventoryStore.create(
         store_id=store_id,
         name=name,
         description=description,
@@ -22,8 +22,8 @@ def test_inventory_store_creation_generates_store_created_event():
     )
 
     # Assert
-    assert len(store.uncommitted_events) == 1
-    event = store.uncommitted_events[0]
+    assert len(events) == 1
+    event = events[0]
     assert isinstance(event, StoreCreated)
     assert event.store_id == store_id
     assert event.name == name
@@ -37,17 +37,15 @@ def test_adding_inventory_item_generates_inventory_item_added_event():
     # Arrange
     store_id = uuid.uuid4()
     ingredient_id = uuid.uuid4()
-    store = InventoryStore.create(
+    store, _ = InventoryStore.create(
         store_id=store_id,
         name="CSA Box",
         description="Test store",
         infinite_supply=False,
     )
-    # Clear the creation event for this test
-    store.uncommitted_events.clear()
 
     # Act
-    store.add_inventory_item(
+    updated_store, events = store.add_inventory_item(
         ingredient_id=ingredient_id,
         quantity=2.0,
         unit="lbs",
@@ -55,8 +53,8 @@ def test_adding_inventory_item_generates_inventory_item_added_event():
     )
 
     # Assert
-    assert len(store.uncommitted_events) == 1
-    event = store.uncommitted_events[0]
+    assert len(events) == 1
+    event = events[0]
     assert isinstance(event, InventoryItemAdded)
     assert event.store_id == store_id
     assert event.ingredient_id == ingredient_id
@@ -110,7 +108,6 @@ def test_inventory_store_can_be_rebuilt_from_events():
     assert store.description == "Weekly delivery"
     assert store.infinite_supply is False
     assert len(store.inventory_items) == 2
-    assert len(store.uncommitted_events) == 0  # Should be empty for rebuilt aggregates
 
     # Check first inventory item
     item1 = store.inventory_items[0]
@@ -135,15 +132,15 @@ def test_ingredient_creation_generates_ingredient_created_event():
     default_unit = "lbs"
 
     # Act
-    ingredient = Ingredient.create(
+    ingredient, events = Ingredient.create(
         ingredient_id=ingredient_id,
         name=name,
         default_unit=default_unit,
     )
 
     # Assert
-    assert len(ingredient.uncommitted_events) == 1
-    event = ingredient.uncommitted_events[0]
+    assert len(events) == 1
+    event = events[0]
     assert isinstance(event, IngredientCreated)
     assert event.ingredient_id == ingredient_id
     assert event.name == name

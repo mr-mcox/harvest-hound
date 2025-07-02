@@ -22,6 +22,18 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [✓] **Test**: InventoryStore can be rebuilt from sequence of StoreCreated + InventoryItemAdded events
 - [✓] **Test**: Ingredient creation generates IngredientCreated event with name and default_unit
 
+### 1.3 Refactor: Functional Event Generation (*Tests needed - refactor existing*)
+**Goal**: Replace `uncommitted_events` pattern with functional approach returning tuples
+
+- [✓] Create pure functions for domain operations in `app/domain/operations.py`
+- [✓] **Refactor Test**: Update InventoryStore.create() to return `(store, events)` tuple
+- [✓] **Refactor Test**: Update add_inventory_item() to return `(store, events)` tuple
+- [✓] **Refactor Test**: Update Ingredient.create() to return `(ingredient, events)` tuple
+- [✓] **Refactor Test**: Update from_events() to work with clean domain models
+- [✓] Remove `uncommitted_events` fields from all domain models
+- [✓] Update all existing tests to handle tuple returns
+- [✓] Ensure all tests still pass with new pattern
+
 ---
 
 ## Task 2: Event Store Infrastructure
