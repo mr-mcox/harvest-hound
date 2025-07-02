@@ -26,12 +26,12 @@ repos:
         entry: "uv"
         args:
           [
-            "--directory",
+            "--project",
             "packages/backend",
             "run",
             "mypy",
             "--config-file",
-            "pyproject.toml",
+            "packages/backend/pyproject.toml",
           ]
         language: system
         types: [python]

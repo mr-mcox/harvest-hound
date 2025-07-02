@@ -11,16 +11,28 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Domain aggregates can be created, store events, and rebuild from events
 
 ### 1.1 Basic Domain Classes (*No tests needed - just class definitions*)
-- [ ] Create `Ingredient` dataclass with ingredient_id, name, default_unit, created_at
-- [ ] Create `InventoryItem` dataclass with store_id, ingredient_id, quantity, unit, notes, added_at
-- [ ] Create `InventoryStore` class with store_id, name, description, infinite_supply, inventory_items list
-- [ ] Create event dataclasses: `StoreCreated`, `IngredientCreated`, `InventoryItemAdded`
+- [✓] Create `Ingredient` dataclass with ingredient_id, name, default_unit, created_at
+- [✓] Create `InventoryItem` dataclass with store_id, ingredient_id, quantity, unit, notes, added_at
+- [✓] Create `InventoryStore` class with store_id, name, description, infinite_supply, inventory_items list
+- [✓] Create event dataclasses: `StoreCreated`, `IngredientCreated`, `InventoryItemAdded`
 
 ### 1.2 Domain Behavior (*Tests needed*)
-- [ ] **Test**: InventoryStore creation generates StoreCreated event with correct store details
-- [ ] **Test**: Adding inventory item to store generates InventoryItemAdded event
-- [ ] **Test**: InventoryStore can be rebuilt from sequence of StoreCreated + InventoryItemAdded events
-- [ ] **Test**: Ingredient creation generates IngredientCreated event with name and default_unit
+- [✓] **Test**: InventoryStore creation generates StoreCreated event with correct store details
+- [✓] **Test**: Adding inventory item to store generates InventoryItemAdded event
+- [✓] **Test**: InventoryStore can be rebuilt from sequence of StoreCreated + InventoryItemAdded events
+- [✓] **Test**: Ingredient creation generates IngredientCreated event with name and default_unit
+
+### 1.3 Refactor: Functional Event Generation (*Tests needed - refactor existing*)
+**Goal**: Replace `uncommitted_events` pattern with functional approach returning tuples
+
+- [✓] Create pure functions for domain operations in `app/domain/operations.py`
+- [✓] **Refactor Test**: Update InventoryStore.create() to return `(store, events)` tuple
+- [✓] **Refactor Test**: Update add_inventory_item() to return `(store, events)` tuple
+- [✓] **Refactor Test**: Update Ingredient.create() to return `(ingredient, events)` tuple
+- [✓] **Refactor Test**: Update from_events() to work with clean domain models
+- [✓] Remove `uncommitted_events` fields from all domain models
+- [✓] Update all existing tests to handle tuple returns
+- [✓] Ensure all tests still pass with new pattern
 
 ---
 
