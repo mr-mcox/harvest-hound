@@ -45,7 +45,7 @@ def test_adding_inventory_item_generates_inventory_item_added_event():
     )
 
     # Act
-    updated_store, events = store.add_inventory_item(
+    _, events = store.add_inventory_item(
         ingredient_id=ingredient_id,
         quantity=2.0,
         unit="lbs",
@@ -132,7 +132,7 @@ def test_ingredient_creation_generates_ingredient_created_event():
     default_unit = "lbs"
 
     # Act
-    ingredient, events = Ingredient.create(
+    _, events = Ingredient.create(
         ingredient_id=ingredient_id,
         name=name,
         default_unit=default_unit,
