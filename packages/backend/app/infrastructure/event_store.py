@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from datetime import datetime
-from typing import List
+from typing import Any, Dict, List
 
 from ..events.domain_events import DomainEvent
 
@@ -47,7 +47,7 @@ class EventStore:
                 (stream_id, event_type, event_data, timestamp),
             )
 
-    def load_events(self, stream_id: str) -> List[dict]:
+    def load_events(self, stream_id: str) -> List[Dict[str, Any]]:
         """Load all events for a stream in chronological order."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
@@ -56,7 +56,7 @@ class EventStore:
                 (stream_id,),
             )
 
-            events = []
+            events: List[Dict[str, Any]] = []
             for row in cursor.fetchall():
                 event_type, event_data, timestamp = row
                 events.append(
