@@ -58,5 +58,19 @@
 		"onlyBuiltDependencies": [
 			"esbuild"
 		]
+	},
+	"lint-staged": {
+		"*.{js,ts,svelte}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{svelte}": [
+			"svelte-check --fix",
+			"prettier --write"
+		],
+		"*.{css,scss,svelte}": [
+			"stylelint --fix",
+			"prettier --write"
+		]
 	}
 }
