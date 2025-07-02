@@ -11,10 +11,10 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Domain aggregates can be created, store events, and rebuild from events
 
 ### 1.1 Basic Domain Classes (*No tests needed - just class definitions*)
-- [ ] Create `Ingredient` dataclass with ingredient_id, name, default_unit, created_at
-- [ ] Create `InventoryItem` dataclass with store_id, ingredient_id, quantity, unit, notes, added_at
-- [ ] Create `InventoryStore` class with store_id, name, description, infinite_supply, inventory_items list
-- [ ] Create event dataclasses: `StoreCreated`, `IngredientCreated`, `InventoryItemAdded`
+- [✓] Create `Ingredient` dataclass with ingredient_id, name, default_unit, created_at
+- [✓] Create `InventoryItem` dataclass with store_id, ingredient_id, quantity, unit, notes, added_at
+- [✓] Create `InventoryStore` class with store_id, name, description, infinite_supply, inventory_items list
+- [✓] Create event dataclasses: `StoreCreated`, `IngredientCreated`, `InventoryItemAdded`
 
 ### 1.2 Domain Behavior (*Tests needed*)
 - [ ] **Test**: InventoryStore creation generates StoreCreated event with correct store details
