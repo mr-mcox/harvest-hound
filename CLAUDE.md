@@ -160,3 +160,7 @@ npm run format
 ## Development Notes
 
 - When installing packages, run `uv sync --all-groups` to avoid uninstalling existing packages
+
+## Code Quality Guidelines
+
+- Add `# type: ignore[...]` when design is solid but adding type checking would make the code unnecessarily complex
