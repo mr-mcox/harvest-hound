@@ -88,6 +88,12 @@ npm run format
 - **Class Definitions vs Behavior**: Distinguish between basic class definitions (no tests needed) and meaningful behavior (tests required)
 - **Concrete Task Planning**: Tasks should be specific and actionable, not abstract concepts
 
+### Test Construction Preferences
+- **Test Organization**: Use pytest test classes to group related behaviors logically (e.g., `TestInventoryStoreCreation`, `TestInventoryItemAddition`)
+- **Focused Tests**: Each test should verify one specific behavior - avoid multiple assertions testing different concepts
+- **Roundtrip Testing**: For event sourcing, prefer roundtrip tests (create → events → rebuild → compare) over field-by-field assertions
+- **Data Integrity**: Test aggregate equality rather than individual field assertions - this validates the complete behavior that matters
+
 ### Domain Model Principles
 - Keep schemas lean, rely on LLM for validation/transformation
 - Immutable events over complex state
