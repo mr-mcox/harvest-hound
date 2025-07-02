@@ -71,6 +71,13 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [ ] **Test**: Empty input returns empty list (no error)
 - [ ] **Test**: Malformed input returns error with original text preserved
 
+### 3.3 BAML-to-Domain Translation (*Tests needed*)
+**Goal**: Convert BAML-generated types to domain models cleanly
+- [ ] **Test**: BAML InventoryParseResult converts to domain ParsedInventoryItem
+- [ ] **Test**: Translation preserves all data fields correctly
+- [ ] **Test**: Translation handles missing/null fields gracefully
+- [ ] **Test**: Translation validates domain constraints (positive quantities, valid units)
+
 ---
 
 ## Task 4: Application Services
