@@ -45,3 +45,30 @@ class Ingredient(BaseModel):
         )
 
         return ingredient, [event]
+
+    @classmethod
+    def from_events(cls, events: List[IngredientCreated]) -> Self:
+        """Rebuild Ingredient from a sequence of events."""
+        if not events:
+            raise ValueError("No events provided to rebuild Ingredient")
+
+        # For Ingredient, we only expect IngredientCreated events
+        created_event = None
+        for event in events:
+            if isinstance(event, IngredientCreated):
+                if created_event is None:
+                    created_event = event
+                else:
+                    raise ValueError("Multiple IngredientCreated events found")
+            else:
+                raise ValueError(f"Unexpected event type: {type(event)}")
+
+        if created_event is None:
+            raise ValueError("No IngredientCreated event found")
+
+        return cls(
+            ingredient_id=created_event.ingredient_id,
+            name=created_event.name,
+            default_unit=created_event.default_unit,
+            created_at=created_event.created_at,
+        )

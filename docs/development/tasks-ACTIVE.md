@@ -40,18 +40,18 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Events can be persisted to SQLite and aggregates reconstructed
 
 ### 2.1 Event Store Implementation (*Minimal tests needed*)
-- [ ] Create SQLite table schema: `events(stream_id, event_type, event_data, timestamp)`
-- [ ] Create `EventStore` class with append_event() and load_events() methods
+- [✓] Create SQLite table schema: `events(stream_id, event_type, event_data, timestamp)`
+- [✓] Create `EventStore` class with append_event() and load_events() methods
 
 ### 2.2 Event Store Behavior (*Tests needed*)
-- [ ] **Test**: EventStore.append_event() persists StoreCreated event to SQLite
-- [ ] **Test**: EventStore.load_events() returns events by stream_id in chronological order
-- [ ] **Test**: EventStore handles concurrent writes without corruption
+- [✓] **Test**: EventStore.append_event() persists StoreCreated event to SQLite
+- [✓] **Test**: EventStore.load_events() returns events by stream_id in chronological order
+- [✓] **Test**: EventStore handles concurrent writes without corruption
 
 ### 2.3 Repository Pattern (*Tests needed*)
-- [ ] **Test**: IngredientRepository can save Ingredient and reload from IngredientCreated events
-- [ ] **Test**: StoreRepository can save InventoryStore and reload from StoreCreated + InventoryItemAdded events
-- [ ] **Test**: Repository throws appropriate error when aggregate not found
+- [✓] **Test**: IngredientRepository can save Ingredient and reload from IngredientCreated events
+- [✓] **Test**: StoreRepository can save InventoryStore and reload from StoreCreated + InventoryItemAdded events
+- [✓] **Test**: Repository throws appropriate error when aggregate not found
 
 ---
 
@@ -99,14 +99,17 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Fast queries for UI without rebuilding aggregates
 
 ### 5.1 Projection Tables (*No tests needed - just SQL schema*)
+- [ ] Create `ingredients` table for ingredient lookups
 - [ ] Create `stores` table for store list queries
 - [ ] Create `current_inventory` view joining stores + inventory_items + ingredients
 
 ### 5.2 Projection Behavior (*Tests needed*)
+- [ ] **Test**: IngredientCreated event updates ingredients table
 - [ ] **Test**: StoreCreated event updates stores table with store details
 - [ ] **Test**: InventoryItemAdded event updates current_inventory view with ingredient name
 - [ ] **Test**: Store list query returns store_id, name, description, item_count
 - [ ] **Test**: Inventory query returns items with ingredient_name, quantity, unit
+- [ ] **Test**: Ingredient lookup by ID uses projection table (performance optimization)
 
 ---
 
