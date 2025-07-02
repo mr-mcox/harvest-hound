@@ -2,7 +2,7 @@ You are implementing tasks from the implementation plan using a self-managing re
 
 ## Process for Each Task:
 
-1. **Open @tasks-ACTIVE.md** and identify the next uncompleted task (not marked with ✓)
+1. **Open @docs/development/tasks-ACTIVE.md** and identify the next uncompleted task (not marked with ✓)
 
 2. **For tasks marked "No tests needed":**
    - Implement directly with clean, focused code
