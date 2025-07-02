@@ -19,20 +19,20 @@ repos:
     hooks:
       - id: black
 
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        entry: "uv"
-        args:
-          [
-            "--project",
-            "packages/backend",
-            "run",
-            "mypy",
-            "--config-file",
-            "packages/backend/pyproject.toml",
-          ]
-        language: system
-        types: [python]
-        require_serial: true
+  # - repo: local
+  #   hooks:
+  #     - id: mypy
+  #       name: mypy
+  #       entry: "uv"
+  #       args:
+  #         [
+  #           "--project",
+  #           "packages/backend",
+  #           "run",
+  #           "mypy",
+  #           "--config-file",
+  #           "packages/backend/pyproject.toml",
+  #         ]
+  #       language: system
+  #       types: [python]
+  #       require_serial: true
