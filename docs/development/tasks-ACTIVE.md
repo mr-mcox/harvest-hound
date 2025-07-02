@@ -40,13 +40,13 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Events can be persisted to SQLite and aggregates reconstructed
 
 ### 2.1 Event Store Implementation (*Minimal tests needed*)
-- [ ] Create SQLite table schema: `events(stream_id, event_type, event_data, timestamp)`
-- [ ] Create `EventStore` class with append_event() and load_events() methods
+- [✓] Create SQLite table schema: `events(stream_id, event_type, event_data, timestamp)`
+- [✓] Create `EventStore` class with append_event() and load_events() methods
 
 ### 2.2 Event Store Behavior (*Tests needed*)
-- [ ] **Test**: EventStore.append_event() persists StoreCreated event to SQLite
-- [ ] **Test**: EventStore.load_events() returns events by stream_id in chronological order
-- [ ] **Test**: EventStore handles concurrent writes without corruption
+- [✓] **Test**: EventStore.append_event() persists StoreCreated event to SQLite
+- [✓] **Test**: EventStore.load_events() returns events by stream_id in chronological order
+- [✓] **Test**: EventStore handles concurrent writes without corruption
 
 ### 2.3 Repository Pattern (*Tests needed*)
 - [ ] **Test**: IngredientRepository can save Ingredient and reload from IngredientCreated events
