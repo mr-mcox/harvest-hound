@@ -82,6 +82,12 @@ npm run format
 
 ## Key Implementation Guidelines
 
+### Development Approach
+- **Red/Green TDD**: Test-driven development with focus on observable behavior
+- **Meaningful Testing**: Test at a level low enough to isolate behavior but high enough to avoid implementation details
+- **Class Definitions vs Behavior**: Distinguish between basic class definitions (no tests needed) and meaningful behavior (tests required)
+- **Concrete Task Planning**: Tasks should be specific and actionable, not abstract concepts
+
 ### Domain Model Principles
 - Keep schemas lean, rely on LLM for validation/transformation
 - Immutable events over complex state
