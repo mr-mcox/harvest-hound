@@ -49,9 +49,9 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [✓] **Test**: EventStore handles concurrent writes without corruption
 
 ### 2.3 Repository Pattern (*Tests needed*)
-- [ ] **Test**: IngredientRepository can save Ingredient and reload from IngredientCreated events
-- [ ] **Test**: StoreRepository can save InventoryStore and reload from StoreCreated + InventoryItemAdded events
-- [ ] **Test**: Repository throws appropriate error when aggregate not found
+- [✓] **Test**: IngredientRepository can save Ingredient and reload from IngredientCreated events
+- [✓] **Test**: StoreRepository can save InventoryStore and reload from StoreCreated + InventoryItemAdded events
+- [✓] **Test**: Repository throws appropriate error when aggregate not found
 
 ---
 
