@@ -21,6 +21,8 @@ Therefore:
 
 | Context                       | Business Purpose                                                 | Core Modules                                       |
 | ----------------------------- | ---------------------------------------------------------------- | -------------------------------------------------- |
+| **Ingredient**                | Canonical ingredient representation, normalization & unit conversion. | *Ingredient*, *IngredientNormalizer*, *UnitConverter*, *IngredientMatcher* |
+| **Recipe**                    | Recipe storage, lifecycle management and materialization.        | *Recipe*, *RecipeCatalog*, *RecipeMaterializer*    |
 | **Inventory**                 | Track what ingredients exist, where they live and how they flow. | *IngredientStore*, *IngredientBroker*, Event Store |
 | **Planning**                  | Generate, negotiate and evolve meal plans.                       | *RecipePlanner*, *MealPlan*, *Claim Saga*          |
 | **Execution**                 | Support cooking day-of (instructions, timers) & decrement stock. | *CookSession*, *InventoryAdjuster*                 |
@@ -32,9 +34,12 @@ Therefore:
 
 ## 3. Ubiquitous Language Glossary
 
+- **Ingredient** – canonical representation of a food item with normalized name and default unit.
+- **IngredientRequirement** – normalized ingredient specification for meal planning (ingredient + quantity + unit).
 - **IngredientStore** – a *root aggregate* representing a physical or virtual source of ingredients.
 - **Claim** – an immutable reservation of specific ingredient quantities for a proposed recipe.
 - **Broker** – the domain service mediating between multiple stores and planners.
+- **Recipe Materialization** – process of converting stored recipe into normalized IngredientRequirements.
 - **Proposal** – a recipe idea in `Pitch` form awaiting confirmation.
 - **MealPlan** – a weekly collection of meals in various readiness states.
 - **Event** – a fact that something domain‑significant *happened* (e.g., `IngredientClaimed`).
@@ -159,11 +164,31 @@ The **Recipe** is its own aggregate inside the **Planning** context. It progress
 | **ShoppingListView**     | Sum `ingredientSpecs` minus `CurrentInventoryView` |
 | **DayOfCookingTimeline** | Topologically sorted steps with durations          |
 
-### 5.5.5 Interaction with Planner & Broker
+### 5.5.5 Recipe Materialization Process
 
-The **RecipePlanner** issues the lifecycle commands. Once a recipe reaches *Final*, the planner creates **Meal Instances** and hands the resulting `ingredientSpecs` to the **IngredientBroker** to negotiate **IngredientClaims**. Updating a *Final* recipe spawns a new revision; existing claims remain bound to the previous revision, preserving historical correctness.
+When a recipe is selected for meal planning, it undergoes **materialization** - converting original ingredient specifications into normalized `IngredientRequirement` objects:
 
-> **Why keep the aggregate rich?** Even a single‑user desktop app benefits from clear state transitions and event history. The extra structure is cheap today and unlocks advanced views (prep lists, nutrition panels) tomorrow without refactoring core persistence.
+1. **Recipe Context** provides original ingredient specifications (e.g., "2 lbs carrots", "1 can tomatoes")
+2. **Ingredient Context** normalizes each specification:
+   - Creates canonical `Ingredient` entities ("carrots", "canned tomatoes")
+   - Converts quantities to standard units (2.0 lbs, 14.5 oz)
+   - Preserves original specification for user reference
+3. **Planning Context** receives `IngredientRequirement[]` for broker negotiation
+
+```python
+@dataclass
+class IngredientRequirement:
+    ingredient: Ingredient      # Normalized ingredient entity
+    quantity: float            # Converted to standard units
+    unit: str                  # Canonical unit
+    original_spec: str         # "2 lbs carrots" - preserved for reference
+```
+
+### 5.5.6 Interaction with Planner & Broker
+
+The **RecipePlanner** issues the lifecycle commands. When a recipe is materialized for meal planning, the **RecipeMaterializer** converts `ingredientSpecs` into normalized `IngredientRequirement` objects via the **Ingredient Context**. These requirements are then handed to the **IngredientBroker** for availability negotiation and claim creation.
+
+> **Why materialize lazily?** This preserves recipe authenticity while enabling context-aware normalization with current inventory knowledge, and allows normalization improvements without recipe data migration.
 
 A **Recipe Ingredient List** is a *static description* of what a dish requires (e.g., "200 g carrots", "1 can coconut milk"). It lives inside the `Recipe` aggregate and remains unchanged across planning sessions.
 
