@@ -150,3 +150,7 @@ npm run format
 3. Build basic ingredient store management
 4. Integrate LLM for recipe planning
 5. Develop real-time UI with WebSocket connections
+
+## Development Notes
+
+- When installing packages, run `uv sync --all-groups` to avoid uninstalling existing packages

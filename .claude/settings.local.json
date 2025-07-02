@@ -4,7 +4,8 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(sed:*)",
       "Bash(mkdir:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

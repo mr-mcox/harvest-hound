@@ -16,4 +16,6 @@ test = ["pytest>=8.4.1"]
 
 [tool.ruff]
 line-length = 88
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "C90"]
