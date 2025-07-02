@@ -1,10 +1,11 @@
 # High-Level Use Cases
 
-## UC1: Create Ingredient Store & Bulk-Upload Inventory
+## UC1: Create Inventory Store & Bulk-Upload Inventory
 
 User-Facing Value
 	•	User adds a new “Perishables” (or “Freezer,” etc.) store, then pastes or uploads a CSV of ingredients+quantities.
 	•	Immediately sees the parsed list of ingredients under that store in the inventory view.
+	•	LLM parsing creates new Ingredient entities dynamically for unknown items.
 
 Technical Implementation
 	•	Front end
@@ -19,6 +20,7 @@ Technical Implementation
 	•	POST /stores → persist store.
 	•	POST /stores/{storeId}/inventory → parse CSV/blob, upsert items.
 	•	Events: emit IngredientAddedToStore(storeId, ingredientId, qty) for each line.
+	•	Ingredient Context: creates canonical Ingredient entities, links InventoryItems via ingredient_id.
 	•	WebSocket: broadcast those events to any subscribers.
 
 ## UC2: View & Refresh Current Inventory
@@ -60,7 +62,8 @@ Technical Implementation
 	•	Front end
 	•	Subscribe to WS; on RecipeProposed{ planId, recipeId, summary, blockingItems } append card.
 	•	Back end
-	•	Broker: as each recipe is ready, emit RecipeProposed.
+	•	Recipe Materialization: convert stored recipes into normalized IngredientRequirement objects via Ingredient Context.
+	•	Broker: negotiate using normalized ingredients, as each recipe is ready, emit RecipeProposed.
 	•	WebSocket: fan out that event to the client’s plan subscription.
 
 ## UC5: Submit Feedback & Claim Ingredients
@@ -74,7 +77,8 @@ Technical Implementation
 	•	On approve: POST /meal-plans/{planId}/feedback { recipeId, action:"approve" }.
 	•	Disable buttons; await subsequent WS events ClaimAccepted or ClaimPartial.
 	•	Back end
-	•	Endpoint: record UserFeedbackReceived; invoke IngredientBroker to claim.
+	•	Endpoint: record UserFeedbackReceived; use materialized IngredientRequirements to invoke IngredientBroker.
+	•	Broker negotiates using normalized ingredient data for accurate matching.
 	•	Emit IngredientClaimed (or ClaimPartial{ missing }) domain event.
 	•	Update CurrentInventoryView projection accordingly.
 

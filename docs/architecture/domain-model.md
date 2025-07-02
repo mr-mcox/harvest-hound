@@ -23,7 +23,7 @@ Therefore:
 | ----------------------------- | ---------------------------------------------------------------- | -------------------------------------------------- |
 | **Ingredient**                | Canonical ingredient representation, normalization & unit conversion. | *Ingredient*, *IngredientNormalizer*, *UnitConverter*, *IngredientMatcher* |
 | **Recipe**                    | Recipe storage, lifecycle management and materialization.        | *Recipe*, *RecipeCatalog*, *RecipeMaterializer*    |
-| **Inventory**                 | Track what ingredients exist, where they live and how they flow. | *IngredientStore*, *IngredientBroker*, Event Store |
+| **Inventory**                 | Track what ingredients exist, where they live and how they flow. | *InventoryStore*, *IngredientBroker*, Event Store |
 | **Planning**                  | Generate, negotiate and evolve meal plans.                       | *RecipePlanner*, *MealPlan*, *Claim Saga*          |
 | **Execution**                 | Support cooking day-of (instructions, timers) & decrement stock. | *CookSession*, *InventoryAdjuster*                 |
 | **User Interface** (external) | Surfaces real‑time progress & captures intent.                   | Desktop Electron UI (Svelte), WebSocket client     |
@@ -36,7 +36,7 @@ Therefore:
 
 - **Ingredient** – canonical representation of a food item with normalized name and default unit.
 - **IngredientRequirement** – normalized ingredient specification for meal planning (ingredient + quantity + unit).
-- **IngredientStore** – a *root aggregate* representing a physical or virtual source of ingredients.
+- **InventoryStore** – a *root aggregate* representing a physical or virtual source of ingredients.
 - **Claim** – an immutable reservation of specific ingredient quantities for a proposed recipe.
 - **Broker** – the domain service mediating between multiple stores and planners.
 - **Recipe Materialization** – process of converting stored recipe into normalized IngredientRequirements.
@@ -46,13 +46,13 @@ Therefore:
 
 ---
 
-## 4. IngredientStore Hierarchy
+## 4. InventoryStore Hierarchy
 
 ### 4.1 Aggregate Root & Sub‑Entities
 
 ```mermaid
 classDiagram
-    class IngredientStore {
+    class InventoryStore {
         +StoreId
         +StoreType
         +Priority
@@ -60,10 +60,10 @@ classDiagram
         +claim(cmd)
         +release(cmd)
     }
-    IngredientStore <|-- PerishableStore
-    IngredientStore <|-- FrozenStore
-    IngredientStore <|-- PantryStore
-    IngredientStore <|-- GroceryStore
+    InventoryStore <|-- PerishableStore
+    InventoryStore <|-- FrozenStore
+    InventoryStore <|-- PantryStore
+    InventoryStore <|-- GroceryStore
 ```
 
 - **Invariant** – Quantity of any lot can never fall below zero.
@@ -95,7 +95,7 @@ A **Domain Service** that delivers a unified availability view and arbitrates cl
 ### 5.2 Interaction Sequence (Command/Result)
 
 1. **RecipePlanner** issues `ProposeClaim(cmd)` containing required `IngredientSet`.
-2. **Broker** checks each `IngredientStore` by priority:
+2. **Broker** checks each `InventoryStore` by priority:
    - Accepts from highest‑priority store able to fulfil qty.
    - If deficit, emits `InsufficientQuantity(event)` per item.
 3. Broker returns `ClaimResult`:
@@ -192,7 +192,7 @@ The **RecipePlanner** issues the lifecycle commands. When a recipe is materializ
 
 A **Recipe Ingredient List** is a *static description* of what a dish requires (e.g., "200 g carrots", "1 can coconut milk"). It lives inside the `Recipe` aggregate and remains unchanged across planning sessions.
 
-An **IngredientClaim** is an *ephemeral reservation* that binds a particular meal instance (not the recipe template) to **specific lots** inside one or more `IngredientStore`s. The claim answers the questions *“Which batch of carrots?”* and *“From which store?”* while maintaining the invariant that two future meals cannot double‑book the same carrot.
+An **IngredientClaim** is an *ephemeral reservation* that binds a particular meal instance (not the recipe template) to **specific lots** inside one or more `InventoryStore`s. The claim answers the questions *“Which batch of carrots?”* and *“From which store?”* while maintaining the invariant that two future meals cannot double‑book the same carrot.
 
 This distinction matters when:
 

@@ -30,8 +30,9 @@ The application uses a greedy optimization approach where an AI agent iterativel
   - Parent recipe ID (for lineage tracking)
 - **Notes**: Immutable within each state - state transitions create new versions with updated content
 
-### IngredientStore
+### InventoryStore
 - **Purpose**: Represents different sources of ingredients with distinct availability semantics
+- **Note**: Manages inventory quantities and claims, while canonical ingredient definitions live in separate Ingredient Context
 - **Types**:
   - **Perishable**: CSA deliveries, fresh items with explicit quantities that decrease when claimed
   - **Frozen Meat**: Explicit inventory that decreases when claimed
@@ -82,7 +83,7 @@ The application uses a greedy optimization approach where an AI agent iterativel
 ## System Flow
 
 ### 1. Inventory Setup
-1. User populates IngredientStores through frontend interface
+1. User populates InventoryStores through frontend interface
 2. Backend parses natural language ingredient lists into structured data
 3. IngredientBroker aggregates availability across all stores
 
@@ -143,7 +144,7 @@ RecipePlanner: [handles substitutions and resubmits] | [abandons recipe after X 
 ## MVP Features
 
 ### Core Functionality
-1. **IngredientStore Management**: CRUD for different store types with natural language input
+1. **InventoryStore Management**: CRUD for different store types with natural language input
 2. **Basic Recipe Planning**: LLM-generated recipes from scratch (no catalog initially)
 3. **Interactive Selection**: User approval/rejection of proposed recipes
 4. **Iterative Planning**: Multi-round planning until week is complete

@@ -12,9 +12,10 @@ This is a **Domain-Driven Design (DDD)** application with **Event Sourcing** pat
 
 ### Core Domain Concepts
 
-- **IngredientStore**: Different sources of ingredients (Perishable/CSA, Frozen, Pantry, Grocery)
+- **InventoryStore**: Different sources of ingredients (Perishable/CSA, Frozen, Pantry, Grocery)
+- **Ingredient**: Canonical ingredient representation with normalization and unit conversion
 - **Recipe**: Immutable aggregate with states (Pitch → Draft → Final)
-- **IngredientBroker**: Domain service mediating between recipe planning and ingredient availability
+- **IngredientBroker**: Domain service mediating between recipe planning and inventory availability
 - **RecipePlanner**: AI agent responsible for recipe selection, adaptation, and substitution
 - **IngredientClaim**: Immutable reservation of ingredients during planning
 - **MealPlan**: Weekly collection of meals in various states
@@ -25,6 +26,8 @@ This is a **Domain-Driven Design (DDD)** application with **Event Sourcing** pat
 - **Negotiation Pattern**: RecipePlanner ↔ IngredientBroker communication
 - **Claim-Based Planning**: Immutable ingredient reservations
 - **Event Sourcing**: All state changes captured as events
+- **Recipe Materialization**: Lazy ingredient normalization during meal planning
+- **Bounded Context Separation**: Distinct domains for Recipe, Inventory, Ingredient, and Planning
 
 ### Technology Stack (Planned)
 
