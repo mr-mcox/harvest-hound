@@ -14,7 +14,7 @@ def test_inventory_store_creation_generates_store_created_event():
     infinite_supply = False
 
     # Act
-    store, events = InventoryStore.create(
+    _, events = InventoryStore.create(
         store_id=store_id,
         name=name,
         description=description,
