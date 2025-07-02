@@ -11,6 +11,9 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = [
+    "pyright>=1.1.402",
+]
 lint = ["mypy>=1.16.1"]
 test = ["pytest>=8.4.1"]
 
