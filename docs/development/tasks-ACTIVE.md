@@ -17,10 +17,10 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [✓] Create event dataclasses: `StoreCreated`, `IngredientCreated`, `InventoryItemAdded`
 
 ### 1.2 Domain Behavior (*Tests needed*)
-- [ ] **Test**: InventoryStore creation generates StoreCreated event with correct store details
-- [ ] **Test**: Adding inventory item to store generates InventoryItemAdded event
-- [ ] **Test**: InventoryStore can be rebuilt from sequence of StoreCreated + InventoryItemAdded events
-- [ ] **Test**: Ingredient creation generates IngredientCreated event with name and default_unit
+- [✓] **Test**: InventoryStore creation generates StoreCreated event with correct store details
+- [✓] **Test**: Adding inventory item to store generates InventoryItemAdded event
+- [✓] **Test**: InventoryStore can be rebuilt from sequence of StoreCreated + InventoryItemAdded events
+- [✓] **Test**: Ingredient creation generates IngredientCreated event with name and default_unit
 
 ---
 
