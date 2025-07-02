@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import List, Union
 
 import pytest
 
@@ -24,7 +23,7 @@ class TestInventoryStoreCreation:
             uuid.uuid4(), "CSA Box", "Weekly delivery", infinite_supply=True
         )
 
-        reconstructed_store = InventoryStore.from_events(events)
+        reconstructed_store = InventoryStore.from_events(events)  # type: ignore[arg-type]
         assert reconstructed_store == original_store
 
     @pytest.mark.parametrize("infinite_supply", [True, False])
@@ -34,7 +33,7 @@ class TestInventoryStoreCreation:
             uuid.uuid4(), "Test Store", infinite_supply=infinite_supply
         )
 
-        reconstructed = InventoryStore.from_events(events)
+        reconstructed = InventoryStore.from_events(events)  # type: ignore[arg-type]
         assert reconstructed.infinite_supply == infinite_supply
 
 
@@ -72,7 +71,7 @@ class TestInventoryItemAddition:
     def test_complete_store_roundtrip_with_inventory(
         self, sample_store: InventoryStore
     ) -> None:
-        """Store with inventory items can be reconstructed from complete event history."""
+        """Store with inventory items can be reconstructed from event history."""
         # Get creation events for the sample store
         creation_event = StoreCreated(
             store_id=sample_store.store_id,
@@ -89,8 +88,8 @@ class TestInventoryItemAddition:
         store2, events2 = store1.add_inventory_item(uuid.uuid4(), 1.0, "bunch", "Kale")
 
         # Reconstruct from complete event history
-        all_events: List[Union[StoreCreated, InventoryItemAdded]] = [creation_event] + events1 + events2
-        reconstructed = InventoryStore.from_events(all_events)
+        all_events = [creation_event] + events1 + events2
+        reconstructed = InventoryStore.from_events(all_events)  # type: ignore[arg-type]
 
         assert reconstructed == store2
         assert len(reconstructed.inventory_items) == 2
