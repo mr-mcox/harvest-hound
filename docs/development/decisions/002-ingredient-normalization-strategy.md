@@ -1,6 +1,6 @@
 ---
-status: "proposed"
-date: 2025-01-02
+status: "accepted"
+date: 2025-07-01
 ---
 
 # Lazy Ingredient Normalization During Recipe Materialization
