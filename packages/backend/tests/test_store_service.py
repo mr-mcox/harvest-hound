@@ -80,3 +80,45 @@ class TestStoreCreation:
         assert events[0]["event_data"]["name"] == "CSA Box"
         assert events[0]["event_data"]["description"] == "Weekly vegetable box"
         assert events[0]["event_data"]["infinite_supply"] is False
+
+    def test_create_store_with_infinite_supply_true_sets_flag_correctly(
+        self, store_service: StoreService, event_store: EventStore
+    ) -> None:
+        """Test that create_store with infinite_supply=True sets flag correctly."""
+        # Act
+        store_id = store_service.create_store(
+            "Pantry", "Long-term storage", infinite_supply=True
+        )
+
+        # Assert
+        stream_id = f"store-{store_id}"
+        events = event_store.load_events(stream_id)
+
+        assert len(events) == 1
+        assert events[0]["event_type"] == "StoreCreated"
+        assert events[0]["event_data"]["infinite_supply"] is True
+
+    def test_create_store_with_duplicate_name_succeeds(
+        self, store_service: StoreService, event_store: EventStore
+    ) -> None:
+        """Test that create_store with duplicate name succeeds."""
+        # Arrange - create first store
+        first_store_id = store_service.create_store("CSA Box", "First box")
+
+        # Act - create second store with same name
+        second_store_id = store_service.create_store("CSA Box", "Second box")
+
+        # Assert - both stores should exist with different IDs
+        assert first_store_id != second_store_id
+
+        # Check first store events
+        first_stream_id = f"store-{first_store_id}"
+        first_events = event_store.load_events(first_stream_id)
+        assert len(first_events) == 1
+        assert first_events[0]["event_data"]["description"] == "First box"
+
+        # Check second store events
+        second_stream_id = f"store-{second_store_id}"
+        second_events = event_store.load_events(second_stream_id)
+        assert len(second_events) == 1
+        assert second_events[0]["event_data"]["description"] == "Second box"
