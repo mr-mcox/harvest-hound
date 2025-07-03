@@ -26,4 +26,4 @@ select = ["E", "F", "I", "C90"]
 "app/infrastructure/baml_client/**/*" = ["ALL"]
 
 [tool.black]
-exclude = "packages/backend/app/infrastructure/baml_client"
+exclude = "app/infrastructure/baml_client/"
