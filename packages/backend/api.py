@@ -1,15 +1,14 @@
 from typing import List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-# TODO: Uncomment these imports when tests are ready
-# from app.infrastructure.event_store import EventStore
-# from app.infrastructure.repositories import IngredientRepository, StoreRepository
-# from app.services.inventory_parser import create_inventory_parser_client
-# from app.services.store_service import StoreService
+from app.infrastructure.event_store import EventStore
+from app.infrastructure.repositories import IngredientRepository, StoreRepository
+from app.services.inventory_parser import create_inventory_parser_client
+from app.services.store_service import StoreService
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
 
@@ -53,29 +52,22 @@ class InventoryItem(BaseModel):
     added_at: str
 
 
-# TODO: Uncomment when tests are ready
 # Dependency injection setup
-# event_store = EventStore()
-# store_repository = StoreRepository(event_store)
-# ingredient_repository = IngredientRepository(event_store)
-# inventory_parser = create_inventory_parser_client()
-# store_service = StoreService(
-#     store_repository, ingredient_repository, inventory_parser
-# )
+event_store = EventStore()
+store_repository = StoreRepository(event_store)
+ingredient_repository = IngredientRepository(event_store)
+inventory_parser = create_inventory_parser_client()
+store_service = StoreService(store_repository, ingredient_repository, inventory_parser)
 
 
 @app.post("/stores", response_model=CreateStoreResponse, status_code=201)
 async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
     """Create a new inventory store."""
-    # TODO: Replace with actual service call when tests are ready
-    # store_id = store_service.create_store(
-    #     name=request.name,
-    #     description=request.description or "",
-    #     infinite_supply=request.infinite_supply or False,
-    # )
-
-    # Stub implementation for testing
-    store_id = uuid4()
+    store_id = store_service.create_store(
+        name=request.name,
+        description=request.description or "",
+        infinite_supply=request.infinite_supply or False,
+    )
 
     return CreateStoreResponse(
         store_id=store_id,
@@ -88,11 +80,16 @@ async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
 @app.get("/stores", response_model=List[StoreListItem])
 async def get_stores() -> List[StoreListItem]:
     """Get list of all stores."""
-    # TODO: Replace with actual service call when tests are ready
-    # stores = store_service.get_all_stores()
-
-    # Stub implementation for testing
-    return []
+    stores_data = store_service.get_all_stores()
+    return [
+        StoreListItem(
+            store_id=UUID(store["store_id"]),
+            name=store["name"],
+            description=store["description"],
+            item_count=store["item_count"],
+        )
+        for store in stores_data
+    ]
 
 
 @app.post(
