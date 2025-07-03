@@ -150,3 +150,99 @@ class TestProjectionBehavior:
         assert row[5] == "bunch"
         assert row[6] == "Fresh from garden"
         assert row[7] == added_at.isoformat()
+
+    def test_store_list_query_returns_store_details_with_item_count(
+        self, event_store: EventStore, temp_db_path: str
+    ) -> None:
+        """Test that store list query returns store details with item count."""
+        # Create multiple stores and ingredients
+        store1_id = uuid4()
+        store2_id = uuid4()
+        ingredient1_id = uuid4()
+        ingredient2_id = uuid4()
+        created_at = datetime(2023, 1, 1, 0, 0, 0)
+        added_at = datetime(2023, 1, 1, 12, 0, 0)
+
+        # Create events
+        events = [
+            StoreCreated(
+                store_id=store1_id,
+                name="CSA Box",
+                description="Weekly delivery",
+                infinite_supply=False,
+                created_at=created_at,
+            ),
+            StoreCreated(
+                store_id=store2_id,
+                name="Grocery Store",
+                description="Local supermarket",
+                infinite_supply=True,
+                created_at=created_at,
+            ),
+            IngredientCreated(
+                ingredient_id=ingredient1_id,
+                name="carrot",
+                default_unit="pound",
+                created_at=created_at,
+            ),
+            IngredientCreated(
+                ingredient_id=ingredient2_id,
+                name="onion",
+                default_unit="pound",
+                created_at=created_at,
+            ),
+        ]
+
+        # Add events
+        for event in events:
+            if isinstance(event, StoreCreated):
+                event_store.append_event(f"store-{event.store_id}", event)
+            elif isinstance(event, IngredientCreated):
+                event_store.append_event(f"ingredient-{event.ingredient_id}", event)
+
+        # Add inventory items
+        inventory_events = [
+            InventoryItemAdded(
+                store_id=store1_id,
+                ingredient_id=ingredient1_id,
+                quantity=2.0,
+                unit="pound",
+                notes=None,
+                added_at=added_at,
+            ),
+            InventoryItemAdded(
+                store_id=store1_id,
+                ingredient_id=ingredient2_id,
+                quantity=1.0,
+                unit="pound",
+                notes=None,
+                added_at=added_at,
+            ),
+        ]
+
+        for event in inventory_events:
+            event_store.append_event(f"store-{event.store_id}", event)
+
+        # This should fail because we haven't implemented store list query yet
+        stores = event_store.get_stores_with_item_count()  # type: ignore[attr-defined]
+
+        # Verify store list results
+        assert len(stores) == 2
+
+        # Find each store in results
+        csa_store = next(
+            (s for s in stores if str(s["store_id"]) == str(store1_id)), None
+        )
+        grocery_store = next(
+            (s for s in stores if str(s["store_id"]) == str(store2_id)), None
+        )
+
+        assert csa_store is not None
+        assert csa_store["name"] == "CSA Box"
+        assert csa_store["description"] == "Weekly delivery"
+        assert csa_store["item_count"] == 2
+
+        assert grocery_store is not None
+        assert grocery_store["name"] == "Grocery Store"
+        assert grocery_store["description"] == "Local supermarket"
+        assert grocery_store["item_count"] == 0
