@@ -14,10 +14,12 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
+        exclude: "app/infrastructure/baml_client/"
   - repo: https://github.com/psf/black
     rev: 25.1.0
     hooks:
       - id: black
+        exclude: "app/infrastructure/baml_client/"
 
   # - repo: local
   #   hooks:
