@@ -1,0 +1,151 @@
+from typing import List, Optional
+from uuid import UUID, uuid4
+
+import uvicorn
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+# TODO: Uncomment these imports when tests are ready
+# from app.infrastructure.event_store import EventStore
+# from app.infrastructure.repositories import IngredientRepository, StoreRepository
+# from app.services.inventory_parser import create_inventory_parser_client
+# from app.services.store_service import StoreService
+
+app = FastAPI(title="Harvest Hound API", version="0.1.0")
+
+
+# Request/Response models
+class CreateStoreRequest(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    infinite_supply: Optional[bool] = False
+
+
+class CreateStoreResponse(BaseModel):
+    store_id: UUID
+    name: str
+    description: str
+    infinite_supply: bool
+
+
+class StoreListItem(BaseModel):
+    store_id: UUID
+    name: str
+    description: str
+    item_count: int
+
+
+class InventoryUploadRequest(BaseModel):
+    inventory_text: str
+
+
+class InventoryUploadResponse(BaseModel):
+    items_added: int
+    errors: List[str]
+    success: bool
+
+
+class InventoryItem(BaseModel):
+    ingredient_name: str
+    quantity: float
+    unit: str
+    notes: str
+    added_at: str
+
+
+# TODO: Uncomment when tests are ready
+# Dependency injection setup
+# event_store = EventStore()
+# store_repository = StoreRepository(event_store)
+# ingredient_repository = IngredientRepository(event_store)
+# inventory_parser = create_inventory_parser_client()
+# store_service = StoreService(
+#     store_repository, ingredient_repository, inventory_parser
+# )
+
+
+@app.post("/stores", response_model=CreateStoreResponse, status_code=201)
+async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
+    """Create a new inventory store."""
+    # TODO: Replace with actual service call when tests are ready
+    # store_id = store_service.create_store(
+    #     name=request.name,
+    #     description=request.description or "",
+    #     infinite_supply=request.infinite_supply or False,
+    # )
+
+    # Stub implementation for testing
+    store_id = uuid4()
+
+    return CreateStoreResponse(
+        store_id=store_id,
+        name=request.name,
+        description=request.description or "",
+        infinite_supply=request.infinite_supply or False,
+    )
+
+
+@app.get("/stores", response_model=List[StoreListItem])
+async def get_stores() -> List[StoreListItem]:
+    """Get list of all stores."""
+    # TODO: Replace with actual service call when tests are ready
+    # stores = store_service.get_all_stores()
+
+    # Stub implementation for testing
+    return []
+
+
+@app.post(
+    "/stores/{store_id}/inventory",
+    response_model=InventoryUploadResponse,
+    status_code=201,
+)
+async def upload_inventory(
+    store_id: UUID, request: InventoryUploadRequest
+) -> InventoryUploadResponse:
+    """Upload inventory to a store."""
+    # TODO: Replace with actual service call when tests are ready
+    # try:
+    #     result = store_service.upload_inventory(store_id, request.inventory_text)
+    #     return InventoryUploadResponse(
+    #         items_added=result.items_added,
+    #         errors=result.errors,
+    #         success=result.success
+    #     )
+    # except Exception as e:
+    #     raise HTTPException(status_code=404, detail=str(e))
+
+    # Stub implementation for testing
+    return InventoryUploadResponse(items_added=0, errors=[], success=True)
+
+
+@app.get("/stores/{store_id}/inventory", response_model=List[InventoryItem])
+async def get_store_inventory(store_id: UUID) -> List[InventoryItem]:
+    """Get current inventory for a store."""
+    # TODO: Replace with actual service call when tests are ready
+    # try:
+    #     inventory = store_service.get_store_inventory(store_id)
+    #     return [
+    #         InventoryItem(
+    #             ingredient_name=item["ingredient_name"],
+    #             quantity=item["quantity"],
+    #             unit=item["unit"],
+    #             notes=item["notes"],
+    #             added_at=item["added_at"].isoformat(),
+    #         )
+    #         for item in inventory
+    #     ]
+    # except Exception as e:
+    #     raise HTTPException(status_code=404, detail=str(e))
+
+    # Stub implementation for testing
+    return []
+
+
+def main() -> None:
+    """Run the FastAPI server."""
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+
+
+if __name__ == "__main__":
+    main()
