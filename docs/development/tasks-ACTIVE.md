@@ -124,10 +124,10 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: HTTP endpoints support the complete user workflow
 
 ### 6.1 API Endpoints (*No tests needed - just FastAPI route definitions*)
-- [ ] Create POST /stores endpoint
-- [ ] Create GET /stores endpoint
-- [ ] Create POST /stores/{id}/inventory endpoint
-- [ ] Create GET /stores/{id}/inventory endpoint
+- [✓] Create POST /stores endpoint
+- [✓] Create GET /stores endpoint
+- [✓] Create POST /stores/{id}/inventory endpoint
+- [✓] Create GET /stores/{id}/inventory endpoint
 
 ### 6.2 API Behavior (*Tests needed*)
 - [ ] **Test**: POST /stores with {"name": "CSA Box"} returns 201 with store details
