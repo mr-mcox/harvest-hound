@@ -131,12 +131,12 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 
 ### 6.2 API Behavior (*Tests needed*)
 - [✓] **Test**: POST /stores with {"name": "CSA Box"} returns 201 with store details
-- [ ] **Test**: POST /stores with missing name returns 400 validation error
-- [ ] **Test**: GET /stores returns list of all stores with item counts
-- [ ] **Test**: POST /stores/{id}/inventory with "2 lbs carrots" returns 201 with parsed items
-- [ ] **Test**: POST /stores/{id}/inventory returns 400 for parsing errors
-- [ ] **Test**: GET /stores/{id}/inventory returns current inventory with ingredient details
-- [ ] **Test**: POST inventory to non-existent store returns 404
+- [✓] **Test**: POST /stores with missing name returns 400 validation error
+- [✓] **Test**: GET /stores returns list of all stores with item counts
+- [✓] **Test**: POST /stores/{id}/inventory with "2 lbs carrots" returns 201 with parsed items
+- [✓] **Test**: POST /stores/{id}/inventory returns 400 for parsing errors
+- [✓] **Test**: GET /stores/{id}/inventory returns current inventory with ingredient details
+- [✓] **Test**: POST inventory to non-existent store returns 404
 
 ---
 

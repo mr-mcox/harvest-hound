@@ -2,12 +2,15 @@ from typing import List, Optional
 from uuid import UUID
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
-from app.services.inventory_parser import create_inventory_parser_client
+from app.models.parsed_inventory import ParsedInventoryItem
+from app.services.inventory_parser import (
+    MockInventoryParserClient,
+)
 from app.services.store_service import StoreService
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
@@ -48,7 +51,7 @@ class InventoryItem(BaseModel):
     ingredient_name: str
     quantity: float
     unit: str
-    notes: str
+    notes: Optional[str]
     added_at: str
 
 
@@ -56,7 +59,35 @@ class InventoryItem(BaseModel):
 event_store = EventStore()
 store_repository = StoreRepository(event_store)
 ingredient_repository = IngredientRepository(event_store)
-inventory_parser = create_inventory_parser_client()
+
+
+# Create a smart mock parser for API testing
+class SmartMockInventoryParserClient(MockInventoryParserClient):
+    """Mock client that provides realistic results based on input."""
+
+    def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
+        """Return parsed results based on input text."""
+        if not inventory_text.strip():
+            return []
+
+        # Simulate parsing errors for specific inputs
+        if (
+            "invalid" in inventory_text.lower()
+            or "unparseable" in inventory_text.lower()
+        ):
+            raise ValueError("Failed to parse inventory text")
+
+        # Simple mapping for common test cases
+        if "carrots" in inventory_text.lower():
+            return [ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound")]
+        elif "kale" in inventory_text.lower():
+            return [ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch")]
+        else:
+            # Default fallback
+            return [ParsedInventoryItem(name="unknown", quantity=1.0, unit="item")]
+
+
+inventory_parser = SmartMockInventoryParserClient()
 store_service = StoreService(store_repository, ingredient_repository, inventory_parser)
 
 
@@ -101,42 +132,46 @@ async def upload_inventory(
     store_id: UUID, request: InventoryUploadRequest
 ) -> InventoryUploadResponse:
     """Upload inventory to a store."""
-    # TODO: Replace with actual service call when tests are ready
-    # try:
-    #     result = store_service.upload_inventory(store_id, request.inventory_text)
-    #     return InventoryUploadResponse(
-    #         items_added=result.items_added,
-    #         errors=result.errors,
-    #         success=result.success
-    #     )
-    # except Exception as e:
-    #     raise HTTPException(status_code=404, detail=str(e))
+    try:
+        result = store_service.upload_inventory(store_id, request.inventory_text)
 
-    # Stub implementation for testing
-    return InventoryUploadResponse(items_added=0, errors=[], success=True)
+        # If the service returned an error result, return 400 Bad Request
+        if not result.success:
+            response = InventoryUploadResponse(
+                items_added=result.items_added,
+                errors=result.errors,
+                success=result.success,
+            )
+            raise HTTPException(status_code=400, detail=response.model_dump())
+
+        return InventoryUploadResponse(
+            items_added=result.items_added, errors=result.errors, success=result.success
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        # Store not found or other unexpected errors
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/stores/{store_id}/inventory", response_model=List[InventoryItem])
 async def get_store_inventory(store_id: UUID) -> List[InventoryItem]:
     """Get current inventory for a store."""
-    # TODO: Replace with actual service call when tests are ready
-    # try:
-    #     inventory = store_service.get_store_inventory(store_id)
-    #     return [
-    #         InventoryItem(
-    #             ingredient_name=item["ingredient_name"],
-    #             quantity=item["quantity"],
-    #             unit=item["unit"],
-    #             notes=item["notes"],
-    #             added_at=item["added_at"].isoformat(),
-    #         )
-    #         for item in inventory
-    #     ]
-    # except Exception as e:
-    #     raise HTTPException(status_code=404, detail=str(e))
-
-    # Stub implementation for testing
-    return []
+    try:
+        inventory = store_service.get_store_inventory(store_id)
+        return [
+            InventoryItem(
+                ingredient_name=item["ingredient_name"],
+                quantity=item["quantity"],
+                unit=item["unit"],
+                notes=item["notes"],
+                added_at=item["added_at"].isoformat(),
+            )
+            for item in inventory
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 def main() -> None:

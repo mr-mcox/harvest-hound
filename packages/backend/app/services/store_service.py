@@ -2,7 +2,11 @@ from dataclasses import dataclass
 from typing import List
 from uuid import UUID, uuid4
 
-from ..infrastructure.repositories import IngredientRepository, StoreRepository
+from ..infrastructure.repositories import (
+    AggregateNotFoundError,
+    IngredientRepository,
+    StoreRepository,
+)
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem
@@ -99,6 +103,9 @@ class StoreService:
 
             return InventoryUploadResult.success_result(items_added)
 
+        except AggregateNotFoundError:
+            # Re-raise store not found errors so API can return 404
+            raise
         except Exception as e:
             return InventoryUploadResult.error_result([str(e)])
 
