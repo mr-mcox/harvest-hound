@@ -84,21 +84,21 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Orchestrate domain operations with proper error handling
 
 ### 4.1 StoreService Class (*No tests needed - just class definition*)
-- [ ] Create `StoreService` with create_store() and upload_inventory() methods
-- [ ] Create `InventoryUploadResult` dataclass
+- [✓] Create `StoreService` with create_store() and upload_inventory() methods
+- [✓] Create `InventoryUploadResult` dataclass
 
 ### 4.2 Store Creation Behavior (*Tests needed*)
-- [ ] **Test**: StoreService.create_store("CSA Box") returns UUID and persists StoreCreated event
-- [ ] **Test**: create_store() with infinite_supply=True sets flag correctly in event
-- [ ] **Test**: create_store() with duplicate name succeeds (no uniqueness constraint)
+- [✓] **Test**: StoreService.create_store("CSA Box") returns UUID and persists StoreCreated event
+- [✓] **Test**: create_store() with infinite_supply=True sets flag correctly in event
+- [✓] **Test**: create_store() with duplicate name succeeds (no uniqueness constraint)
 
 ### 4.3 Inventory Upload Behavior (*Tests needed*)
-- [ ] **Test**: upload_inventory() parses "2 lbs carrots" and creates new Ingredient with name="carrots"
-- [ ] **Test**: upload_inventory() creates InventoryItem linking to ingredient via ingredient_id
-- [ ] **Test**: upload_inventory() emits both IngredientCreated and InventoryItemAdded events
-- [ ] **Test**: upload_inventory() returns InventoryUploadResult with items_added=1
-- [ ] **Test**: upload_inventory() handles LLM parsing errors and returns error in result
-- [ ] **Test**: get_store_inventory() returns current inventory with ingredient names
+- [✓] **Test**: upload_inventory() parses "2 lbs carrots" and creates new Ingredient with name="carrots"
+- [✓] **Test**: upload_inventory() creates InventoryItem linking to ingredient via ingredient_id
+- [✓] **Test**: upload_inventory() emits both IngredientCreated and InventoryItemAdded events
+- [✓] **Test**: upload_inventory() returns InventoryUploadResult with items_added=1
+- [✓] **Test**: upload_inventory() handles LLM parsing errors and returns error in result
+- [✓] **Test**: get_store_inventory() returns current inventory with ingredient names
 
 ---
 
