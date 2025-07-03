@@ -19,13 +19,12 @@ class BamlInventoryParserClient(InventoryParserClient):
     """Real BAML-based inventory parser client."""
 
     def __init__(self) -> None:
-        # Check if we're in a test environment and require explicit opt-in
-        if os.environ.get("TESTING", "false").lower() == "true":
-            if os.environ.get("ALLOW_BAML_IN_TESTS", "false").lower() != "true":
-                raise RuntimeError(
-                    "BAML client cannot be used in tests. "
-                    "Use TestInventoryParserClient instead."
-                )
+        # Require explicit opt-in for BAML usage (defaults to safe testing mode)
+        if os.environ.get("ENABLE_BAML", "false").lower() != "true":
+            raise RuntimeError(
+                "BAML client requires ENABLE_BAML=true environment variable. "
+                "Use TestInventoryParserClient for testing."
+            )
 
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text using BAML LLM service."""
@@ -59,8 +58,12 @@ class TestInventoryParserClient(InventoryParserClient):
 
 
 def create_inventory_parser_client() -> InventoryParserClient:
-    """Factory function to create appropriate inventory parser client."""
-    if os.environ.get("TESTING", "false").lower() == "true":
-        return TestInventoryParserClient()
-    else:
+    """Factory function to create appropriate inventory parser client.
+
+    Defaults to TestInventoryParserClient for safety.
+    Use ENABLE_BAML=true to enable real BAML client.
+    """
+    if os.environ.get("ENABLE_BAML", "false").lower() == "true":
         return BamlInventoryParserClient()
+    else:
+        return TestInventoryParserClient()
