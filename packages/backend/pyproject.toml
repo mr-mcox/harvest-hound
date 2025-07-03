@@ -7,13 +7,12 @@ requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.11.7",
     "fastapi>=0.115.6",
-    "uvicorn>=0.30.6"
+    "uvicorn>=0.30.6",
+    "baml-py>=0.62.0",
 ]
 
 [dependency-groups]
-dev = [
-    "pyright>=1.1.402",
-]
+dev = ["pyright>=1.1.402"]
 lint = ["mypy>=1.16.1"]
 test = ["pytest>=8.4.1"]
 
@@ -22,3 +21,9 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "C90"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/infrastructure/baml_client/**/*" = ["ALL"]
+
+[tool.black]
+exclude = "app/infrastructure/baml_client/"
