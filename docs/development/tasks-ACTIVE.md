@@ -59,17 +59,17 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Natural language text is parsed into structured inventory items
 
 ### 3.1 BAML Setup (*No tests needed - configuration*)
-- [ ] Install BAML dependencies and configure client
-- [ ] Create inventory parsing prompt template
+- [x] Install BAML dependencies and configure client
+- [x] Create inventory parsing prompt template
 
 ### 3.2 Parser Implementation and Behavior (*Tests needed*)
 - [x] **Test**: Parse "2 lbs carrots" → {"name": "carrot", "quantity": 2.0, "unit": "pound"}
-- [ ] **Test**: Parse "1 bunch kale" → {"name": "kale", "quantity": 1.0, "unit": "bunch"}
-- [ ] **Test**: Parse multi-line "2 lbs carrots\n1 bunch kale" → 2 parsed items
-- [ ] **Test**: Parse CSV format "carrots, 2, lbs" → correct structured output
-- [ ] **Test**: Handle parsing errors with meaningful error messages
-- [ ] **Test**: Empty input returns empty list (no error)
-- [ ] **Test**: Malformed input returns error with original text preserved
+- [x] **Test**: Parse "1 bunch kale" → {"name": "kale", "quantity": 1.0, "unit": "bunch"}
+- [x] **Test**: Parse multi-line "2 lbs carrots\n1 bunch kale" → 2 parsed items
+- [x] **Test**: Parse CSV format "carrots, 2, lbs" → correct structured output
+- [x] **Test**: Handle parsing errors with meaningful error messages
+- [x] **Test**: Empty input returns empty list (no error)
+- [x] **Test**: Malformed input returns error with original text preserved
 
 ### 3.3 BAML-to-Domain Translation (*Tests needed*)
 **Goal**: Convert BAML-generated types to domain models cleanly
