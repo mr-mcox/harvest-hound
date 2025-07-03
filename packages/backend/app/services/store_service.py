@@ -2,12 +2,11 @@ from dataclasses import dataclass
 from typing import List
 from uuid import UUID, uuid4
 
-from ..infrastructure.baml_client import b
 from ..infrastructure.repositories import IngredientRepository, StoreRepository
-from ..infrastructure.translation import InventoryTranslator
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem
+from .inventory_parser import InventoryParserClient
 
 
 @dataclass
@@ -36,10 +35,11 @@ class StoreService:
         self,
         store_repository: StoreRepository,
         ingredient_repository: IngredientRepository,
+        inventory_parser: InventoryParserClient,
     ):
         self.store_repository = store_repository
         self.ingredient_repository = ingredient_repository
-        self.translator = InventoryTranslator()
+        self.inventory_parser = inventory_parser
 
     def create_store(
         self,
@@ -124,18 +124,8 @@ class StoreService:
         return inventory_with_names
 
     def _parse_inventory_text(self, inventory_text: str) -> List[ParsedInventoryItem]:
-        """Parse inventory text using LLM."""
-        if not inventory_text.strip():
-            return []
-
-        # Use BAML client to parse the text
-        baml_ingredients = b.ExtractIngredients(inventory_text)
-
-        # Convert BAML result to domain objects
-        return [
-            self.translator.to_parsed_inventory_item(ingredient)
-            for ingredient in baml_ingredients
-        ]
+        """Parse inventory text using injected parser client."""
+        return self.inventory_parser.parse_inventory(inventory_text)
 
     def _create_or_get_ingredient(self, name: str, default_unit: str) -> UUID:
         """Create a new ingredient or get existing one by name."""
