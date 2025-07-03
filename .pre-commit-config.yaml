@@ -21,20 +21,11 @@ repos:
       - id: black
         exclude: "app/infrastructure/baml_client/"
 
-  # - repo: local
-  #   hooks:
-  #     - id: mypy
-  #       name: mypy
-  #       entry: "uv"
-  #       args:
-  #         [
-  #           "--project",
-  #           "packages/backend",
-  #           "run",
-  #           "mypy",
-  #           "--config-file",
-  #           "packages/backend/pyproject.toml",
-  #         ]
-  #       language: system
-  #       types: [python]
-  #       require_serial: true
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: scripts/run-mypy.sh
+        language: script
+        types: [python]
+        require_serial: true
