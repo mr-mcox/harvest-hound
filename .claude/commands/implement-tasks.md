@@ -4,10 +4,11 @@ You are implementing tasks from the implementation plan using a self-managing re
 
 1. **Open @docs/development/tasks-ACTIVE.md** and identify the next uncompleted task (not marked with ✓)
 
-2. **For tasks marked "No tests needed":**
-   - Implement directly with clean, focused code
-   - Follow existing patterns and conventions
-   - Commit immediately with clear message
+2. **For tasks marked "No tests needed - setup only":**
+   - Create minimal setup work: stubs, schemas, route definitions, basic UI components
+   - For class stubs: use `raise NotImplementedError("TODO: implement in tests")` for method bodies
+   - Goal: Enable testing/development, not functional implementation
+   - Commit setup immediately with clear message
    - Mark as completed with ✓ in @paste.txt
 
 3. **For tasks marked "Tests needed":**
