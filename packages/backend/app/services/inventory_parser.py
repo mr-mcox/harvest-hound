@@ -23,7 +23,7 @@ class BamlInventoryParserClient(InventoryParserClient):
         if os.environ.get("ENABLE_BAML", "false").lower() != "true":
             raise RuntimeError(
                 "BAML client requires ENABLE_BAML=true environment variable. "
-                "Use TestInventoryParserClient for testing."
+                "Use MockInventoryParserClient for testing."
             )
 
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
@@ -44,7 +44,7 @@ class BamlInventoryParserClient(InventoryParserClient):
         ]
 
 
-class TestInventoryParserClient(InventoryParserClient):
+class MockInventoryParserClient(InventoryParserClient):
     """Test implementation for inventory parser client."""
 
     def __init__(self, mock_results: Optional[List[ParsedInventoryItem]] = None):
@@ -60,10 +60,10 @@ class TestInventoryParserClient(InventoryParserClient):
 def create_inventory_parser_client() -> InventoryParserClient:
     """Factory function to create appropriate inventory parser client.
 
-    Defaults to TestInventoryParserClient for safety.
+    Defaults to MockInventoryParserClient for safety.
     Use ENABLE_BAML=true to enable real BAML client.
     """
     if os.environ.get("ENABLE_BAML", "false").lower() == "true":
         return BamlInventoryParserClient()
     else:
-        return TestInventoryParserClient()
+        return MockInventoryParserClient()

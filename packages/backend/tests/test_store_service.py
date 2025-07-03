@@ -1,14 +1,15 @@
 import os
 import tempfile
-from typing import Generator
+from typing import Generator, List
 from uuid import uuid4
 
 import pytest
 
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
-from app.services.inventory_parser import TestInventoryParserClient
-from app.services.store_service import StoreService
+from app.models.parsed_inventory import ParsedInventoryItem
+from app.services.inventory_parser import MockInventoryParserClient
+from app.services.store_service import InventoryUploadResult, StoreService
 
 
 @pytest.fixture
@@ -42,16 +43,16 @@ def ingredient_repository(event_store: EventStore) -> IngredientRepository:
 
 
 @pytest.fixture
-def inventory_parser() -> TestInventoryParserClient:
+def inventory_parser() -> MockInventoryParserClient:
     """Create a test inventory parser client."""
-    return TestInventoryParserClient()
+    return MockInventoryParserClient()
 
 
 @pytest.fixture
 def store_service(
     store_repository: StoreRepository,
     ingredient_repository: IngredientRepository,
-    inventory_parser: TestInventoryParserClient,
+    inventory_parser: MockInventoryParserClient,
 ) -> StoreService:
     """Create a StoreService for testing."""
     return StoreService(store_repository, ingredient_repository, inventory_parser)
@@ -122,3 +123,170 @@ class TestStoreCreation:
         second_events = event_store.load_events(second_stream_id)
         assert len(second_events) == 1
         assert second_events[0]["event_data"]["description"] == "Second box"
+
+
+class TestInventoryUpload:
+    """Test inventory upload behavior."""
+
+    def test_upload_inventory_parses_text_and_creates_new_ingredient(
+        self,
+        store_service: StoreService,
+        event_store: EventStore,
+        inventory_parser: MockInventoryParserClient,
+    ) -> None:
+        """Test that upload_inventory parses text and creates new Ingredient."""
+        # Arrange
+        store_id = store_service.create_store("CSA Box")
+
+        # Configure parser to return parsed item
+        parsed_item = ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound")
+        inventory_parser.mock_results = [parsed_item]
+
+        # Act
+        result = store_service.upload_inventory(store_id, "2 lbs carrots")
+
+        # Assert - successful upload
+        assert result.success is True
+        assert result.items_added == 1
+        assert result.errors == []
+
+        # Check that IngredientCreated event was persisted
+        # Find ingredient events by getting ingredient_id from inventory events
+        store_stream_id = f"store-{store_id}"
+        store_events = event_store.load_events(store_stream_id)
+
+        # Should have StoreCreated + InventoryItemAdded
+        assert len(store_events) == 2
+        assert store_events[1]["event_type"] == "InventoryItemAdded"
+
+        ingredient_id = store_events[1]["event_data"]["ingredient_id"]
+        ingredient_stream_id = f"ingredient-{ingredient_id}"
+        ingredient_events = event_store.load_events(ingredient_stream_id)
+
+        assert len(ingredient_events) == 1
+        assert ingredient_events[0]["event_type"] == "IngredientCreated"
+        assert ingredient_events[0]["event_data"]["name"] == "carrots"
+        assert ingredient_events[0]["event_data"]["default_unit"] == "pound"
+
+    def test_upload_inventory_creates_inventory_item_linking_to_ingredient(
+        self,
+        store_service: StoreService,
+        event_store: EventStore,
+        inventory_parser: MockInventoryParserClient,
+    ) -> None:
+        """Test that upload_inventory creates InventoryItem linking to ingredient."""
+        # Arrange
+        store_id = store_service.create_store("CSA Box")
+        parsed_item = ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch")
+        inventory_parser.mock_results = [parsed_item]
+
+        # Act
+        store_service.upload_inventory(store_id, "1 bunch kale")
+
+        # Assert - check InventoryItemAdded event
+        store_stream_id = f"store-{store_id}"
+        store_events = event_store.load_events(store_stream_id)
+
+        inventory_added_event = store_events[1]
+        assert inventory_added_event["event_type"] == "InventoryItemAdded"
+        assert inventory_added_event["event_data"]["store_id"] == str(store_id)
+        assert inventory_added_event["event_data"]["quantity"] == 1.0
+        assert inventory_added_event["event_data"]["unit"] == "bunch"
+
+        # Verify ingredient_id links to actual ingredient
+        ingredient_id = inventory_added_event["event_data"]["ingredient_id"]
+        ingredient_stream_id = f"ingredient-{ingredient_id}"
+        ingredient_events = event_store.load_events(ingredient_stream_id)
+        assert len(ingredient_events) == 1
+        assert ingredient_events[0]["event_data"]["name"] == "kale"
+
+    def test_upload_inventory_returns_upload_result_with_items_added_count(
+        self,
+        store_service: StoreService,
+        inventory_parser: MockInventoryParserClient,
+    ) -> None:
+        """Test that upload_inventory returns InventoryUploadResult with count."""
+        # Arrange
+        store_id = store_service.create_store("CSA Box")
+        parsed_items = [
+            ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
+            ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+        ]
+        inventory_parser.mock_results = parsed_items
+
+        # Act
+        result = store_service.upload_inventory(store_id, "2 lbs carrots\n1 bunch kale")
+
+        # Assert
+        assert isinstance(result, InventoryUploadResult)
+        assert result.success is True
+        assert result.items_added == 2
+        assert result.errors == []
+
+    def test_upload_inventory_handles_parsing_errors(
+        self,
+        store_service: StoreService,
+        inventory_parser: MockInventoryParserClient,
+    ) -> None:
+        """Test that upload_inventory handles LLM parsing errors."""
+        # Arrange
+        store_id = store_service.create_store("CSA Box")
+
+        # Configure parser to trigger an exception through parse_inventory call
+        # by using a mock that raises an exception when called
+        class FailingMockParser(MockInventoryParserClient):
+            def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
+                raise ValueError("Failed to parse inventory text")
+
+        # Replace the parser with our failing version
+        failing_parser = FailingMockParser()
+        store_service.inventory_parser = failing_parser
+
+        # Act
+        result = store_service.upload_inventory(store_id, "invalid text")
+
+        # Assert
+        assert result.success is False
+        assert result.items_added == 0
+        assert len(result.errors) == 1
+        assert "Failed to parse inventory text" in result.errors[0]
+
+    def test_get_store_inventory_returns_current_inventory_with_ingredient_names(
+        self,
+        store_service: StoreService,
+        inventory_parser: MockInventoryParserClient,
+    ) -> None:
+        """Test that get_store_inventory returns current inventory with names."""
+        # Arrange
+        store_id = store_service.create_store("CSA Box")
+        parsed_items = [
+            ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
+            ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+        ]
+        inventory_parser.mock_results = parsed_items
+
+        # Upload inventory
+        store_service.upload_inventory(store_id, "2 lbs carrots\n1 bunch kale")
+
+        # Act
+        inventory = store_service.get_store_inventory(store_id)
+
+        # Assert
+        assert len(inventory) == 2
+
+        # Sort by ingredient name for consistent assertions
+        inventory_by_name = {item["ingredient_name"]: item for item in inventory}
+
+        assert "carrots" in inventory_by_name
+        carrots_item = inventory_by_name["carrots"]
+        assert carrots_item["quantity"] == 2.0
+        assert carrots_item["unit"] == "pound"
+        assert carrots_item["notes"] is None
+        assert "added_at" in carrots_item
+
+        assert "kale" in inventory_by_name
+        kale_item = inventory_by_name["kale"]
+        assert kale_item["quantity"] == 1.0
+        assert kale_item["unit"] == "bunch"
+        assert kale_item["notes"] is None
+        assert "added_at" in kale_item
