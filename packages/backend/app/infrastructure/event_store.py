@@ -14,8 +14,9 @@ class EventStore:
         self._ensure_table_exists()
 
     def _ensure_table_exists(self) -> None:
-        """Create events table if it doesn't exist."""
+        """Create events table and projection tables if they don't exist."""
         with sqlite3.connect(self.db_path) as conn:
+            # Events table
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS events (
@@ -31,6 +32,65 @@ class EventStore:
                 """
                 CREATE INDEX IF NOT EXISTS idx_stream_id_timestamp
                 ON events(stream_id, timestamp)
+            """
+            )
+
+            # Projection tables
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ingredients (
+                    ingredient_id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    default_unit TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS stores (
+                    store_id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    infinite_supply BOOLEAN NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL
+                )
+            """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS inventory_items (
+                    store_id TEXT NOT NULL,
+                    ingredient_id TEXT NOT NULL,
+                    quantity REAL NOT NULL,
+                    unit TEXT NOT NULL,
+                    notes TEXT,
+                    added_at TEXT NOT NULL,
+                    PRIMARY KEY (store_id, ingredient_id),
+                    FOREIGN KEY (store_id) REFERENCES stores(store_id),
+                    FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+                )
+            """
+            )
+
+            # Current inventory view
+            conn.execute(
+                """
+                CREATE VIEW IF NOT EXISTS current_inventory AS
+                SELECT
+                    s.store_id,
+                    s.name as store_name,
+                    ii.ingredient_id,
+                    i.name as ingredient_name,
+                    ii.quantity,
+                    ii.unit,
+                    ii.notes,
+                    ii.added_at
+                FROM inventory_items ii
+                JOIN stores s ON ii.store_id = s.store_id
+                JOIN ingredients i ON ii.ingredient_id = i.ingredient_id
             """
             )
 
