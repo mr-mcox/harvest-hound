@@ -1,6 +1,6 @@
 import os
 import tempfile
-from typing import Any, Dict, Generator, List, Optional, Type
+from typing import Generator, List
 from uuid import uuid4
 
 import pytest
@@ -11,6 +11,7 @@ from app.infrastructure.repositories import IngredientRepository, StoreRepositor
 from app.models.parsed_inventory import ParsedInventoryItem
 from app.services.inventory_parser import MockInventoryParserClient
 from app.services.store_service import InventoryUploadResult, StoreService
+from tests.test_utils import assert_event_matches, get_typed_events
 
 
 @pytest.fixture
@@ -57,55 +58,6 @@ def store_service(
 ) -> StoreService:
     """Create a StoreService for testing."""
     return StoreService(store_repository, ingredient_repository, inventory_parser)
-
-
-# Test Helper Functions
-
-
-def get_typed_events(
-    event_store: EventStore, stream_id: str, event_type_class: Type[Any]
-) -> List[Any]:
-    """Get typed domain events from event store."""
-    raw_events = event_store.load_events(stream_id)
-    return [
-        event_type_class(**event["event_data"])
-        for event in raw_events
-        if event["event_type"] == event_type_class.__name__
-    ]
-
-
-def assert_event_matches(
-    event: Any,
-    expected_data: Optional[Dict[str, Any]] = None,
-    exclude_fields: Optional[List[str]] = None,
-) -> None:
-    """Assert a typed domain event matches expected data.
-
-    Args:
-        event: Typed domain event object
-        expected_data: Dict of field->value pairs to check (optional)
-        exclude_fields: List of fields to skip (defaults to timestamp fields)
-    """
-    exclude_fields = exclude_fields or ["created_at", "added_at"]
-
-    if expected_data:
-        # Convert event to dict (works for both pydantic and dataclass)
-        if hasattr(event, "model_dump"):
-            actual_data = event.model_dump()
-        else:
-            from dataclasses import asdict
-
-            actual_data = asdict(event)
-
-        # Filter out excluded fields
-        actual_data = {k: v for k, v in actual_data.items() if k not in exclude_fields}
-
-        # Only check the fields that were specified
-        for field, expected_value in expected_data.items():
-            assert field in actual_data, f"Field '{field}' not found in event data"
-            assert (
-                actual_data[field] == expected_value
-            ), f"Field '{field}': expected {expected_value}, got {actual_data[field]}"
 
 
 class TestStoreCreation:

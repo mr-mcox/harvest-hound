@@ -7,12 +7,13 @@ from uuid import uuid4
 
 from app.events.domain_events import InventoryItemAdded, StoreCreated
 from app.infrastructure.event_store import EventStore
+from tests.test_utils import assert_event_matches, get_typed_events
 
 
 class TestEventStoreAppendEvent:
     """Test EventStore.append_event() persists events to SQLite."""
 
-    def test_append_event_persists_store_created_event(self):
+    def test_append_event_persists_store_created_event(self) -> None:
         """EventStore.append_event() should persist StoreCreated event to SQLite."""
         # Create temporary database
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
@@ -36,15 +37,18 @@ class TestEventStoreAppendEvent:
             event_store.append_event(stream_id, event)
 
             # Verify event was persisted by loading it back
-            loaded_events = event_store.load_events(stream_id)
+            store_events = get_typed_events(event_store, stream_id, StoreCreated)
 
-            assert len(loaded_events) == 1
-            loaded_event = loaded_events[0]
-            assert loaded_event["event_type"] == "StoreCreated"
-            assert loaded_event["event_data"]["store_id"] == str(store_id)
-            assert loaded_event["event_data"]["name"] == "Test Store"
-            assert loaded_event["event_data"]["description"] == "A test store"
-            assert loaded_event["event_data"]["infinite_supply"] is False
+            assert len(store_events) == 1
+            assert_event_matches(
+                store_events[0],
+                {
+                    "store_id": store_id,
+                    "name": "Test Store",
+                    "description": "A test store",
+                    "infinite_supply": False,
+                },
+            )
 
         finally:
             # Clean up
@@ -54,7 +58,7 @@ class TestEventStoreAppendEvent:
 class TestEventStoreLoadEvents:
     """Test EventStore.load_events() returns events in chronological order."""
 
-    def test_load_events_returns_events_in_chronological_order(self):
+    def test_load_events_returns_events_in_chronological_order(self) -> None:
         """EventStore should return events by stream_id in chronological order."""
         # Create temporary database
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
@@ -102,19 +106,43 @@ class TestEventStoreLoadEvents:
             event_store.append_event(stream_id, event2)
             event_store.append_event(stream_id, event3)
 
-            # Load events
-            loaded_events = event_store.load_events(stream_id)
+            # Load events and verify order and content
+            store_events = get_typed_events(event_store, stream_id, StoreCreated)
+            inventory_events = get_typed_events(
+                event_store, stream_id, InventoryItemAdded
+            )
 
-            # Verify order and content
-            assert len(loaded_events) == 3
-            assert loaded_events[0]["event_type"] == "StoreCreated"
-            assert loaded_events[1]["event_type"] == "InventoryItemAdded"
-            assert loaded_events[1]["event_data"]["notes"] == "First item"
-            assert loaded_events[2]["event_type"] == "InventoryItemAdded"
-            assert loaded_events[2]["event_data"]["notes"] == "Second item"
+            # Verify we have the right number of each event type
+            assert len(store_events) == 1
+            assert len(inventory_events) == 2
 
-            # Verify chronological ordering by timestamp
-            timestamps = [event["timestamp"] for event in loaded_events]
+            # Verify content of specific events
+            assert_event_matches(
+                store_events[0], {"store_id": store_id, "name": "Test Store"}
+            )
+            assert_event_matches(
+                inventory_events[0],
+                {
+                    "store_id": store_id,
+                    "quantity": 2.0,
+                    "unit": "lbs",
+                    "notes": "First item",
+                },
+            )
+            assert_event_matches(
+                inventory_events[1],
+                {
+                    "store_id": store_id,
+                    "quantity": 1.0,
+                    "unit": "bunch",
+                    "notes": "Second item",
+                },
+            )
+
+            # Verify chronological ordering by checking raw events
+            raw_events = event_store.load_events(stream_id)
+            assert len(raw_events) == 3
+            timestamps = [event["timestamp"] for event in raw_events]
             assert timestamps == sorted(timestamps)
 
         finally:
@@ -125,7 +153,7 @@ class TestEventStoreLoadEvents:
 class TestEventStoreConcurrentWrites:
     """Test EventStore handles concurrent writes without corruption."""
 
-    def test_concurrent_writes_no_corruption(self):
+    def test_concurrent_writes_no_corruption(self) -> None:
         """EventStore should handle concurrent writes without corruption."""
         # Create temporary database
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
@@ -135,7 +163,7 @@ class TestEventStoreConcurrentWrites:
             event_store = EventStore(db_path)
 
             # Create multiple threads that write events concurrently
-            def write_events(thread_id):
+            def write_events(thread_id: int) -> None:
                 for i in range(10):
                     store_id = uuid4()
                     stream_id = f"store-{store_id}"
