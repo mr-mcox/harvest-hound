@@ -246,3 +246,116 @@ class TestProjectionBehavior:
         assert grocery_store["name"] == "Grocery Store"
         assert grocery_store["description"] == "Local supermarket"
         assert grocery_store["item_count"] == 0
+
+    def test_inventory_query_returns_items_with_ingredient_names(
+        self, event_store: EventStore, temp_db_path: str
+    ) -> None:
+        """Test that inventory query returns items with ingredient names."""
+        # Setup store and ingredients
+        store_id = uuid4()
+        ingredient1_id = uuid4()
+        ingredient2_id = uuid4()
+        created_at = datetime(2023, 1, 1, 0, 0, 0)
+        added_at = datetime(2023, 1, 1, 12, 0, 0)
+
+        # Create prerequisite events
+        events = [
+            StoreCreated(
+                store_id=store_id,
+                name="Test Store",
+                description="Test store",
+                infinite_supply=False,
+                created_at=created_at,
+            ),
+            IngredientCreated(
+                ingredient_id=ingredient1_id,
+                name="carrot",
+                default_unit="pound",
+                created_at=created_at,
+            ),
+            IngredientCreated(
+                ingredient_id=ingredient2_id,
+                name="onion",
+                default_unit="piece",
+                created_at=created_at,
+            ),
+        ]
+
+        for event in events:
+            if isinstance(event, StoreCreated):
+                event_store.append_event(f"store-{event.store_id}", event)
+            elif isinstance(event, IngredientCreated):
+                event_store.append_event(f"ingredient-{event.ingredient_id}", event)
+
+        # Add inventory items
+        inventory_events = [
+            InventoryItemAdded(
+                store_id=store_id,
+                ingredient_id=ingredient1_id,
+                quantity=2.5,
+                unit="pound",
+                notes="Fresh carrots",
+                added_at=added_at,
+            ),
+            InventoryItemAdded(
+                store_id=store_id,
+                ingredient_id=ingredient2_id,
+                quantity=3.0,
+                unit="piece",
+                notes=None,
+                added_at=added_at,
+            ),
+        ]
+
+        for event in inventory_events:
+            event_store.append_event(f"store-{event.store_id}", event)
+
+        # This should fail because we haven't implemented inventory query yet
+        inventory = event_store.get_store_inventory(str(store_id))  # type: ignore[attr-defined]
+
+        # Verify inventory results
+        assert len(inventory) == 2
+
+        # Sort by ingredient name for consistent testing
+        inventory.sort(key=lambda x: x["ingredient_name"])
+
+        # Check carrot entry
+        carrot_item = inventory[0]
+        assert carrot_item["ingredient_name"] == "carrot"
+        assert carrot_item["quantity"] == 2.5
+        assert carrot_item["unit"] == "pound"
+        assert carrot_item["notes"] == "Fresh carrots"
+
+        # Check onion entry
+        onion_item = inventory[1]
+        assert onion_item["ingredient_name"] == "onion"
+        assert onion_item["quantity"] == 3.0
+        assert onion_item["unit"] == "piece"
+        assert onion_item["notes"] is None
+
+    def test_ingredient_lookup_by_id_uses_projection_table(
+        self, event_store: EventStore, temp_db_path: str
+    ) -> None:
+        """Test that ingredient lookup by ID uses projection table for performance."""
+        ingredient_id = uuid4()
+        created_at = datetime(2023, 1, 1, 0, 0, 0)
+
+        # Create ingredient
+        event = IngredientCreated(
+            ingredient_id=ingredient_id,
+            name="tomato",
+            default_unit="piece",
+            created_at=created_at,
+        )
+
+        event_store.append_event(f"ingredient-{ingredient_id}", event)
+
+        # This should fail because we haven't implemented ingredient lookup yet
+        ingredient = event_store.get_ingredient_by_id(str(ingredient_id))  # type: ignore[attr-defined]
+
+        # Verify ingredient lookup result
+        assert ingredient is not None
+        assert ingredient["ingredient_id"] == str(ingredient_id)
+        assert ingredient["name"] == "tomato"
+        assert ingredient["default_unit"] == "piece"
+        assert ingredient["created_at"] == created_at.isoformat()
