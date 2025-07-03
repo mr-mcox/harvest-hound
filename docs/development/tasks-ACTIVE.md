@@ -73,10 +73,10 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 
 ### 3.3 BAML-to-Domain Translation (*Tests needed*)
 **Goal**: Convert BAML-generated types to domain models cleanly
-- [ ] **Test**: BAML InventoryParseResult converts to domain ParsedInventoryItem
-- [ ] **Test**: Translation preserves all data fields correctly
-- [ ] **Test**: Translation handles missing/null fields gracefully
-- [ ] **Test**: Translation validates domain constraints (positive quantities, valid units)
+- [x] **Test**: BAML InventoryParseResult converts to domain ParsedInventoryItem
+- [x] **Test**: Translation preserves all data fields correctly
+- [x] **Test**: Translation handles missing/null fields gracefully
+- [x] **Test**: Translation validates domain constraints (positive quantities, valid units)
 
 ---
 
