@@ -13,7 +13,7 @@ class ParsedInventoryItem:
     quantity: float
     unit: str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate domain constraints."""
         if not self.name or not self.name.strip():
             raise ValueError("Ingredient name cannot be empty")
