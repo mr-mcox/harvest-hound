@@ -3,7 +3,12 @@ import sqlite3
 from datetime import datetime
 from typing import Any, Dict, List
 
-from ..events.domain_events import DomainEvent
+from ..events.domain_events import (
+    DomainEvent,
+    IngredientCreated,
+    InventoryItemAdded,
+    StoreCreated,
+)
 
 
 class EventStore:
@@ -101,10 +106,56 @@ class EventStore:
         timestamp = datetime.now().isoformat()
 
         with sqlite3.connect(self.db_path) as conn:
+            # Append event to event store
             conn.execute(
                 """INSERT INTO events (stream_id, event_type, event_data, timestamp)
                    VALUES (?, ?, ?, ?)""",
                 (stream_id, event_type, event_data, timestamp),
+            )
+
+            # Update projection tables
+            self._update_projections(conn, event)
+
+    def _update_projections(self, conn: sqlite3.Connection, event: DomainEvent) -> None:
+        """Update projection tables based on domain events."""
+        if isinstance(event, IngredientCreated):
+            conn.execute(
+                """INSERT OR REPLACE INTO ingredients
+                   (ingredient_id, name, default_unit, created_at)
+                   VALUES (?, ?, ?, ?)""",
+                (
+                    str(event.ingredient_id),
+                    event.name,
+                    event.default_unit,
+                    event.created_at.isoformat(),
+                ),
+            )
+        elif isinstance(event, StoreCreated):
+            conn.execute(
+                """INSERT OR REPLACE INTO stores
+                   (store_id, name, description, infinite_supply, created_at)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    str(event.store_id),
+                    event.name,
+                    event.description,
+                    event.infinite_supply,
+                    event.created_at.isoformat(),
+                ),
+            )
+        elif isinstance(event, InventoryItemAdded):
+            conn.execute(
+                """INSERT OR REPLACE INTO inventory_items
+                   (store_id, ingredient_id, quantity, unit, notes, added_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    str(event.store_id),
+                    str(event.ingredient_id),
+                    event.quantity,
+                    event.unit,
+                    event.notes,
+                    event.added_at.isoformat(),
+                ),
             )
 
     def load_events(self, stream_id: str) -> List[Dict[str, Any]]:
