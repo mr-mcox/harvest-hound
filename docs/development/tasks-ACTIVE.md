@@ -63,7 +63,7 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [ ] Create inventory parsing prompt template
 
 ### 3.2 Parser Implementation and Behavior (*Tests needed*)
-- [ ] **Test**: Parse "2 lbs carrots" → {"name": "carrots", "quantity": 2.0, "unit": "lbs"}
+- [x] **Test**: Parse "2 lbs carrots" → {"name": "carrot", "quantity": 2.0, "unit": "pound"}
 - [ ] **Test**: Parse "1 bunch kale" → {"name": "kale", "quantity": 1.0, "unit": "bunch"}
 - [ ] **Test**: Parse multi-line "2 lbs carrots\n1 bunch kale" → 2 parsed items
 - [ ] **Test**: Parse CSV format "carrots, 2, lbs" → correct structured output
