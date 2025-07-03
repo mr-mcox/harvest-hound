@@ -179,3 +179,91 @@ class EventStore:
                 )
 
             return events
+
+    def get_stores_with_item_count(self) -> List[Dict[str, Any]]:
+        """Get list of all stores with their inventory item counts."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                """SELECT
+                    s.store_id,
+                    s.name,
+                    s.description,
+                    s.infinite_supply,
+                    s.created_at,
+                    COALESCE(item_counts.item_count, 0) as item_count
+                FROM stores s
+                LEFT JOIN (
+                    SELECT store_id, COUNT(*) as item_count
+                    FROM inventory_items
+                    GROUP BY store_id
+                ) item_counts ON s.store_id = item_counts.store_id
+                ORDER BY s.created_at"""
+            )
+
+            stores: List[Dict[str, Any]] = []
+            for row in cursor.fetchall():
+                stores.append(
+                    {
+                        "store_id": row[0],
+                        "name": row[1],
+                        "description": row[2],
+                        "infinite_supply": bool(row[3]),
+                        "created_at": row[4],
+                        "item_count": row[5],
+                    }
+                )
+
+            return stores
+
+    def get_store_inventory(self, store_id: str) -> List[Dict[str, Any]]:
+        """Get inventory for a specific store with ingredient details."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                """SELECT
+                    ii.ingredient_id,
+                    i.name as ingredient_name,
+                    ii.quantity,
+                    ii.unit,
+                    ii.notes,
+                    ii.added_at
+                FROM inventory_items ii
+                JOIN ingredients i ON ii.ingredient_id = i.ingredient_id
+                WHERE ii.store_id = ?
+                ORDER BY ii.added_at""",
+                (store_id,),
+            )
+
+            inventory: List[Dict[str, Any]] = []
+            for row in cursor.fetchall():
+                inventory.append(
+                    {
+                        "ingredient_id": row[0],
+                        "ingredient_name": row[1],
+                        "quantity": row[2],
+                        "unit": row[3],
+                        "notes": row[4],
+                        "added_at": row[5],
+                    }
+                )
+
+            return inventory
+
+    def get_ingredient_by_id(self, ingredient_id: str) -> Dict[str, Any] | None:
+        """Get ingredient details by ID from projection table."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                """SELECT ingredient_id, name, default_unit, created_at
+                   FROM ingredients WHERE ingredient_id = ?""",
+                (ingredient_id,),
+            )
+            row = cursor.fetchone()
+
+            if row is None:
+                return None
+
+            return {
+                "ingredient_id": row[0],
+                "name": row[1],
+                "default_unit": row[2],
+                "created_at": row[3],
+            }
