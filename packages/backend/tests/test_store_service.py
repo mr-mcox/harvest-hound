@@ -1,10 +1,11 @@
 import os
 import tempfile
-from typing import Generator, List
+from typing import Any, Dict, Generator, List, Optional, Type
 from uuid import uuid4
 
 import pytest
 
+from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
 from app.models.parsed_inventory import ParsedInventoryItem
@@ -58,6 +59,55 @@ def store_service(
     return StoreService(store_repository, ingredient_repository, inventory_parser)
 
 
+# Test Helper Functions
+
+
+def get_typed_events(
+    event_store: EventStore, stream_id: str, event_type_class: Type[Any]
+) -> List[Any]:
+    """Get typed domain events from event store."""
+    raw_events = event_store.load_events(stream_id)
+    return [
+        event_type_class(**event["event_data"])
+        for event in raw_events
+        if event["event_type"] == event_type_class.__name__
+    ]
+
+
+def assert_event_matches(
+    event: Any,
+    expected_data: Optional[Dict[str, Any]] = None,
+    exclude_fields: Optional[List[str]] = None,
+) -> None:
+    """Assert a typed domain event matches expected data.
+
+    Args:
+        event: Typed domain event object
+        expected_data: Dict of field->value pairs to check (optional)
+        exclude_fields: List of fields to skip (defaults to timestamp fields)
+    """
+    exclude_fields = exclude_fields or ["created_at", "added_at"]
+
+    if expected_data:
+        # Convert event to dict (works for both pydantic and dataclass)
+        if hasattr(event, "model_dump"):
+            actual_data = event.model_dump()
+        else:
+            from dataclasses import asdict
+
+            actual_data = asdict(event)
+
+        # Filter out excluded fields
+        actual_data = {k: v for k, v in actual_data.items() if k not in exclude_fields}
+
+        # Only check the fields that were specified
+        for field, expected_value in expected_data.items():
+            assert field in actual_data, f"Field '{field}' not found in event data"
+            assert (
+                actual_data[field] == expected_value
+            ), f"Field '{field}': expected {expected_value}, got {actual_data[field]}"
+
+
 class TestStoreCreation:
     """Test store creation behavior."""
 
@@ -72,15 +122,18 @@ class TestStoreCreation:
         assert isinstance(store_id, type(uuid4()))
 
         # Check that StoreCreated event was persisted
-        stream_id = f"store-{store_id}"
-        events = event_store.load_events(stream_id)
+        store_events = get_typed_events(event_store, f"store-{store_id}", StoreCreated)
 
-        assert len(events) == 1
-        assert events[0]["event_type"] == "StoreCreated"
-        assert events[0]["event_data"]["store_id"] == str(store_id)
-        assert events[0]["event_data"]["name"] == "CSA Box"
-        assert events[0]["event_data"]["description"] == "Weekly vegetable box"
-        assert events[0]["event_data"]["infinite_supply"] is False
+        assert len(store_events) == 1
+        assert_event_matches(
+            store_events[0],
+            {
+                "store_id": store_id,
+                "name": "CSA Box",
+                "description": "Weekly vegetable box",
+                "infinite_supply": False,
+            },
+        )
 
     def test_create_store_with_infinite_supply_true_sets_flag_correctly(
         self, store_service: StoreService, event_store: EventStore
@@ -92,12 +145,10 @@ class TestStoreCreation:
         )
 
         # Assert
-        stream_id = f"store-{store_id}"
-        events = event_store.load_events(stream_id)
+        store_events = get_typed_events(event_store, f"store-{store_id}", StoreCreated)
 
-        assert len(events) == 1
-        assert events[0]["event_type"] == "StoreCreated"
-        assert events[0]["event_data"]["infinite_supply"] is True
+        assert len(store_events) == 1
+        assert_event_matches(store_events[0], {"infinite_supply": True})
 
     def test_create_store_with_duplicate_name_succeeds(
         self, store_service: StoreService, event_store: EventStore
@@ -113,16 +164,18 @@ class TestStoreCreation:
         assert first_store_id != second_store_id
 
         # Check first store events
-        first_stream_id = f"store-{first_store_id}"
-        first_events = event_store.load_events(first_stream_id)
+        first_events = get_typed_events(
+            event_store, f"store-{first_store_id}", StoreCreated
+        )
         assert len(first_events) == 1
-        assert first_events[0]["event_data"]["description"] == "First box"
+        assert_event_matches(first_events[0], {"description": "First box"})
 
         # Check second store events
-        second_stream_id = f"store-{second_store_id}"
-        second_events = event_store.load_events(second_stream_id)
+        second_events = get_typed_events(
+            event_store, f"store-{second_store_id}", StoreCreated
+        )
         assert len(second_events) == 1
-        assert second_events[0]["event_data"]["description"] == "Second box"
+        assert_event_matches(second_events[0], {"description": "Second box"})
 
 
 class TestInventoryUpload:
@@ -150,23 +203,26 @@ class TestInventoryUpload:
         assert result.items_added == 1
         assert result.errors == []
 
+        # Check that InventoryItemAdded event was persisted
+        inventory_events = get_typed_events(
+            event_store, f"store-{store_id}", InventoryItemAdded
+        )
+        assert len(inventory_events) == 1
+        assert_event_matches(
+            inventory_events[0],
+            {"store_id": store_id, "quantity": 2.0, "unit": "pound"},
+        )
+
         # Check that IngredientCreated event was persisted
-        # Find ingredient events by getting ingredient_id from inventory events
-        store_stream_id = f"store-{store_id}"
-        store_events = event_store.load_events(store_stream_id)
-
-        # Should have StoreCreated + InventoryItemAdded
-        assert len(store_events) == 2
-        assert store_events[1]["event_type"] == "InventoryItemAdded"
-
-        ingredient_id = store_events[1]["event_data"]["ingredient_id"]
-        ingredient_stream_id = f"ingredient-{ingredient_id}"
-        ingredient_events = event_store.load_events(ingredient_stream_id)
+        ingredient_id = inventory_events[0].ingredient_id
+        ingredient_events = get_typed_events(
+            event_store, f"ingredient-{ingredient_id}", IngredientCreated
+        )
 
         assert len(ingredient_events) == 1
-        assert ingredient_events[0]["event_type"] == "IngredientCreated"
-        assert ingredient_events[0]["event_data"]["name"] == "carrots"
-        assert ingredient_events[0]["event_data"]["default_unit"] == "pound"
+        assert_event_matches(
+            ingredient_events[0], {"name": "carrots", "default_unit": "pound"}
+        )
 
     def test_upload_inventory_creates_inventory_item_linking_to_ingredient(
         self,
@@ -184,21 +240,22 @@ class TestInventoryUpload:
         store_service.upload_inventory(store_id, "1 bunch kale")
 
         # Assert - check InventoryItemAdded event
-        store_stream_id = f"store-{store_id}"
-        store_events = event_store.load_events(store_stream_id)
-
-        inventory_added_event = store_events[1]
-        assert inventory_added_event["event_type"] == "InventoryItemAdded"
-        assert inventory_added_event["event_data"]["store_id"] == str(store_id)
-        assert inventory_added_event["event_data"]["quantity"] == 1.0
-        assert inventory_added_event["event_data"]["unit"] == "bunch"
+        inventory_events = get_typed_events(
+            event_store, f"store-{store_id}", InventoryItemAdded
+        )
+        assert len(inventory_events) == 1
+        assert_event_matches(
+            inventory_events[0],
+            {"store_id": store_id, "quantity": 1.0, "unit": "bunch"},
+        )
 
         # Verify ingredient_id links to actual ingredient
-        ingredient_id = inventory_added_event["event_data"]["ingredient_id"]
-        ingredient_stream_id = f"ingredient-{ingredient_id}"
-        ingredient_events = event_store.load_events(ingredient_stream_id)
+        ingredient_id = inventory_events[0].ingredient_id
+        ingredient_events = get_typed_events(
+            event_store, f"ingredient-{ingredient_id}", IngredientCreated
+        )
         assert len(ingredient_events) == 1
-        assert ingredient_events[0]["event_data"]["name"] == "kale"
+        assert_event_matches(ingredient_events[0], {"name": "kale"})
 
     def test_upload_inventory_returns_upload_result_with_items_added_count(
         self,
