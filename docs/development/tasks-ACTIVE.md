@@ -106,17 +106,17 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Fast queries for UI without rebuilding aggregates
 
 ### 5.1 Projection Tables (*No tests needed - just SQL schema*)
-- [ ] Create `ingredients` table for ingredient lookups
-- [ ] Create `stores` table for store list queries
-- [ ] Create `current_inventory` view joining stores + inventory_items + ingredients
+- [✓] Create `ingredients` table for ingredient lookups
+- [✓] Create `stores` table for store list queries
+- [✓] Create `current_inventory` view joining stores + inventory_items + ingredients
 
 ### 5.2 Projection Behavior (*Tests needed*)
-- [ ] **Test**: IngredientCreated event updates ingredients table
-- [ ] **Test**: StoreCreated event updates stores table with store details
-- [ ] **Test**: InventoryItemAdded event updates current_inventory view with ingredient name
-- [ ] **Test**: Store list query returns store_id, name, description, item_count
-- [ ] **Test**: Inventory query returns items with ingredient_name, quantity, unit
-- [ ] **Test**: Ingredient lookup by ID uses projection table (performance optimization)
+- [✓] **Test**: IngredientCreated event updates ingredients table
+- [✓] **Test**: StoreCreated event updates stores table with store details
+- [✓] **Test**: InventoryItemAdded event updates current_inventory view with ingredient name
+- [✓] **Test**: Store list query returns store_id, name, description, item_count
+- [✓] **Test**: Inventory query returns items with ingredient_name, quantity, unit
+- [✓] **Test**: Ingredient lookup by ID uses projection table (performance optimization)
 
 ---
 
