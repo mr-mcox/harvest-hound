@@ -123,7 +123,7 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 ## Task 6: REST API
 **Goal**: HTTP endpoints support the complete user workflow
 
-### 6.1 API Endpoints (*No tests needed - just Flask route definitions*)
+### 6.1 API Endpoints (*No tests needed - just FastAPI route definitions*)
 - [ ] Create POST /stores endpoint
 - [ ] Create GET /stores endpoint
 - [ ] Create POST /stores/{id}/inventory endpoint
