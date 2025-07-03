@@ -164,3 +164,7 @@ npm run format
 ## Code Quality Guidelines
 
 - Add `# type: ignore[...]` when design is solid but adding type checking would make the code unnecessarily complex
+
+## Testing Guidelines
+
+- BAML functions are costly to run in tests, so wrap them in clients that we can swap out via dependency injection
