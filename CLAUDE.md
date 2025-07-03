@@ -168,3 +168,7 @@ npm run format
 ## Testing Guidelines
 
 - BAML functions are costly to run in tests, so wrap them in clients that we can swap out via dependency injection
+
+## Workflow Guidelines
+
+- When running tests, be sure to prepend uv run
