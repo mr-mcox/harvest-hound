@@ -13,7 +13,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 		// Arrange
 		const submitHandler = vi.fn().mockResolvedValue({ items_added: 3 } as InventoryUploadResult);
 		render(InventoryUploadPage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act
@@ -31,11 +31,14 @@ describe('Inventory Upload Component UI Behavior', () => {
 
 	it('should show loading state while upload is in progress', async () => {
 		// Arrange
-		const submitHandler = vi.fn(() => new Promise<InventoryUploadResult>(resolve =>
-			setTimeout(() => resolve({ items_added: 1 }), 100)
-		));
+		const submitHandler = vi.fn(
+			() =>
+				new Promise<InventoryUploadResult>((resolve) =>
+					setTimeout(() => resolve({ items_added: 1 }), 100)
+				)
+		);
 		render(InventoryUploadPage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act
@@ -57,7 +60,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 		// Arrange
 		const submitHandler = vi.fn().mockResolvedValue({ items_added: 3 } as InventoryUploadResult);
 		render(InventoryUploadPage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act
@@ -76,7 +79,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 		// Arrange
 		const submitHandler = vi.fn().mockRejectedValue(new Error('Failed to parse: invalid format'));
 		render(InventoryUploadPage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act
@@ -93,12 +96,13 @@ describe('Inventory Upload Component UI Behavior', () => {
 
 	it('should clear previous messages when new upload is attempted', async () => {
 		// Arrange
-		const submitHandler = vi.fn()
+		const submitHandler = vi
+			.fn()
 			.mockRejectedValueOnce(new Error('First error'))
 			.mockResolvedValueOnce({ items_added: 2 } as InventoryUploadResult);
 
 		render(InventoryUploadPage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act - First upload fails

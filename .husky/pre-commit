@@ -1,0 +1,5 @@
+#!/bin/sh
+cd packages/frontend
+pnpm run check
+pnpm run test:unit -- --run
+npx lint-staged

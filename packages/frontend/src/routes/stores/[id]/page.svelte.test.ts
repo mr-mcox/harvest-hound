@@ -20,7 +20,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { props: { inventory: mockInventory } });
+		render(InventoryTablePage, { inventory: mockInventory });
 
 		// Assert - Check all required column headers are present in table
 		const table = page.getByRole('table');
@@ -62,7 +62,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { props: { inventory: mockInventory } });
+		render(InventoryTablePage, { inventory: mockInventory });
 
 		// Assert - Check first row data
 		const carrotCell = page.getByRole('cell', { name: 'Carrots' });
@@ -88,7 +88,7 @@ describe('Inventory Table Display', () => {
 		const emptyInventory: InventoryItemWithIngredient[] = [];
 
 		// Act
-		render(InventoryTablePage, { props: { inventory: emptyInventory } });
+		render(InventoryTablePage, { inventory: emptyInventory });
 
 		// Assert
 		const emptyMessage = page.getByText('No inventory items found.');
@@ -103,24 +103,36 @@ describe('Inventory Table Display', () => {
 		// Arrange
 		const mockInventory: InventoryItemWithIngredient[] = [
 			{
-				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-1',
-				ingredient_name: 'Carrots', quantity: 2, unit: 'lbs',
-				notes: null, added_at: '2024-01-01T00:00:00Z'
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-1',
+				ingredient_name: 'Carrots',
+				quantity: 2,
+				unit: 'lbs',
+				notes: null,
+				added_at: '2024-01-01T00:00:00Z'
 			},
 			{
-				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-2',
-				ingredient_name: 'Kale', quantity: 1, unit: 'bunch',
-				notes: null, added_at: '2024-01-01T00:00:00Z'
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-2',
+				ingredient_name: 'Kale',
+				quantity: 1,
+				unit: 'bunch',
+				notes: null,
+				added_at: '2024-01-01T00:00:00Z'
 			},
 			{
-				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-3',
-				ingredient_name: 'Tomatoes', quantity: 3, unit: 'pieces',
-				notes: null, added_at: '2024-01-01T00:00:00Z'
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-3',
+				ingredient_name: 'Tomatoes',
+				quantity: 3,
+				unit: 'pieces',
+				notes: null,
+				added_at: '2024-01-01T00:00:00Z'
 			}
 		];
 
 		// Act
-		render(InventoryTablePage, { props: { inventory: mockInventory } });
+		render(InventoryTablePage, { inventory: mockInventory });
 
 		// Assert
 		const headerWithCount = page.getByText('Inventory (3 items)');
@@ -142,7 +154,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { props: { inventory: mockInventory } });
+		render(InventoryTablePage, { inventory: mockInventory });
 
 		// Assert - Should show dash for missing notes
 		const dashCell = page.getByRole('cell', { name: '-' });
@@ -153,24 +165,36 @@ describe('Inventory Table Display', () => {
 		// Arrange
 		const mockInventory: InventoryItemWithIngredient[] = [
 			{
-				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-1',
-				ingredient_name: 'Carrots', quantity: 2, unit: 'lbs', notes: 'Fresh',
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-1',
+				ingredient_name: 'Carrots',
+				quantity: 2,
+				unit: 'lbs',
+				notes: 'Fresh',
 				added_at: '2024-01-01T00:00:00Z'
 			},
 			{
-				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-2',
-				ingredient_name: 'Kale', quantity: 1, unit: 'bunch', notes: 'Organic',
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-2',
+				ingredient_name: 'Kale',
+				quantity: 1,
+				unit: 'bunch',
+				notes: 'Organic',
 				added_at: '2024-01-01T00:00:00Z'
 			},
 			{
-				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-3',
-				ingredient_name: 'Tomatoes', quantity: 5, unit: 'pieces', notes: null,
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-3',
+				ingredient_name: 'Tomatoes',
+				quantity: 5,
+				unit: 'pieces',
+				notes: null,
 				added_at: '2024-01-01T00:00:00Z'
 			}
 		];
 
 		// Act
-		render(InventoryTablePage, { props: { inventory: mockInventory } });
+		render(InventoryTablePage, { inventory: mockInventory });
 
 		// Assert - All items should be visible
 		await expect.element(page.getByRole('cell', { name: 'Carrots' })).toBeInTheDocument();

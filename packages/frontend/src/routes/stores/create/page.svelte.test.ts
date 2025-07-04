@@ -12,7 +12,7 @@ describe('Store Creation Form UI Behavior', () => {
 		// Arrange
 		const submitHandler = vi.fn();
 		render(CreateStorePage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act - Fill out valid form
@@ -38,7 +38,7 @@ describe('Store Creation Form UI Behavior', () => {
 		// Arrange
 		const submitHandler = vi.fn();
 		render(CreateStorePage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act - Submit form with invalid data (empty name)
@@ -55,7 +55,7 @@ describe('Store Creation Form UI Behavior', () => {
 		// Arrange
 		const submitHandler = vi.fn();
 		render(CreateStorePage, {
-			props: { onSubmit: submitHandler }
+			onSubmit: submitHandler
 		});
 
 		// Act - First submit invalid form to show error
