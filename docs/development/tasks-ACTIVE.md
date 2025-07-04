@@ -140,15 +140,41 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 
 ---
 
-## Task 7: Frontend Components
+## Task 7: WebSocket Service Layer
+**Goal**: Real-time communication infrastructure for UC2 (live inventory updates) and UC3+ (meal planning sessions)
+
+### 7.1 WebSocket Service Implementation (*No tests needed - service class*)
+- [ ] Create WebSocket service class with connection management
+- [ ] Add event subscription/unsubscription methods
+- [ ] Implement connection retry logic and error handling
+- [ ] Create TypeScript interfaces for WebSocket event envelope structure
+
+### 7.2 Domain Event Types (*No tests needed - type definitions*)
+- [ ] Define TypeScript interfaces for all domain events (IngredientAddedToStore, RecipeProposed, etc.)
+- [ ] Create API request/response type definitions
+- [ ] Add projection data structure types for inventory and store data
+
+### 7.3 WebSocket Service Behavior (*Tests needed*)
+- [ ] **Test**: WebSocket service connects with proper subscription filters (storeIds, planId)
+- [ ] **Test**: Service handles connection failures and reconnects automatically
+- [ ] **Test**: Event subscription routes messages to correct handlers
+- [ ] **Test**: Service maintains connection state and notifies components of changes
+
+---
+
+## Task 8: Frontend Components
 **Goal**: User can complete the workflow through web interface
 
-### 7.1 UI Components (*No tests needed - just HTML/JS*)
-- [ ] Create store creation form with name, description, infinite_supply fields
-- [ ] Create inventory upload page with large text area
-- [ ] Create inventory display table component
+### 8.1 Frontend Setup (*No tests needed - configuration*)
+- [ ] Downgrade TailwindCSS from v4 to v3 for Skeleton UI compatibility
+- [ ] Verify Skeleton UI components work with TailwindCSS v3
 
-### 7.2 UI Behavior (*Tests needed*)
+### 8.2 UI Components (*No tests needed - Svelte components with Skeleton UI*)
+- [ ] Create store creation form with name, description, infinite_supply fields using Skeleton form components
+- [ ] Create inventory upload page with large text area using Skeleton input components
+- [ ] Create inventory display table component using Skeleton table components
+
+### 8.3 UI Behavior (*Tests needed*)
 - [ ] **Test**: Store creation form submission calls POST /stores and shows success message
 - [ ] **Test**: Form shows validation errors for empty name field
 - [ ] **Test**: Inventory upload calls POST /stores/{id}/inventory and shows loading state
@@ -158,21 +184,35 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 
 ---
 
-## Task 8: Integration Testing
-**Goal**: End-to-end workflow works as expected
+## Task 9: Component Development Tools
+**Goal**: Development infrastructure for building and testing components
 
-### 8.1 Happy Path Integration (*Tests needed*)
+### 9.1 Storybook Setup (*No tests needed - configuration*)
+- [ ] Configure Storybook with Skeleton UI theme
+- [ ] Create base story templates for common component patterns
+- [ ] Set up Storybook with mock WebSocket data providers
+
+### 9.2 Component Stories (*No tests needed - development aids*)
+- [ ] Create stories for store creation form with various states
+- [ ] Create stories for inventory upload component with loading/error states
+- [ ] Create stories for inventory table with mock data
+- [ ] Create stories for real-time components with mock WebSocket events
+
+---
+
+## Task 10: Integration Testing
+### 10.1 Happy Path Integration (*Tests needed*)
 - [ ] **Test**: Create "CSA Box" store → upload "2 lbs carrots, 1 bunch kale" → see 2 items in table
 - [ ] **Test**: Store list shows "CSA Box" with item_count=2
 - [ ] **Test**: Page refresh preserves all data (event sourcing working)
 - [ ] **Test**: Multiple stores maintain separate inventories
 
-### 8.2 Error Handling Integration (*Tests needed*)
+### 10.2 Error Handling Integration (*Tests needed*)
 - [ ] **Test**: Invalid inventory text shows error without crashing
 - [ ] **Test**: Network errors show appropriate user messages
 - [ ] **Test**: LLM service unavailable shows graceful error
 
-### 8.3 Performance Requirements (*Tests needed*)
+### 10.3 Performance Requirements (*Tests needed*)
 - [ ] **Test**: Store creation completes in <1 second
 - [ ] **Test**: LLM parsing completes in <10 seconds for typical inventory
 - [ ] **Test**: Inventory display loads in <2 seconds
