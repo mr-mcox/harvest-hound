@@ -2,3 +2,4 @@
 **/*.local.json
 **/*.local.md
 .env
+*.db
