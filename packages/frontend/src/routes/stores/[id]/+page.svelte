@@ -1,10 +1,7 @@
 <script lang="ts">
-	export let inventory: Array<{
-		ingredient_name: string;
-		quantity: number;
-		unit: string;
-		notes?: string;
-	}> = [];
+	import type { InventoryItemWithIngredient } from '$lib/types.js';
+	
+	export let inventory: InventoryItemWithIngredient[] = [];
 </script>
 
 <div class="container mx-auto p-4">
