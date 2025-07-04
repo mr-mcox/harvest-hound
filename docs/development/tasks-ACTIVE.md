@@ -158,7 +158,7 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [✓] **Test**: Inventory upload calls onSubmit handler and shows loading state
 - [✓] **Test**: Successful upload displays "X items added" message
 - [✓] **Test**: Parse errors show error message with original text
-- [ ] **Test**: Inventory table displays ingredient name, quantity, unit columns
+- [✓] **Test**: Inventory table displays ingredient name, quantity, unit columns
 
 ---
 
