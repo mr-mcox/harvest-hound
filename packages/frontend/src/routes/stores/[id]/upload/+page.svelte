@@ -1,11 +1,27 @@
 <script lang="ts">
-	export let onSubmit = (data: { inventoryText: string }) => {};
+	export let onSubmit = (data: { inventoryText: string }) => Promise<{ items_added: number }>;
 
 	let inventoryText = '';
+	let loading = false;
+	let error = '';
+	let success = '';
 
-	function handleSubmit(event: Event) {
+	async function handleSubmit(event: Event) {
 		event.preventDefault();
-		onSubmit({ inventoryText });
+
+		// Clear previous messages
+		error = '';
+		success = '';
+		loading = true;
+
+		try {
+			const result = await onSubmit({ inventoryText });
+			success = `Successfully added ${result.items_added} items to inventory`;
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Upload failed';
+		} finally {
+			loading = false;
+		}
 	}
 </script>
 
@@ -25,8 +41,30 @@
 			></textarea>
 		</div>
 
+		{#if error}
+			<div class="alert variant-filled-error">
+				<div class="alert-message">
+					<p>{error}</p>
+				</div>
+			</div>
+		{/if}
+
+		{#if success}
+			<div class="alert variant-filled-success">
+				<div class="alert-message">
+					<p>{success}</p>
+				</div>
+			</div>
+		{/if}
+
 		<div class="flex gap-4">
-			<button type="submit" class="btn variant-filled-primary">Upload Inventory</button>
+			<button
+				type="submit"
+				disabled={loading}
+				class="btn variant-filled-primary"
+			>
+				{loading ? 'Uploading...' : 'Upload Inventory'}
+			</button>
 			<a href="/stores" class="btn variant-ghost">Cancel</a>
 		</div>
 	</form>

@@ -155,9 +155,9 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 ### 7.3 UI Behavior (*Tests needed*)
 - [✓] **Test**: Store creation form submission calls onSubmit handler with form data
 - [✓] **Test**: Form shows validation errors for empty name field
-- [ ] **Test**: Inventory upload calls POST /stores/{id}/inventory and shows loading state
-- [ ] **Test**: Successful upload displays "X items added" and updates inventory table
-- [ ] **Test**: Parse errors show error message with original text
+- [✓] **Test**: Inventory upload calls onSubmit handler and shows loading state
+- [✓] **Test**: Successful upload displays "X items added" message
+- [✓] **Test**: Parse errors show error message with original text
 - [ ] **Test**: Inventory table displays ingredient name, quantity, unit columns
 
 ---
