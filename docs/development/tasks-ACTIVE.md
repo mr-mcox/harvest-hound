@@ -144,13 +144,13 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: User can complete the workflow through web interface
 
 ### 7.1 Frontend Setup (*No tests needed - configuration*)
-- [ ] Downgrade TailwindCSS from v4 to v3 for Skeleton UI compatibility
-- [ ] Verify Skeleton UI components work with TailwindCSS v3
+- [✓] Downgrade TailwindCSS from v4 to v3 for Skeleton UI compatibility
+- [✓] Verify Skeleton UI components work with TailwindCSS v3
 
 ### 7.2 UI Components (*No tests needed - Svelte components with Skeleton UI*)
-- [ ] Create store creation form with name, description, infinite_supply fields using Skeleton form components
-- [ ] Create inventory upload page with large text area using Skeleton input components
-- [ ] Create inventory display table component using Skeleton table components
+- [✓] Create store creation form with name, description, infinite_supply fields using Skeleton form components
+- [✓] Create inventory upload page with large text area using Skeleton input components
+- [✓] Create inventory display table component using Skeleton table components
 
 ### 7.3 UI Behavior (*Tests needed*)
 - [ ] **Test**: Store creation form submission calls POST /stores and shows success message
