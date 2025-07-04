@@ -2,7 +2,11 @@ from dataclasses import dataclass
 from typing import List
 from uuid import UUID, uuid4
 
-from ..infrastructure.repositories import IngredientRepository, StoreRepository
+from ..infrastructure.repositories import (
+    AggregateNotFoundError,
+    IngredientRepository,
+    StoreRepository,
+)
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem
@@ -99,8 +103,15 @@ class StoreService:
 
             return InventoryUploadResult.success_result(items_added)
 
+        except AggregateNotFoundError:
+            # Re-raise store not found errors so API can return 404
+            raise
         except Exception as e:
             return InventoryUploadResult.error_result([str(e)])
+
+    def get_all_stores(self) -> List[dict]:
+        """Get list of all stores with item counts."""
+        return self.store_repository.event_store.get_stores_with_item_count()
 
     def get_store_inventory(self, store_id: UUID) -> List[dict]:
         """Get current inventory for a store with ingredient names."""
