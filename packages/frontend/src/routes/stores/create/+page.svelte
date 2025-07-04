@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { validateStoreForm } from '$lib/validation.js';
+
 	export let onSubmit = (data: { name: string; description: string; infinite_supply: boolean }) => {};
 
 	let name = '';
@@ -9,8 +11,10 @@
 	function handleSubmit(event: Event) {
 		event.preventDefault();
 
-		if (!name.trim()) {
-			error = 'Store name is required';
+		const validation = validateStoreForm({ name, description, infinite_supply });
+
+		if (validation.error) {
+			error = validation.error;
 			return;
 		}
 

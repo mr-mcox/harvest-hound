@@ -3,26 +3,17 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import CreateStorePage from './+page.svelte';
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
-
-describe('Store Creation Form', () => {
+describe('Store Creation Form UI Behavior', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it('should call POST /stores with form data when submitted', async () => {
+	it('should call onSubmit handler with form data when valid form is submitted', async () => {
 		// Arrange
-		mockFetch.mockResolvedValueOnce(new Response(
-			JSON.stringify({ store_id: 'test-id', name: 'Test Store' }),
-			{ status: 201, headers: { 'content-type': 'application/json' } }
-		));
-
 		const submitHandler = vi.fn();
 		render(CreateStorePage, { props: { onSubmit: submitHandler } });
 
-		// Act
+		// Act - Fill out valid form
 		const nameInput = page.getByLabelText('Store Name');
 		const descriptionInput = page.getByLabelText('Description');
 		const infiniteSupplyCheckbox = page.getByLabelText('Infinite Supply');
@@ -33,7 +24,7 @@ describe('Store Creation Form', () => {
 		await infiniteSupplyCheckbox.click();
 		await submitButton.click();
 
-		// Assert
+		// Assert - UI calls handler with correct data
 		expect(submitHandler).toHaveBeenCalledWith({
 			name: 'Test Store',
 			description: 'Test Description',
@@ -41,18 +32,45 @@ describe('Store Creation Form', () => {
 		});
 	});
 
-	it('should show validation error for empty name field', async () => {
+	it('should display validation error in UI when form submission fails validation', async () => {
 		// Arrange
 		const submitHandler = vi.fn();
 		render(CreateStorePage, { props: { onSubmit: submitHandler } });
 
-		// Act
+		// Act - Submit form with invalid data (empty name)
 		const submitButton = page.getByRole('button', { name: 'Create Store' });
 		await submitButton.click();
 
-		// Assert
+		// Assert - UI displays error message and doesn't call handler
 		const errorMessage = page.getByText('Store name is required');
 		await expect.element(errorMessage).toBeInTheDocument();
 		expect(submitHandler).not.toHaveBeenCalled();
+	});
+
+	it('should clear error message when valid form is submitted after error', async () => {
+		// Arrange
+		const submitHandler = vi.fn();
+		render(CreateStorePage, { props: { onSubmit: submitHandler } });
+
+		// Act - First submit invalid form to show error
+		const submitButton = page.getByRole('button', { name: 'Create Store' });
+		await submitButton.click();
+
+		// Verify error is shown
+		const errorMessage = page.getByText('Store name is required');
+		await expect.element(errorMessage).toBeInTheDocument();
+
+		// Then fix the form and submit again
+		const nameInput = page.getByLabelText('Store Name');
+		await nameInput.fill('Valid Store Name');
+		await submitButton.click();
+
+		// Assert - Error is cleared and handler is called
+		await expect.element(errorMessage).not.toBeInTheDocument();
+		expect(submitHandler).toHaveBeenCalledWith({
+			name: 'Valid Store Name',
+			description: '',
+			infinite_supply: false
+		});
 	});
 });
