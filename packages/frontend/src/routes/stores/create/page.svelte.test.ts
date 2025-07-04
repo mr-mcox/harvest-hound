@@ -30,7 +30,7 @@ describe('Store Creation Form', () => {
 
 		await nameInput.fill('Test Store');
 		await descriptionInput.fill('Test Description');
-		await infiniteSupplyCheckbox.check();
+		await infiniteSupplyCheckbox.click();
 		await submitButton.click();
 
 		// Assert

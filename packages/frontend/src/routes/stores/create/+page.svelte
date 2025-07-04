@@ -4,9 +4,17 @@
 	let name = '';
 	let description = '';
 	let infinite_supply = false;
+	let error = '';
 
 	function handleSubmit(event: Event) {
 		event.preventDefault();
+
+		if (!name.trim()) {
+			error = 'Store name is required';
+			return;
+		}
+
+		error = '';
 		onSubmit({ name, description, infinite_supply });
 	}
 </script>
@@ -52,6 +60,14 @@
 				<span class="label-text">Infinite Supply</span>
 			</label>
 		</div>
+
+		{#if error}
+			<div class="alert variant-filled-error">
+				<div class="alert-message">
+					<p>{error}</p>
+				</div>
+			</div>
+		{/if}
 
 		<div class="flex gap-4">
 			<button type="submit" class="btn variant-filled-primary">Create Store</button>
