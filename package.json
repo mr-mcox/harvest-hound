@@ -1,0 +1,21 @@
+{
+	"name": "harvest-hound",
+	"private": true,
+	"type": "module",
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "pnpm --parallel --filter './packages/*' dev",
+		"build": "pnpm --filter './packages/*' build",
+		"test": "pnpm --filter './packages/*' test",
+		"lint": "pnpm --filter './packages/*' lint",
+		"format": "pnpm --filter './packages/*' format",
+		"typecheck": "pnpm --filter frontend check && cd packages/backend && uv run mypy .",
+		"prepare": "husky"
+	},
+	"devDependencies": {
+		"husky": "^9.1.7",
+		"lint-staged": "^16.1.2"
+	}
+}
