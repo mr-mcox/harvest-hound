@@ -203,18 +203,18 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 ## Task 10: Integration Testing
 **Goal**: End-to-end workflow works as expected
 
-### 8.1 Happy Path Integration (*Tests needed*)
+### 10.1 Happy Path Integration (*Tests needed*)
 - [ ] **Test**: Create "CSA Box" store → upload "2 lbs carrots, 1 bunch kale" → see 2 items in table
 - [ ] **Test**: Store list shows "CSA Box" with item_count=2
 - [ ] **Test**: Page refresh preserves all data (event sourcing working)
 - [ ] **Test**: Multiple stores maintain separate inventories
 
-### 8.2 Error Handling Integration (*Tests needed*)
+### 10.2 Error Handling Integration (*Tests needed*)
 - [ ] **Test**: Invalid inventory text shows error without crashing
 - [ ] **Test**: Network errors show appropriate user messages
 - [ ] **Test**: LLM service unavailable shows graceful error
 
-### 8.3 Performance Requirements (*Tests needed*)
+### 10.3 Performance Requirements (*Tests needed*)
 - [ ] **Test**: Store creation completes in <1 second
 - [ ] **Test**: LLM parsing completes in <10 seconds for typical inventory
 - [ ] **Test**: Inventory display loads in <2 seconds
