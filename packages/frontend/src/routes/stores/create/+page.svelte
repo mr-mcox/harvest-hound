@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { validateStoreForm } from '$lib/validation.js';
+	import { validateStoreForm, type ValidationResult } from '$lib/validation.js';
 
 	export let onSubmit = (data: { name: string; description: string; infinite_supply: boolean }) => {};
 
@@ -11,9 +11,9 @@
 	function handleSubmit(event: Event) {
 		event.preventDefault();
 
-		const validation = validateStoreForm({ name, description, infinite_supply });
+		const validation: ValidationResult = validateStoreForm({ name, description, infinite_supply });
 
-		if (validation.error) {
+		if ('error' in validation) {
 			error = validation.error;
 			return;
 		}

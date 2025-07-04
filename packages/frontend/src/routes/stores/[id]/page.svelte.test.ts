@@ -2,16 +2,20 @@ import { page } from '@vitest/browser/context';
 import { describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import InventoryTablePage from './+page.svelte';
+import type { InventoryItemWithIngredient } from '$lib/types.js';
 
 describe('Inventory Table Display', () => {
 	it('should display correct table headers for inventory columns', async () => {
 		// Arrange
-		const mockInventory = [
+		const mockInventory: InventoryItemWithIngredient[] = [
 			{
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id',
 				ingredient_name: 'Carrots',
 				quantity: 2,
 				unit: 'lbs',
-				notes: 'Fresh from garden'
+				notes: 'Fresh from garden',
+				added_at: '2024-01-01T00:00:00Z'
 			}
 		];
 
@@ -36,17 +40,24 @@ describe('Inventory Table Display', () => {
 
 	it('should display inventory data in correct table columns', async () => {
 		// Arrange
-		const mockInventory = [
+		const mockInventory: InventoryItemWithIngredient[] = [
 			{
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-1',
 				ingredient_name: 'Carrots',
 				quantity: 2,
 				unit: 'lbs',
-				notes: 'Fresh from garden'
+				notes: 'Fresh from garden',
+				added_at: '2024-01-01T00:00:00Z'
 			},
 			{
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id-2',
 				ingredient_name: 'Kale',
 				quantity: 1,
-				unit: 'bunch'
+				unit: 'bunch',
+				notes: null,
+				added_at: '2024-01-01T00:00:00Z'
 			}
 		];
 
@@ -74,7 +85,7 @@ describe('Inventory Table Display', () => {
 
 	it('should display empty state message when no inventory items provided', async () => {
 		// Arrange
-		const emptyInventory: any[] = [];
+		const emptyInventory: InventoryItemWithIngredient[] = [];
 
 		// Act
 		render(InventoryTablePage, { props: { inventory: emptyInventory } });
@@ -90,10 +101,22 @@ describe('Inventory Table Display', () => {
 
 	it('should display item count in header', async () => {
 		// Arrange
-		const mockInventory = [
-			{ ingredient_name: 'Carrots', quantity: 2, unit: 'lbs' },
-			{ ingredient_name: 'Kale', quantity: 1, unit: 'bunch' },
-			{ ingredient_name: 'Tomatoes', quantity: 3, unit: 'pieces' }
+		const mockInventory: InventoryItemWithIngredient[] = [
+			{
+				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-1',
+				ingredient_name: 'Carrots', quantity: 2, unit: 'lbs',
+				notes: null, added_at: '2024-01-01T00:00:00Z'
+			},
+			{
+				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-2',
+				ingredient_name: 'Kale', quantity: 1, unit: 'bunch',
+				notes: null, added_at: '2024-01-01T00:00:00Z'
+			},
+			{
+				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-3',
+				ingredient_name: 'Tomatoes', quantity: 3, unit: 'pieces',
+				notes: null, added_at: '2024-01-01T00:00:00Z'
+			}
 		];
 
 		// Act
@@ -106,12 +129,15 @@ describe('Inventory Table Display', () => {
 
 	it('should handle missing notes field gracefully', async () => {
 		// Arrange
-		const mockInventory = [
+		const mockInventory: InventoryItemWithIngredient[] = [
 			{
+				store_id: 'test-store-id',
+				ingredient_id: 'test-ingredient-id',
 				ingredient_name: 'Carrots',
 				quantity: 2,
-				unit: 'lbs'
-				// notes field is missing
+				unit: 'lbs',
+				notes: null, // null notes should show as dash
+				added_at: '2024-01-01T00:00:00Z'
 			}
 		];
 
@@ -125,10 +151,22 @@ describe('Inventory Table Display', () => {
 
 	it('should display multiple inventory items in separate table rows', async () => {
 		// Arrange
-		const mockInventory = [
-			{ ingredient_name: 'Carrots', quantity: 2, unit: 'lbs', notes: 'Fresh' },
-			{ ingredient_name: 'Kale', quantity: 1, unit: 'bunch', notes: 'Organic' },
-			{ ingredient_name: 'Tomatoes', quantity: 5, unit: 'pieces' }
+		const mockInventory: InventoryItemWithIngredient[] = [
+			{
+				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-1',
+				ingredient_name: 'Carrots', quantity: 2, unit: 'lbs', notes: 'Fresh',
+				added_at: '2024-01-01T00:00:00Z'
+			},
+			{
+				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-2',
+				ingredient_name: 'Kale', quantity: 1, unit: 'bunch', notes: 'Organic',
+				added_at: '2024-01-01T00:00:00Z'
+			},
+			{
+				store_id: 'test-store-id', ingredient_id: 'test-ingredient-id-3',
+				ingredient_name: 'Tomatoes', quantity: 5, unit: 'pieces', notes: null,
+				added_at: '2024-01-01T00:00:00Z'
+			}
 		];
 
 		// Act

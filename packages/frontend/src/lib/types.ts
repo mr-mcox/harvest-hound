@@ -1,67 +1,35 @@
 /**
- * Shared type definitions that should match backend Pydantic models
- * TODO: Generate these automatically from backend schemas
+ * Type definitions for Harvest Hound frontend
+ *
+ * Re-exports types from generated backend schemas plus additional frontend types
  */
 
-export interface InventoryItem {
-	/** UUID of the store this item belongs to */
-	store_id: string;
-	
-	/** UUID of the ingredient */
-	ingredient_id: string;
-	
-	/** Quantity of the ingredient (decimal number) */
-	quantity: number;
-	
-	/** Unit of measurement (should be validated against allowed units) */
-	unit: string;
-	
-	/** Optional notes about this inventory item */
-	notes?: string;
-	
-	/** ISO datetime string when item was added */
-	added_at: string;
-}
+// Re-export all generated types from backend
+export * from './generated/api-types.js';
 
+// Import specific types for extending
+import type { InventoryItem } from './generated/api-types.js';
+
+/**
+ * Frontend-specific types that extend backend types
+ */
+
+/** InventoryItem with ingredient name joined from ingredient table */
 export interface InventoryItemWithIngredient extends InventoryItem {
 	/** Name of the ingredient (from ingredient table join) */
 	ingredient_name: string;
 }
 
-export interface Ingredient {
-	/** UUID of the ingredient */
-	ingredient_id: string;
-	
-	/** Canonical name of the ingredient */
-	name: string;
-	
-	/** Default unit for this ingredient */
-	default_unit: string;
-	
-	/** ISO datetime string when ingredient was created */
-	created_at: string;
-}
-
-export interface Store {
-	/** UUID of the store */
-	store_id: string;
-	
-	/** Name of the store */
-	name: string;
-	
-	/** Optional description */
-	description?: string;
-	
-	/** Whether this store has infinite supply */
-	infinite_supply: boolean;
-	
-	/** ISO datetime string when store was created */
-	created_at: string;
-}
-
-// API Response types
+/** API Response types for frontend operations */
 export interface StoreListResponse {
-	stores: Array<Store & { item_count: number }>;
+	stores: Array<{
+		store_id: string;
+		name: string;
+		description?: string;
+		infinite_supply: boolean;
+		created_at: string;
+		item_count: number;
+	}>;
 }
 
 export interface InventoryUploadResult {

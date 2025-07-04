@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { InventoryUploadResult } from '$lib/types.js';
-	
-	export let onSubmit = (data: { inventoryText: string }) => Promise<InventoryUploadResult>;
+
+	export let onSubmit: (data: { inventoryText: string }) => Promise<InventoryUploadResult> = async () => ({ items_added: 0 });
 
 	let inventoryText = '';
 	let loading = false;

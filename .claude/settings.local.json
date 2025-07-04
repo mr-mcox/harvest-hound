@@ -8,7 +8,9 @@
       "Bash(git commit:*)",
       "Bash(uv run pytest:*)",
       "Bash(uv run:*)",
-      "Bash(pnpm test:*)"
+      "Bash(pnpm test:*)",
+      "Bash(PYTHONPATH=. uv run python scripts/export_schemas.py)",
+      "Bash(pnpm run:*)"
     ],
     "deny": []
   }

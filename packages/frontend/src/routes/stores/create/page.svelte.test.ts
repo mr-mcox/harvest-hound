@@ -11,7 +11,9 @@ describe('Store Creation Form UI Behavior', () => {
 	it('should call onSubmit handler with form data when valid form is submitted', async () => {
 		// Arrange
 		const submitHandler = vi.fn();
-		render(CreateStorePage, { props: { onSubmit: submitHandler } });
+		render(CreateStorePage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act - Fill out valid form
 		const nameInput = page.getByLabelText('Store Name');
@@ -35,7 +37,9 @@ describe('Store Creation Form UI Behavior', () => {
 	it('should display validation error in UI when form submission fails validation', async () => {
 		// Arrange
 		const submitHandler = vi.fn();
-		render(CreateStorePage, { props: { onSubmit: submitHandler } });
+		render(CreateStorePage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act - Submit form with invalid data (empty name)
 		const submitButton = page.getByRole('button', { name: 'Create Store' });
@@ -50,7 +54,9 @@ describe('Store Creation Form UI Behavior', () => {
 	it('should clear error message when valid form is submitted after error', async () => {
 		// Arrange
 		const submitHandler = vi.fn();
-		render(CreateStorePage, { props: { onSubmit: submitHandler } });
+		render(CreateStorePage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act - First submit invalid form to show error
 		const submitButton = page.getByRole('button', { name: 'Create Store' });

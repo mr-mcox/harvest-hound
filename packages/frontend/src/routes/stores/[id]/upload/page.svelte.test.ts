@@ -2,6 +2,7 @@ import { page } from '@vitest/browser/context';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import InventoryUploadPage from './+page.svelte';
+import type { InventoryUploadResult } from '$lib/types.js';
 
 describe('Inventory Upload Component UI Behavior', () => {
 	beforeEach(() => {
@@ -10,8 +11,10 @@ describe('Inventory Upload Component UI Behavior', () => {
 
 	it('should call onSubmit handler with inventory text when form is submitted', async () => {
 		// Arrange
-		const submitHandler = vi.fn();
-		render(InventoryUploadPage, { props: { onSubmit: submitHandler } });
+		const submitHandler = vi.fn().mockResolvedValue({ items_added: 3 } as InventoryUploadResult);
+		render(InventoryUploadPage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act
 		const textArea = page.getByLabelText('Inventory Items');
@@ -28,8 +31,12 @@ describe('Inventory Upload Component UI Behavior', () => {
 
 	it('should show loading state while upload is in progress', async () => {
 		// Arrange
-		const submitHandler = vi.fn(() => new Promise(resolve => setTimeout(resolve, 100)));
-		render(InventoryUploadPage, { props: { onSubmit: submitHandler } });
+		const submitHandler = vi.fn(() => new Promise<InventoryUploadResult>(resolve =>
+			setTimeout(() => resolve({ items_added: 1 }), 100)
+		));
+		render(InventoryUploadPage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act
 		const textArea = page.getByLabelText('Inventory Items');
@@ -48,8 +55,10 @@ describe('Inventory Upload Component UI Behavior', () => {
 
 	it('should display success message with items count after successful upload', async () => {
 		// Arrange
-		const submitHandler = vi.fn().mockResolvedValue({ items_added: 3 });
-		render(InventoryUploadPage, { props: { onSubmit: submitHandler } });
+		const submitHandler = vi.fn().mockResolvedValue({ items_added: 3 } as InventoryUploadResult);
+		render(InventoryUploadPage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act
 		const textArea = page.getByLabelText('Inventory Items');
@@ -66,7 +75,9 @@ describe('Inventory Upload Component UI Behavior', () => {
 	it('should display error message when upload fails with parse error', async () => {
 		// Arrange
 		const submitHandler = vi.fn().mockRejectedValue(new Error('Failed to parse: invalid format'));
-		render(InventoryUploadPage, { props: { onSubmit: submitHandler } });
+		render(InventoryUploadPage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act
 		const textArea = page.getByLabelText('Inventory Items');
@@ -84,9 +95,11 @@ describe('Inventory Upload Component UI Behavior', () => {
 		// Arrange
 		const submitHandler = vi.fn()
 			.mockRejectedValueOnce(new Error('First error'))
-			.mockResolvedValueOnce({ items_added: 2 });
+			.mockResolvedValueOnce({ items_added: 2 } as InventoryUploadResult);
 
-		render(InventoryUploadPage, { props: { onSubmit: submitHandler } });
+		render(InventoryUploadPage, {
+			props: { onSubmit: submitHandler }
+		});
 
 		// Act - First upload fails
 		const textArea = page.getByLabelText('Inventory Items');
