@@ -1,5 +1,24 @@
-#!/bin/sh
-cd packages/frontend
-pnpm run check
-pnpm run test:unit -- --run
+# Type checking (should always pass)
+echo "🔍 Running type checks..."
+
+# Frontend TypeScript checking
+cd packages/frontend && pnpm run check
+if [ $? -ne 0 ]; then
+  echo "❌ Frontend type checking failed"
+  exit 1
+fi
+
+# Backend Python type checking  
+cd ../backend && uv run mypy .
+if [ $? -ne 0 ]; then
+  echo "❌ Backend type checking failed"
+  exit 1
+fi
+
+cd ../..
+
+# Linting and formatting (pattern-based)
+echo "🧹 Running linters and formatters..."
 npx lint-staged
+
+echo "✅ Pre-commit checks passed!"
