@@ -8,7 +8,7 @@ services:
     environment:
       - DATABASE_URL=sqlite:///tmp/dev.db
       - BAML_ENV=development
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/packages/backend
     volumes:
       - .:/app
       - backend_cache:/app/packages/backend/.uv

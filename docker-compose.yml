@@ -8,8 +8,9 @@ services:
     environment:
       - DATABASE_URL=sqlite:///tmp/test.db
       - BAML_ENV=test
+      - PYTHONPATH=/app/packages/backend
     volumes:
-      - ./packages/backend:/app
+      - .:/app
     networks:
       - harvest-hound
     healthcheck:
