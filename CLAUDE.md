@@ -29,7 +29,7 @@ This is a **Domain-Driven Design (DDD)** application with **Event Sourcing** pat
 - **Recipe Materialization**: Lazy ingredient normalization during meal planning
 - **Bounded Context Separation**: Distinct domains for Recipe, Inventory, Ingredient, and Planning
 
-### Technology Stack (Planned)
+### Technology Stack
 
 - **Frontend**: Svelte/SvelteKit + TypeScript
 - **Backend**: FastAPI (Python) + SQLModel/Pydantic
@@ -37,62 +37,57 @@ This is a **Domain-Driven Design (DDD)** application with **Event Sourcing** pat
 - **Database**: SQLite (development), event store pattern
 - **Communication**: WebSocket for real-time updates
 
-## Development Setup
+## Project Structure
 
-**Note**: This codebase is currently in the design/documentation phase. The actual implementation has not yet been started.
-
-Based on the planned architecture:
-
-### Backend (when implemented)
-```bash
-# Install dependencies
-pip install -e .
-
-# Run development server
-uvicorn app.main:app --reload
-
-# Run tests
-pytest
-
-# Linting and formatting
-ruff check .
-ruff format .
-black .
-mypy .
+```
+/
+├── docs/                     # Architecture documentation
+├── packages/
+│   ├── frontend/            # Svelte app (see packages/frontend/CLAUDE.md)
+│   │   ├── src/components/
+│   │   ├── src/lib/
+│   └── backend/             # FastAPI app (see packages/backend/CLAUDE.md)
+│       ├── app/
+│       │   ├── routers/     # REST endpoints
+│       │   ├── models/      # Domain aggregates
+│       │   └── events/      # Event definitions
 ```
 
-### Frontend (when implemented)
-```bash
-# Install dependencies
-npm install
+## API Design
 
-# Development server
-npm run dev
+### REST Endpoints
+- POST `/meal-plans` - Start planning session
+- POST `/stores` - Create ingredient store
+- POST `/stores/{id}/inventory` - Bulk upload ingredients
+- GET `/inventory/current` - Current availability
+- POST `/meal-plans/{id}/feedback` - User recipe feedback
 
-# Build
-npm run build
+### WebSocket Events
+- `RecipeProposed` - New recipe suggestion
+- `IngredientClaimed` - Ingredient reservation
+- `ClaimPartial` - Partial ingredient availability
+- `MealPlanFinalised` - Planning complete
 
-# Test
-npm test
+## Development Status
 
-# Linting
-npm run lint
-npm run format
-```
+**Current Phase**: Active Development
+- Core domain models implemented in backend
+- Basic frontend UI components created
+- Event sourcing infrastructure in place
 
-## Key Implementation Guidelines
+## Package-Specific Guidelines
 
-### Development Approach
+Each package has its own CLAUDE.md file with specific development guidelines:
+
+- **Backend**: See `packages/backend/CLAUDE.md` for Python, FastAPI, and domain modeling guidelines
+- **Frontend**: See `packages/frontend/CLAUDE.md` for Svelte, TypeScript, and UI development guidelines
+
+## Global Development Guidelines
+
+### General Principles
 - **Red/Green TDD**: Test-driven development with focus on observable behavior
 - **Meaningful Testing**: Test at a level low enough to isolate behavior but high enough to avoid implementation details
-- **Class Definitions vs Behavior**: Distinguish between basic class definitions (no tests needed) and meaningful behavior (tests required)
 - **Concrete Task Planning**: Tasks should be specific and actionable, not abstract concepts
-
-### Test Construction Preferences
-- **Test Organization**: Use pytest test classes to group related behaviors logically (e.g., `TestInventoryStoreCreation`, `TestInventoryItemAddition`)
-- **Focused Tests**: Each test should verify one specific behavior - avoid multiple assertions testing different concepts
-- **Roundtrip Testing**: For event sourcing, prefer roundtrip tests (create → events → rebuild → compare) over field-by-field assertions
-- **Data Integrity**: Test aggregate equality rather than individual field assertions - this validates the complete behavior that matters
 
 ### Domain Model Principles
 - Keep schemas lean, rely on LLM for validation/transformation
@@ -111,64 +106,3 @@ npm run format
 - Natural language MealPlanSpec inputs
 - Ingredient substitution and conflict resolution
 - Context management for planning sessions
-
-## Project Structure (Planned)
-
-```
-/
-├── docs/                     # Architecture documentation
-├── packages/
-│   ├── frontend/            # Svelte app
-│   │   ├── src/components/
-│   │   ├── src/lib/
-│   └── backend/             # FastAPI app
-│       ├── app/
-│       │   ├── routers/     # REST endpoints
-│       │   ├── models/      # Domain aggregates
-│       │   └── events/      # Event definitions
-```
-
-## API Design (Planned)
-
-### REST Endpoints
-- POST `/meal-plans` - Start planning session
-- POST `/stores` - Create ingredient store
-- POST `/stores/{id}/inventory` - Bulk upload ingredients
-- GET `/inventory/current` - Current availability
-- POST `/meal-plans/{id}/feedback` - User recipe feedback
-
-### WebSocket Events
-- `RecipeProposed` - New recipe suggestion
-- `IngredientClaimed` - Ingredient reservation
-- `ClaimPartial` - Partial ingredient availability
-- `MealPlanFinalised` - Planning complete
-
-## Development Status
-
-**Current Phase**: Design and Documentation
-- Comprehensive domain architecture defined
-- Technical specifications complete
-- Implementation not yet started
-
-**Next Steps**:
-1. Set up monorepo structure with frontend/backend packages
-2. Implement core domain models and event sourcing infrastructure
-3. Build basic ingredient store management
-4. Integrate LLM for recipe planning
-5. Develop real-time UI with WebSocket connections
-
-## Development Notes
-
-- When installing packages, run `uv sync --all-groups` to avoid uninstalling existing packages
-
-## Code Quality Guidelines
-
-- Add `# type: ignore[...]` when design is solid but adding type checking would make the code unnecessarily complex
-
-## Testing Guidelines
-
-- BAML functions are costly to run in tests, so wrap them in clients that we can swap out via dependency injection
-
-## Workflow Guidelines
-
-- When running tests, be sure to prepend uv run
