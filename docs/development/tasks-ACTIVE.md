@@ -53,13 +53,13 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Development infrastructure for building and testing components
 
 ### 8.1 Storybook Setup (*No tests needed - configuration*)
-- [ ] Configure Storybook with Skeleton UI theme
-- [ ] Create base story templates for common component patterns
+- [✓] Configure Storybook with Skeleton UI theme
+- [✓] Create base story templates for common component patterns
 
 ### 8.2 Component Stories (*No tests needed - development aids*)
-- [ ] Create stories for store creation form with various states
-- [ ] Create stories for inventory upload component with loading/error states
-- [ ] Create stories for inventory table with mock data
+- [✓] Create stories for store creation form with various states
+- [✓] Create stories for inventory upload component with loading/error states
+- [✓] Create stories for inventory table with mock data
 
 ---
 
