@@ -21,7 +21,7 @@ export const mockData = {
 // Common story decorators
 export const decorators = {
 	withSkeletonTheme: (story: () => string) => `
-    <div data-theme="cerberus" class="p-4">
+    <div data-theme="nosh" class="p-4">
       ${story()}
     </div>
   `,

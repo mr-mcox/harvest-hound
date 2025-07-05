@@ -1,5 +1,5 @@
 import type { Preview } from '@storybook/sveltekit';
-import '@skeletonlabs/skeleton/themes/cerberus';
+import '@skeletonlabs/skeleton/themes/nosh';
 import '../src/app.css';
 
 const preview: Preview = {
