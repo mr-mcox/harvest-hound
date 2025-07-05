@@ -10,3 +10,18 @@
 
 ## Concerns
 - Noticing some smell in how base models are constructed
+
+## Scratch
+### 9.8 Future Work Notes (*No tests needed - planning*)
+- [ ] **WebSocket testing infrastructure** (deferred)
+  - [ ] Real-time event streaming tests
+  - [ ] Connection handling and reconnection
+  - [ ] Multi-client event broadcasting
+- [ ] **Load testing setup** (deferred)
+  - [ ] Large inventory parsing performance
+  - [ ] Concurrent user session handling
+  - [ ] Database performance under load
+- [ ] **Browser automation** (deferred)
+  - [ ] Playwright/Puppeteer test suite
+  - [ ] Cross-browser compatibility testing
+  - [ ] Mobile responsiveness testing

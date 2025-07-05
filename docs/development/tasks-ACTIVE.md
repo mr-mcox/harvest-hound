@@ -64,23 +64,79 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 ---
 
 ## Task 9: Integration Testing
-**Goal**: End-to-end workflow works as expected
+**Goal**: End-to-end workflow works with Docker Compose coordination and comprehensive mocked testing
 
-### 9.1 Happy Path Integration (*Tests needed*)
+### 9.1 Docker Compose Setup (*No tests needed - configuration*)
+- [ ] **Create `docker-compose.yml`** in project root for E2E testing
+  - [ ] Backend service with test database
+  - [ ] Frontend service with test build
+  - [ ] Shared network for service communication
+- [ ] **Create `docker-compose.dev.yml`** for local development
+  - [ ] Backend service with live reload
+  - [ ] Frontend service with dev server
+  - [ ] Volume mounts for source code
+- [ ] **Create test environment scripts**
+  - [ ] `scripts/test-e2e.sh` - Automated E2E test runner
+  - [ ] `scripts/dev-start.sh` - Local development startup
+  - [ ] `scripts/test-manual.sh` - Manual testing with real LLM
+
+### 9.2 Enhanced Mocked Testing (*Tests needed*)
+- [ ] **Create LLM response fixtures** in `tests/fixtures/llm_responses.json`
+  - [ ] Successful ingredient parsing responses
+  - [ ] Partial parsing responses with errors
+  - [ ] Complete parsing failure responses
+  - [ ] Edge cases (empty input, malformed text)
+- [ ] **Create mock LLM service** in `tests/mocks/llm_service.py`
+  - [ ] Deterministic responses based on input patterns
+  - [ ] Configurable failure modes for error testing
+  - [ ] Timing simulation for performance testing
+- [ ] **Backend integration tests with mocked LLM**
+  - [ ] Full API workflow with predictable LLM responses
+  - [ ] Error handling with simulated LLM failures
+  - [ ] Performance testing with fast mocked responses
+
+### 9.3 Integration Testing Infrastructure (*Tests needed*)
+- [ ] **Backend integration test suite**
+  - [ ] Real database (SQLite in-memory for speed)
+  - [ ] Mocked LLM service for predictable responses
+  - [ ] Full HTTP request/response cycle testing
+- [ ] **Frontend integration test suite**
+  - [ ] Real API calls to test backend
+  - [ ] Mocked LLM service via backend mock
+  - [ ] Full UI interaction workflows
+- [ ] **Cross-service integration tests**
+  - [ ] Docker Compose test environment
+  - [ ] Frontend → Backend → Database flow
+  - [ ] Real HTTP communication, mocked external services
+
+### 9.4 Happy Path Integration (*Tests needed*)
 - [ ] **Test**: Create "CSA Box" store → upload "2 lbs carrots, 1 bunch kale" → see 2 items in table
 - [ ] **Test**: Store list shows "CSA Box" with item_count=2
 - [ ] **Test**: Page refresh preserves all data (event sourcing working)
 - [ ] **Test**: Multiple stores maintain separate inventories
 
-### 9.2 Error Handling Integration (*Tests needed*)
+### 9.5 Error Handling Integration (*Tests needed*)
 - [ ] **Test**: Invalid inventory text shows error without crashing
 - [ ] **Test**: Network errors show appropriate user messages
 - [ ] **Test**: LLM service unavailable shows graceful error
+- [ ] **Test**: Partial parsing results display correctly
 
-### 9.3 Performance Requirements (*Tests needed*)
+### 9.6 Performance Testing Setup (*Tests needed*)
 - [ ] **Test**: Store creation completes in <1 second
-- [ ] **Test**: LLM parsing completes in <10 seconds for typical inventory
+- [ ] **Test**: Mocked LLM parsing completes in <100ms (baseline)
 - [ ] **Test**: Inventory display loads in <2 seconds
+- [ ] **Test**: Concurrent store creation handles 10 simultaneous requests
+
+### 9.7 Manual Testing Options (*No tests needed - documentation*)
+- [ ] **Create manual test scenarios** in `docs/testing/manual-tests.md`
+  - [ ] Real LLM integration test procedures
+  - [ ] Performance testing with actual API calls
+  - [ ] Edge case exploration guidelines
+- [ ] **Create testing environment configs**
+  - [ ] `config/test-real-llm.env` - Real LLM service configuration
+  - [ ] `config/test-mock-llm.env` - Mocked LLM service configuration
+
+
 
 ---
 
