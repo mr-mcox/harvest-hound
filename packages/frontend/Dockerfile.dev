@@ -10,17 +10,17 @@ RUN npm install -g pnpm
 # Copy workspace configuration files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy package files
-COPY packages/frontend/package.json packages/frontend/pnpm-lock.yaml packages/frontend/
+# Copy all package files to ensure workspace resolution
+COPY packages/frontend/package.json packages/frontend/
 
-# Install dependencies
+# Install dependencies (including dev dependencies)
 RUN pnpm install --frozen-lockfile
 
 # Copy application code
 COPY packages/frontend/ packages/frontend/
 
-# Set working directory to frontend package
-WORKDIR /app/packages/frontend
+# Stay in workspace root for proper pnpm command execution
+WORKDIR /app
 
 # Expose ports
 EXPOSE 3000
@@ -30,5 +30,5 @@ EXPOSE 6006
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000 || exit 1
 
-# Run the development server
-CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "3000"]
+# Run the development server using pnpm workspace commands
+CMD ["pnpm", "--filter", "frontend", "dev", "--host", "0.0.0.0", "--port", "3000"]
