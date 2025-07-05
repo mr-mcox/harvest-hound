@@ -7,119 +7,6 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 
 ---
 
-## Task 1: Core Domain Model
-**Goal**: Domain aggregates can be created, store events, and rebuild from events
-
-### 1.1 Basic Domain Classes (*No tests needed - just class definitions*)
-- [✓] Create `Ingredient` dataclass with ingredient_id, name, default_unit, created_at
-- [✓] Create `InventoryItem` dataclass with store_id, ingredient_id, quantity, unit, notes, added_at
-- [✓] Create `InventoryStore` class with store_id, name, description, infinite_supply, inventory_items list
-- [✓] Create event dataclasses: `StoreCreated`, `IngredientCreated`, `InventoryItemAdded`
-
-### 1.2 Domain Behavior (*Tests needed*)
-- [✓] **Test**: InventoryStore creation generates StoreCreated event with correct store details
-- [✓] **Test**: Adding inventory item to store generates InventoryItemAdded event
-- [✓] **Test**: InventoryStore can be rebuilt from sequence of StoreCreated + InventoryItemAdded events
-- [✓] **Test**: Ingredient creation generates IngredientCreated event with name and default_unit
-
-### 1.3 Refactor: Functional Event Generation (*Tests needed - refactor existing*)
-**Goal**: Replace `uncommitted_events` pattern with functional approach returning tuples
-
-- [✓] Create pure functions for domain operations in `app/domain/operations.py`
-- [✓] **Refactor Test**: Update InventoryStore.create() to return `(store, events)` tuple
-- [✓] **Refactor Test**: Update add_inventory_item() to return `(store, events)` tuple
-- [✓] **Refactor Test**: Update Ingredient.create() to return `(ingredient, events)` tuple
-- [✓] **Refactor Test**: Update from_events() to work with clean domain models
-- [✓] Remove `uncommitted_events` fields from all domain models
-- [✓] Update all existing tests to handle tuple returns
-- [✓] Ensure all tests still pass with new pattern
-
----
-
-## Task 2: Event Store Infrastructure
-**Goal**: Events can be persisted to SQLite and aggregates reconstructed
-
-### 2.1 Event Store Implementation (*Minimal tests needed*)
-- [✓] Create SQLite table schema: `events(stream_id, event_type, event_data, timestamp)`
-- [✓] Create `EventStore` class with append_event() and load_events() methods
-
-### 2.2 Event Store Behavior (*Tests needed*)
-- [✓] **Test**: EventStore.append_event() persists StoreCreated event to SQLite
-- [✓] **Test**: EventStore.load_events() returns events by stream_id in chronological order
-- [✓] **Test**: EventStore handles concurrent writes without corruption
-
-### 2.3 Repository Pattern (*Tests needed*)
-- [✓] **Test**: IngredientRepository can save Ingredient and reload from IngredientCreated events
-- [✓] **Test**: StoreRepository can save InventoryStore and reload from StoreCreated + InventoryItemAdded events
-- [✓] **Test**: Repository throws appropriate error when aggregate not found
-
----
-
-## Task 3: LLM Inventory Parser
-**Goal**: Natural language text is parsed into structured inventory items
-
-### 3.1 BAML Setup (*No tests needed - configuration*)
-- [x] Install BAML dependencies and configure client
-- [x] Create inventory parsing prompt template
-
-### 3.2 Parser Implementation and Behavior (*Tests needed*)
-- [x] **Test**: Parse "2 lbs carrots" → {"name": "carrot", "quantity": 2.0, "unit": "pound"}
-- [x] **Test**: Parse "1 bunch kale" → {"name": "kale", "quantity": 1.0, "unit": "bunch"}
-- [x] **Test**: Parse multi-line "2 lbs carrots\n1 bunch kale" → 2 parsed items
-- [x] **Test**: Parse CSV format "carrots, 2, lbs" → correct structured output
-- [x] **Test**: Handle parsing errors with meaningful error messages
-- [x] **Test**: Empty input returns empty list (no error)
-- [x] **Test**: Malformed input returns error with original text preserved
-
-### 3.3 BAML-to-Domain Translation (*Tests needed*)
-**Goal**: Convert BAML-generated types to domain models cleanly
-- [x] **Test**: BAML InventoryParseResult converts to domain ParsedInventoryItem
-- [x] **Test**: Translation preserves all data fields correctly
-- [x] **Test**: Translation handles missing/null fields gracefully
-- [x] **Test**: Translation validates domain constraints (positive quantities, valid units)
-
----
-
-## Task 4: Application Services
-**Goal**: Orchestrate domain operations with proper error handling
-
-### 4.1 StoreService Class (*No tests needed - just class definition*)
-- [✓] Create `StoreService` with create_store() and upload_inventory() methods
-- [✓] Create `InventoryUploadResult` dataclass
-
-### 4.2 Store Creation Behavior (*Tests needed*)
-- [✓] **Test**: StoreService.create_store("CSA Box") returns UUID and persists StoreCreated event
-- [✓] **Test**: create_store() with infinite_supply=True sets flag correctly in event
-- [✓] **Test**: create_store() with duplicate name succeeds (no uniqueness constraint)
-
-### 4.3 Inventory Upload Behavior (*Tests needed*)
-- [✓] **Test**: upload_inventory() parses "2 lbs carrots" and creates new Ingredient with name="carrots"
-- [✓] **Test**: upload_inventory() creates InventoryItem linking to ingredient via ingredient_id
-- [✓] **Test**: upload_inventory() emits both IngredientCreated and InventoryItemAdded events
-- [✓] **Test**: upload_inventory() returns InventoryUploadResult with items_added=1
-- [✓] **Test**: upload_inventory() handles LLM parsing errors and returns error in result
-- [✓] **Test**: get_store_inventory() returns current inventory with ingredient names
-
----
-
-## Task 5: Read Model Projections
-**Goal**: Fast queries for UI without rebuilding aggregates
-
-### 5.1 Projection Tables (*No tests needed - just SQL schema*)
-- [✓] Create `ingredients` table for ingredient lookups
-- [✓] Create `stores` table for store list queries
-- [✓] Create `current_inventory` view joining stores + inventory_items + ingredients
-
-### 5.2 Projection Behavior (*Tests needed*)
-- [✓] **Test**: IngredientCreated event updates ingredients table
-- [✓] **Test**: StoreCreated event updates stores table with store details
-- [✓] **Test**: InventoryItemAdded event updates current_inventory view with ingredient name
-- [✓] **Test**: Store list query returns store_id, name, description, item_count
-- [✓] **Test**: Inventory query returns items with ingredient_name, quantity, unit
-- [✓] **Test**: Ingredient lookup by ID uses projection table (performance optimization)
-
----
-
 ## Task 6: REST API
 **Goal**: HTTP endpoints support the complete user workflow
 
@@ -194,6 +81,111 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [ ] **Test**: Store creation completes in <1 second
 - [ ] **Test**: LLM parsing completes in <10 seconds for typical inventory
 - [ ] **Test**: Inventory display loads in <2 seconds
+
+---
+
+## Task 10: Read Model Projections Implementation (ADR-005)
+**Goal**: Implement read model projections to eliminate frontend "smell" and optimize query performance
+
+### 10.1 Backend Read Model Infrastructure (*Tests needed*)
+- [ ] **Create read model classes** in `/packages/backend/app/models/read_models.py`
+  - [ ] `InventoryItemView` with denormalized fields (ingredient_name, store_name)
+  - [ ] `StoreView` with computed fields (item_count)
+- [ ] **Create projection handlers** in `/packages/backend/app/projections/handlers.py`
+  - [ ] `InventoryProjectionHandler` for inventory events
+  - [ ] `StoreProjectionHandler` for store events
+- [ ] **Create view stores** in `/packages/backend/app/infrastructure/view_stores.py`
+  - [ ] `InventoryItemViewStore` using SQLAlchemy Core
+  - [ ] `StoreViewStore` using SQLAlchemy Core
+- [ ] **Create projection registry** in `/packages/backend/app/projections/registry.py`
+  - [ ] `ProjectionRegistry` for managing event handlers
+
+### 10.2 Database Schema Updates (*No tests needed - migration*)
+- [ ] **Create read model tables** with proper indexes
+  - [ ] `inventory_item_views` table with denormalized fields
+  - [ ] `store_views` table with computed fields
+  - [ ] Add indexes for common query patterns
+- [ ] **Update EventStore** to trigger projections
+  - [ ] Remove inline projection logic
+  - [ ] Add projection registry integration
+
+### 10.3 API Layer Updates (*Tests needed*)
+- [ ] **Add new read model endpoints**
+  - [ ] `GET /stores/{id}/inventory-view` returning `InventoryItemView[]`
+  - [ ] `GET /stores-view` returning denormalized store list
+- [ ] **Update existing endpoints** to use read models
+  - [ ] Modify `GET /stores/{id}/inventory` to use view store
+  - [ ] Modify `GET /stores` to use store view
+- [ ] **Update service layer** to use view stores instead of joins
+  - [ ] Remove N+1 queries from `StoreService.get_store_inventory()`
+  - [ ] Add view store dependency injection
+
+### 10.4 Backend Testing (*Tests needed*)
+- [ ] **Test projection handlers**
+  - [ ] `InventoryItemAdded` event updates `InventoryItemView`
+  - [ ] `IngredientCreated` event updates existing inventory views
+  - [ ] `StoreCreated` event creates `StoreView`
+- [ ] **Test view stores**
+  - [ ] Roundtrip tests for read model persistence
+  - [ ] Query performance tests
+- [ ] **Test API endpoints**
+  - [ ] New endpoints return correct denormalized data
+  - [ ] Response schemas match `InventoryItemView` structure
+
+### 10.5 Frontend Migration (*Tests needed*)
+- [ ] **Remove interface extensions** (eliminate the "smell")
+  - [ ] Delete `InventoryItemWithIngredient` from `/packages/frontend/src/lib/types.ts`
+  - [ ] Update imports across all components
+- [ ] **Update API calls** to use new endpoints
+  - [ ] Change inventory endpoints from `/inventory` to `/inventory-view`
+  - [ ] Update store listing endpoints
+- [ ] **Update component types**
+  - [ ] Replace `InventoryItemWithIngredient` with `InventoryItemView`
+  - [ ] Update all component prop types
+- [ ] **Regenerate types** from updated backend schemas
+  - [ ] Run `python scripts/export_schemas.py`
+  - [ ] Run `npm run generate-types`
+
+### 10.6 Frontend Testing (*Tests needed*)
+- [ ] **Update component tests**
+  - [ ] Mock data includes `store_name` field
+  - [ ] Type annotations use `InventoryItemView`
+- [ ] **Update integration tests**
+  - [ ] API endpoint URLs point to new view endpoints
+  - [ ] Response structure matches flat view models
+
+### 10.7 Documentation Updates (*No tests needed - documentation*)
+- [ ] **Update API documentation**
+  - [ ] `docs/architecture/interface.md` - new read model endpoints
+  - [ ] `docs/features/inventory/design.md` - flat response structures
+- [ ] **Update domain documentation**
+  - [ ] `docs/architecture/domain-model.md` - read model concepts
+  - [ ] `docs/architecture/overview.md` - CQRS patterns
+- [ ] **Create implementation guides**
+  - [ ] Read model architecture guide
+  - [ ] Event projection development guide
+  - [ ] Frontend integration guide
+
+### 10.8 Integration Testing (*Tests needed*)
+- [ ] **End-to-end workflow tests**
+  - [ ] Create store → upload inventory → view denormalized data
+  - [ ] Multiple stores maintain separate read models
+  - [ ] Ingredient name updates propagate to all inventory views
+- [ ] **Performance verification**
+  - [ ] Read model queries faster than joined queries
+  - [ ] Event projection latency acceptable (<100ms)
+  - [ ] No N+1 queries in service layer
+
+### 10.9 Migration Strategy (*Tests needed*)
+- [ ] **Dual endpoint support** during transition
+  - [ ] Keep old endpoints functional
+  - [ ] Add read model endpoints in parallel
+- [ ] **Data migration**
+  - [ ] Populate read model tables from existing events
+  - [ ] Verify projection consistency
+- [ ] **Cleanup phase**
+  - [ ] Remove old join-based endpoints
+  - [ ] Remove frontend interface extensions
 
 ---
 
