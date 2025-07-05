@@ -13,13 +13,16 @@ RUN apt-get update && apt-get install -y \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Copy project files
-COPY pyproject.toml uv.lock ./
+COPY packages/backend/pyproject.toml packages/backend/uv.lock packages/backend/
+
+# Set working directory to backend package
+WORKDIR /app/packages/backend
 
 # Install dependencies including dev dependencies
 RUN uv sync --frozen
 
 # Copy application code
-COPY . .
+COPY packages/backend/ .
 
 # Expose port
 EXPOSE 8000

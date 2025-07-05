@@ -7,14 +7,20 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
+# Copy workspace configuration files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY packages/frontend/package.json packages/frontend/pnpm-lock.yaml packages/frontend/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
 # Copy application code
-COPY . .
+COPY packages/frontend/ packages/frontend/
+
+# Set working directory to frontend package
+WORKDIR /app/packages/frontend
 
 # Expose ports
 EXPOSE 3000
