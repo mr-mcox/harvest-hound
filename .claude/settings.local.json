@@ -10,7 +10,11 @@
       "Bash(uv run:*)",
       "Bash(pnpm test:*)",
       "Bash(PYTHONPATH=. uv run python scripts/export_schemas.py)",
-      "Bash(pnpm run:*)"
+      "Bash(pnpm run:*)",
+      "mcp__puppeteer__puppeteer_click",
+      "mcp__puppeteer__puppeteer_screenshot",
+      "mcp__puppeteer__puppeteer_navigate",
+      "Bash(find:*)"
     ],
     "deny": []
   }
