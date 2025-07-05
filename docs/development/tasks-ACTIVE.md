@@ -81,19 +81,19 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] `scripts/test-manual.sh` - Manual testing with real LLM
 
 ### 9.2 Enhanced Mocked Testing (*Tests needed*)
-- [ ] **Create LLM response fixtures** in `tests/fixtures/llm_responses.json`
-  - [ ] Successful ingredient parsing responses
-  - [ ] Partial parsing responses with errors
-  - [ ] Complete parsing failure responses
-  - [ ] Edge cases (empty input, malformed text)
-- [ ] **Create mock LLM service** in `tests/mocks/llm_service.py`
-  - [ ] Deterministic responses based on input patterns
-  - [ ] Configurable failure modes for error testing
-  - [ ] Timing simulation for performance testing
-- [ ] **Backend integration tests with mocked LLM**
-  - [ ] Full API workflow with predictable LLM responses
-  - [ ] Error handling with simulated LLM failures
-  - [ ] Performance testing with fast mocked responses
+- [✓] **Create LLM response fixtures** in `tests/fixtures/llm_responses.json`
+  - [✓] Successful ingredient parsing responses
+  - [✓] Partial parsing responses with errors
+  - [✓] Complete parsing failure responses
+  - [✓] Edge cases (empty input, malformed text)
+- [✓] **Create mock LLM service** in `tests/mocks/llm_service.py`
+  - [✓] Deterministic responses based on input patterns
+  - [✓] Configurable failure modes for error testing
+  - [✓] Timing simulation for performance testing
+- [✓] **Backend integration tests with mocked LLM**
+  - [✓] Full API workflow with predictable LLM responses
+  - [✓] Error handling with simulated LLM failures
+  - [✓] Performance testing with fast mocked responses
 
 ### 9.3 Integration Testing Infrastructure (*Tests needed*)
 - [ ] **Backend integration test suite**
