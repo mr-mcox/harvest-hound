@@ -67,18 +67,18 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: End-to-end workflow works with Docker Compose coordination and comprehensive mocked testing
 
 ### 9.1 Docker Compose Setup (*No tests needed - configuration*)
-- [ ] **Create `docker-compose.yml`** in project root for E2E testing
-  - [ ] Backend service with test database
-  - [ ] Frontend service with test build
-  - [ ] Shared network for service communication
-- [ ] **Create `docker-compose.dev.yml`** for local development
-  - [ ] Backend service with live reload
-  - [ ] Frontend service with dev server
-  - [ ] Volume mounts for source code
-- [ ] **Create test environment scripts**
-  - [ ] `scripts/test-e2e.sh` - Automated E2E test runner
-  - [ ] `scripts/dev-start.sh` - Local development startup
-  - [ ] `scripts/test-manual.sh` - Manual testing with real LLM
+- [✓] **Create `docker-compose.yml`** in project root for E2E testing
+  - [✓] Backend service with test database
+  - [✓] Frontend service with test build
+  - [✓] Shared network for service communication
+- [✓] **Create `docker-compose.dev.yml`** for local development
+  - [✓] Backend service with live reload
+  - [✓] Frontend service with dev server
+  - [✓] Volume mounts for source code
+- [✓] **Create test environment scripts**
+  - [✓] `scripts/test-e2e.sh` - Automated E2E test runner
+  - [✓] `scripts/dev-start.sh` - Local development startup
+  - [✓] `scripts/test-manual.sh` - Manual testing with real LLM
 
 ### 9.2 Enhanced Mocked Testing (*Tests needed*)
 - [ ] **Create LLM response fixtures** in `tests/fixtures/llm_responses.json`
