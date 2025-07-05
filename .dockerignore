@@ -1,0 +1,56 @@
+# Virtual environments (uv creates fresh ones in containers)
+**/.venv/
+.venv/
+
+# Python cache files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+
+# Node modules (npm/pnpm creates fresh ones in containers)
+**/node_modules/
+node_modules/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation and development files
+README.md
+*.md
+docs/
+
+# Test and development artifacts
+**/.pytest_cache/
+.coverage
+.nyc_output
+coverage/
+
+# Local environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock

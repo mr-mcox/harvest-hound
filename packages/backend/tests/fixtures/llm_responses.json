@@ -1,0 +1,186 @@
+{
+  "successful_parsing": {
+    "simple_items": {
+      "input": "2 lbs carrots, 1 bunch kale",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"},
+        {"name": "kale", "quantity": 1.0, "unit": "bunch"}
+      ]
+    },
+    "complex_items": {
+      "input": "3.5 oz organic spinach, 2.25 cups whole milk, 1/2 cup olive oil",
+      "output": [
+        {"name": "spinach", "quantity": 3.5, "unit": "ounce"},
+        {"name": "milk", "quantity": 2.25, "unit": "cup"},
+        {"name": "oil", "quantity": 0.5, "unit": "cup"}
+      ]
+    },
+    "mixed_formats": {
+      "input": "1 large onion\n2 pounds tomatoes\n3 cloves garlic",
+      "output": [
+        {"name": "onion", "quantity": 1.0, "unit": "piece"},
+        {"name": "tomato", "quantity": 2.0, "unit": "pound"},
+        {"name": "garlic", "quantity": 3.0, "unit": "clove"}
+      ]
+    },
+    "csa_box_example": {
+      "input": "CSA delivery this week:\n- 1 bunch rainbow chard\n- 3 lbs red potatoes\n- 2 heads lettuce\n- 1/2 lb green beans",
+      "output": [
+        {"name": "chard", "quantity": 1.0, "unit": "bunch"},
+        {"name": "potato", "quantity": 3.0, "unit": "pound"},
+        {"name": "lettuce", "quantity": 2.0, "unit": "head"},
+        {"name": "green bean", "quantity": 0.5, "unit": "pound"}
+      ]
+    }
+  },
+  "partial_parsing": {
+    "some_unparseable": {
+      "input": "2 lbs carrots, some kale, 3 tomatoes",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"},
+        {"name": "tomato", "quantity": 3.0, "unit": "piece"}
+      ],
+      "errors": ["Could not parse quantity for: some kale"]
+    },
+    "unit_normalization": {
+      "input": "2 pounds carrots, 1 lb onions, 16oz spinach",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"},
+        {"name": "onion", "quantity": 1.0, "unit": "pound"},
+        {"name": "spinach", "quantity": 1.0, "unit": "pound"}
+      ]
+    }
+  },
+  "parsing_failures": {
+    "complete_failure": {
+      "input": "Lorem ipsum dolor sit amet",
+      "output": [],
+      "errors": ["No recognizable ingredients found in text"]
+    },
+    "malformed_quantities": {
+      "input": "abc carrots, xyz onions",
+      "output": [],
+      "errors": ["Invalid quantity format: abc", "Invalid quantity format: xyz"]
+    },
+    "missing_units": {
+      "input": "2 carrots without units, 3 onions no measurement",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "piece"},
+        {"name": "onion", "quantity": 3.0, "unit": "piece"}
+      ]
+    }
+  },
+  "edge_cases": {
+    "empty_input": {
+      "input": "",
+      "output": []
+    },
+    "whitespace_only": {
+      "input": "   \n\t  ",
+      "output": []
+    },
+    "single_item": {
+      "input": "1 apple",
+      "output": [
+        {"name": "apple", "quantity": 1.0, "unit": "piece"}
+      ]
+    },
+    "fractional_quantities": {
+      "input": "1/2 cup rice, 3/4 lb cheese, 2.5 oz herbs",
+      "output": [
+        {"name": "rice", "quantity": 0.5, "unit": "cup"},
+        {"name": "cheese", "quantity": 0.75, "unit": "pound"},
+        {"name": "herb", "quantity": 2.5, "unit": "ounce"}
+      ]
+    },
+    "unicode_characters": {
+      "input": "2 lbs carrots with unicode: ½ cup rice",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"},
+        {"name": "rice", "quantity": 0.5, "unit": "cup"}
+      ]
+    },
+    "very_long_list": {
+      "input": "1 apple, 2 bananas, 3 carrots, 4 dates, 5 eggplants, 6 figs, 7 grapes, 8 herbs, 9 lemons, 10 jalapeños",
+      "output": [
+        {"name": "apple", "quantity": 1.0, "unit": "piece"},
+        {"name": "banana", "quantity": 2.0, "unit": "piece"},
+        {"name": "carrot", "quantity": 3.0, "unit": "piece"},
+        {"name": "date", "quantity": 4.0, "unit": "piece"},
+        {"name": "eggplant", "quantity": 5.0, "unit": "piece"},
+        {"name": "fig", "quantity": 6.0, "unit": "piece"},
+        {"name": "grape", "quantity": 7.0, "unit": "piece"},
+        {"name": "herb", "quantity": 8.0, "unit": "piece"},
+        {"name": "lemon", "quantity": 9.0, "unit": "piece"},
+        {"name": "jalapeño", "quantity": 10.0, "unit": "piece"}
+      ]
+    }
+  },
+  "baml_test_patterns": {
+    "carrots_single_ingredient": {
+      "input": "- 2 lbs carrots",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"}
+      ]
+    },
+    "kale_with_bunch": {
+      "input": "1 bunch kale",
+      "output": [
+        {"name": "kale", "quantity": 1.0, "unit": "bunch"}
+      ]
+    },
+    "multi_line_ingredients": {
+      "input": "2 lbs carrots\n1 bunch kale",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"},
+        {"name": "kale", "quantity": 1.0, "unit": "bunch"}
+      ]
+    },
+    "csv_format": {
+      "input": "carrots, 2, lbs",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"}
+      ]
+    },
+    "herbs_and_spices": {
+      "input": "1 teaspoon salt, 2 tablespoons olive oil, 1 cup basil",
+      "output": [
+        {"name": "salt", "quantity": 1.0, "unit": "teaspoon"},
+        {"name": "oil", "quantity": 2.0, "unit": "tablespoon"},
+        {"name": "basil", "quantity": 1.0, "unit": "cup"}
+      ]
+    },
+    "typical_csa_box": {
+      "input": "1 head cabbage, 2 pound beet, 1 bunch radish, 3 ounce lettuce mix",
+      "output": [
+        {"name": "cabbage", "quantity": 1.0, "unit": "head"},
+        {"name": "beet", "quantity": 2.0, "unit": "pound"},
+        {"name": "radish", "quantity": 1.0, "unit": "bunch"},
+        {"name": "lettuce", "quantity": 3.0, "unit": "ounce"}
+      ]
+    }
+  },
+  "performance_testing": {
+    "fast_response": {
+      "input": "1 apple",
+      "output": [{"name": "apple", "quantity": 1.0, "unit": "piece"}],
+      "simulated_latency_ms": 50
+    },
+    "medium_response": {
+      "input": "2 lbs carrots, 1 bunch kale, 3 tomatoes",
+      "output": [
+        {"name": "carrot", "quantity": 2.0, "unit": "pound"},
+        {"name": "kale", "quantity": 1.0, "unit": "bunch"},
+        {"name": "tomato", "quantity": 3.0, "unit": "piece"}
+      ],
+      "simulated_latency_ms": 150
+    },
+    "slow_response": {
+      "input": "Complex grocery list with many items and detailed descriptions...",
+      "output": [
+        {"name": "item", "quantity": 1.0, "unit": "piece"}
+      ],
+      "simulated_latency_ms": 500
+    }
+  }
+}

@@ -23,7 +23,7 @@ class TestInventoryStoreCreation:
             uuid.uuid4(), "CSA Box", "Weekly delivery", infinite_supply=True
         )
 
-        reconstructed_store = InventoryStore.from_events(events)  # type: ignore[arg-type]
+        reconstructed_store = InventoryStore.from_events(events)
         assert reconstructed_store == original_store
 
     @pytest.mark.parametrize("infinite_supply", [True, False])
@@ -33,7 +33,7 @@ class TestInventoryStoreCreation:
             uuid.uuid4(), "Test Store", infinite_supply=infinite_supply
         )
 
-        reconstructed = InventoryStore.from_events(events)  # type: ignore[arg-type]
+        reconstructed = InventoryStore.from_events(events)
         assert reconstructed.infinite_supply == infinite_supply
 
 
@@ -89,7 +89,7 @@ class TestInventoryItemAddition:
 
         # Reconstruct from complete event history
         all_events = [creation_event] + events1 + events2
-        reconstructed = InventoryStore.from_events(all_events)  # type: ignore[arg-type]
+        reconstructed = InventoryStore.from_events(all_events)
 
         assert reconstructed == store2
         assert len(reconstructed.inventory_items) == 2
