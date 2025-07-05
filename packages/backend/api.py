@@ -91,6 +91,12 @@ inventory_parser = SmartMockInventoryParserClient()
 store_service = StoreService(store_repository, ingredient_repository, inventory_parser)
 
 
+@app.get("/health")
+async def health_check() -> dict[str, str]:
+    """Health check endpoint for Docker containers."""
+    return {"status": "healthy", "service": "harvest-hound-backend"}
+
+
 @app.post("/stores", response_model=CreateStoreResponse, status_code=201)
 async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
     """Create a new inventory store."""
