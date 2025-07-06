@@ -51,156 +51,44 @@ pnpm format
 - **User-Centric Testing**: Test what users see and do, not internal component state
 - **Integration Testing**: Prefer testing component integration over isolated unit tests
 
-### Component Architecture: Hybrid Container/Presentation Pattern
+### Component Architecture: Container/Presentation Pattern
 
-**CRITICAL**: This project uses a strict separation between pure UI components and data-fetching page wrappers.
+**CRITICAL**: Strict separation between pure UI components and data-fetching page wrappers.
 
 #### Pure Components (`src/lib/components/`)
-**Purpose**: Reusable, testable UI components that accept props and emit events.
+- ✅ Accept data via props, emit events via prop functions
+- ✅ Handle UI state (loading, validation)
+- ❌ NO API calls, SvelteKit imports (`$app/*`), or navigation
 
 ```svelte
 <!-- ✅ GOOD: Pure component -->
 <script lang="ts">
   export let inventory: InventoryItem[];
-  export let onItemClick: (item: InventoryItem) => void = () => {};
-  
-  // Only UI logic - no API calls, no SvelteKit imports
+  export let onSubmit: (data: FormData) => void = () => {};
 </script>
-
-<table>
-  {#each inventory as item}
-    <tr on:click={() => onItemClick(item)}>
-      <td>{item.name}</td>
-    </tr>
-  {/each}
-</table>
 ```
 
-**Rules for Pure Components**:
-- ✅ Accept data via props
-- ✅ Emit events via prop functions (`onSubmit`, `onClick`)
-- ✅ Handle UI state (loading, validation errors)
-- ❌ NO API calls (`apiGet`, `apiPost`)
-- ❌ NO SvelteKit imports (`$app/navigation`, `$app/stores`)
-- ❌ NO direct routing or navigation
-
 #### Page Wrappers (`src/routes/**/+page.svelte`)
-**Purpose**: Handle data fetching, routing, and SvelteKit integration.
+- ✅ Handle data fetching, routing, SvelteKit APIs
+- ✅ Pass data to pure components, handle their events
+- ❌ NO complex UI rendering (delegate to components)
 
 ```svelte
 <!-- ✅ GOOD: Page wrapper -->
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
-  import { apiGet, apiPost } from '$lib/api';
+  import { apiGet } from '$lib/api';
   import InventoryTable from '$lib/components/InventoryTable.svelte';
   
   let inventory = [];
-  let loading = true;
-  
   onMount(async () => {
-    const response = await apiGet(`/stores/${$page.params.id}/inventory`);
-    inventory = await response.json();
-    loading = false;
+    inventory = await apiGet('/inventory').then(r => r.json());
   });
-  
-  async function handleItemClick(item) {
-    await goto(`/items/${item.id}`);
-  }
 </script>
 
-{#if loading}
-  <div>Loading...</div>
-{:else}
-  <InventoryTable {inventory} onItemClick={handleItemClick} />
-{/if}
-```
-
-**Rules for Page Wrappers**:
-- ✅ Handle data fetching and API calls
-- ✅ Manage route parameters (`$page.params`)
-- ✅ Handle navigation (`goto`)
-- ✅ Pass data down to pure components
-- ✅ Handle component events and side effects
-- ❌ NO complex UI rendering (delegate to components)
-
-#### Why This Pattern?
-
-**Testability**:
-```javascript
-// ✅ Easy to test pure components
-render(InventoryTable, { 
-  inventory: mockData,
-  onItemClick: vi.fn()
-});
-
-// ❌ Impossible to test mixed components
-render(InventoryPageWithEverything); // Requires full SvelteKit context
-```
-
-**Reusability**:
-```svelte
-<!-- ✅ Reuse components anywhere -->
 <InventoryTable {inventory} />
-<Modal><InventoryTable {inventory} /></Modal>
-<Dashboard><InventoryTable {inventory} /></Dashboard>
 ```
 
-**Storybook Development**:
-```javascript
-// ✅ Pure components work in Storybook
-export default {
-  component: InventoryTable,
-  args: { inventory: mockData }
-};
-```
-
-#### Common Anti-Patterns to Avoid
-
-❌ **DON'T mix data fetching with UI**:
-```svelte
-<script>
-  import { onMount } from 'svelte';
-  import { apiGet } from '$lib/api';
-  
-  let data = [];
-  onMount(() => apiGet('/api').then(r => data = r)); // ❌ Untestable
-</script>
-<table>{#each data as item}...{/each}</table>
-```
-
-❌ **DON'T use SvelteKit APIs in reusable components**:
-```svelte
-<script>
-  import { goto } from '$app/navigation'; // ❌ Breaks reusability
-  function handleClick() { goto('/somewhere'); }
-</script>
-```
-
-❌ **DON'T create "god components" that do everything**:
-```svelte
-<!-- ❌ BAD: One component handling everything -->
-<script>
-  // API calls + UI logic + navigation + validation...
-</script>
-```
-
-#### File Organization
-
-```
-src/
-├── lib/components/           # Pure UI components
-│   ├── InventoryTable.svelte
-│   ├── InventoryUpload.svelte
-│   └── StoreCreateForm.svelte
-├── routes/                   # Page wrappers only
-│   ├── stores/
-│   │   ├── [id]/+page.svelte      # Fetches data, passes to InventoryTable
-│   │   └── create/+page.svelte    # Handles API calls, uses StoreCreateForm
-└── stories/                  # Test pure components in isolation
-    ├── InventoryTable.stories.svelte
-    └── StoreCreateForm.stories.svelte
-```
+**Why?** Testability (`render(PureComponent, {props})`), reusability, Storybook compatibility.
 
 ### Component Design Principles
 
@@ -219,35 +107,11 @@ src/
 
 ### Testing Guidelines
 
-#### Component Testing Strategy
-- **Test Pure Components Only**: Import from `$lib/components/`, never from `src/routes/`
-- **Use Vitest with `@testing-library/svelte`**: For component behavior testing
-- **Mock Data, Not Dependencies**: Pass mock data as props instead of mocking API calls
-- **Test User Interactions**: Focus on what users see and do, not internal state
-
-#### Testing Examples
-
-**✅ GOOD: Test pure components**:
-```javascript
-import InventoryTable from '$lib/components/InventoryTable.svelte';
-
-test('displays inventory items', () => {
-  const mockInventory = [{ name: 'Carrots', quantity: 2 }];
-  render(InventoryTable, { inventory: mockInventory });
-  expect(screen.getByText('Carrots')).toBeInTheDocument();
-});
-```
-
-**❌ BAD: Test page components**:
-```javascript
-import InventoryPage from '../routes/stores/[id]/+page.svelte'; // ❌ Requires SvelteKit context
-```
-
-#### Test Organization
-- **Unit Tests**: Pure components with mock props
-- **Integration Tests**: API client functions and backend communication  
-- **E2E Testing**: Use Playwright for full user journey testing
-- **Mock External Dependencies**: Mock API calls at the service layer, not component level
+- **Test Pure Components Only**: Import from `$lib/components/`, never `src/routes/`
+- **Mock Data, Not Dependencies**: Pass mock data as props instead of mocking APIs
+- **Component Testing**: Use Vitest with `@testing-library/svelte` 
+- **E2E Testing**: Use Playwright for user journey testing
+- **Focus on User Interactions**: Test what users see and do, not internal state
 
 ## Code Quality Guidelines
 
@@ -269,34 +133,17 @@ import InventoryPage from '../routes/stores/[id]/+page.svelte'; // ❌ Requires 
 packages/frontend/
 ├── src/
 │   ├── lib/
-│   │   ├── components/      # 🎯 Pure UI components (testable, reusable)
-│   │   │   ├── InventoryTable.svelte
-│   │   │   ├── InventoryUpload.svelte
-│   │   │   └── StoreCreateForm.svelte
-│   │   ├── generated/       # Generated API types from backend
+│   │   ├── components/      # Pure UI components (testable, reusable)
+│   │   ├── generated/       # Generated API types
 │   │   ├── api.ts           # API client functions
 │   │   ├── types.ts         # Frontend-specific types
 │   │   └── validation.ts    # Form validation utilities
-│   ├── routes/              # 🔌 Page wrappers (data fetching, routing)
-│   │   ├── +layout.svelte   # App layout
-│   │   ├── +page.svelte     # Home page wrapper
-│   │   └── stores/          # Store management page wrappers
-│   │       ├── [id]/+page.svelte      # Loads data → InventoryTable
-│   │       ├── [id]/upload/+page.svelte # API calls → InventoryUpload  
-│   │       └── create/+page.svelte    # API calls → StoreCreateForm
-│   └── stories/             # 📚 Storybook stories (pure components only)
-│       ├── InventoryTable.stories.svelte
-│       └── StoreCreateForm.stories.svelte
-├── tests/                   # 🧪 Component tests (pure components only)
-├── e2e/                     # 🎭 End-to-end tests (full user journeys)
+│   ├── routes/              # Page wrappers (data fetching, routing)
+│   └── stories/             # Storybook stories (pure components only)
+├── tests/                   # Component tests (pure components only)
+├── e2e/                     # End-to-end tests
 └── static/                  # Static assets
 ```
-
-**Key Architecture Rules**:
-- **`src/lib/components/`**: Pure UI components only (no SvelteKit imports)
-- **`src/routes/`**: Data fetching wrappers only (minimal UI logic)
-- **Tests**: Only test pure components, never page wrappers
-- **Stories**: Only create stories for pure components
 
 ## Component Guidelines
 
