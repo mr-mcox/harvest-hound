@@ -1,3 +1,76 @@
+# Active Development Tasks
+
+## URGENT: Frontend Test Architecture Fix
+
+**Status**: CRITICAL - Tests failing, blocking clean commits
+**Priority**: HIGH - Must complete before continuing UC #1
+
+### Problem Analysis
+
+The frontend API integration work changed the component architecture from:
+- **Before**: Testable components accepting props (`inventory`, `onSubmit`)  
+- **After**: Self-contained pages managing their own API calls and SvelteKit routing
+
+This broke existing tests that expect the old prop-based interface.
+
+### Root Cause
+
+The tests were written expecting components that accept props, suggesting this was the intended architecture for testability. The current approach couples UI components with data fetching, making them harder to test and less reusable.
+
+### Recommended Solution: Hybrid Architecture
+
+Separate pure UI components from data-fetching page wrappers to maintain both functionality and testability.
+
+### Implementation Plan
+
+#### Phase 1: Extract Pure Components
+
+Create reusable components in `src/lib/components/`:
+
+1. **`InventoryTable.svelte`**
+   - Accepts `inventory: InventoryItemWithIngredient[]` prop
+   - Pure UI component for displaying inventory data
+   - Extracted from current `[id]/+page.svelte`
+
+2. **`InventoryUpload.svelte`** 
+   - Accepts `onSubmit: (data: {inventoryText: string}) => Promise<InventoryUploadResult>` prop
+   - Pure form component for inventory upload
+   - Extracted from current `[id]/upload/+page.svelte`
+
+3. **`StoreCreateForm.svelte`**
+   - Already exists but needs interface update to match tests
+   - Accepts `onSubmit: (data: StoreFormData) => void` prop
+   - Pure form component for store creation
+
+#### Phase 2: Update Pages to Use Components
+
+Transform pages into data-fetching wrappers that handle SvelteKit integration and pass data to pure components.
+
+#### Phase 3: Update Tests
+
+Update test files to import and test pure components instead of pages, removing need for SvelteKit mocking.
+
+#### Phase 4: Verification
+
+Ensure manual functionality still works and all tests pass.
+
+### Files to Change
+
+**New Files**: `src/lib/components/InventoryTable.svelte`, `src/lib/components/InventoryUpload.svelte`
+
+**Modified Files**: All page files and their corresponding test files
+
+### Success Criteria
+
+- [ ] All existing tests pass
+- [ ] Manual functionality works identically
+- [ ] TypeScript compilation succeeds
+- [ ] Components can be rendered in isolation
+
+**Estimated Effort**: 2-3 hours
+
+---
+
 # UC #1 Implementation Plan: Create Inventory Store & Bulk-Upload Inventory
 
 ## Overview
@@ -136,7 +209,40 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] `config/test-real-llm.env` - Real LLM service configuration
   - [✓] `config/test-mock-llm.env` - Mocked LLM service configuration
 
+### 9.8 Frontend API Integration (*Tests needed*)
+- [✓] **Frontend API communication infrastructure**
+  - [✓] Add CORS middleware to backend for cross-origin requests
+  - [✓] Create centralized API utility module (`src/lib/api.ts`)
+  - [✓] Update all frontend API calls to use proper base URLs
+- [✓] **Complete store management API integration**
+  - [✓] Store creation: `POST /stores` with form data and navigation
+  - [✓] Store detail view: `GET /stores/{id}/inventory` with loading states
+  - [✓] Inventory upload: `POST /stores/{id}/inventory` with success handling
+- [✓] **Maintain backend type synchronization**
+  - [✓] Use `InventoryItemWithIngredient` from generated backend types
+  - [✓] Ensure frontend types match backend schemas
 
+### 9.9 Frontend Component Test Architecture Fix (*Tests needed - URGENT*)
+**Status**: CRITICAL - Tests failing, blocking clean commits
+
+**Problem**: Frontend API integration changed component architecture from testable prop-based components to self-contained pages that manage their own API calls. This broke existing tests that expect the old interface.
+
+- [ ] **Extract pure UI components** in `src/lib/components/`
+  - [ ] `InventoryTable.svelte` - accepts `inventory: InventoryItemWithIngredient[]` prop
+  - [ ] `InventoryUpload.svelte` - accepts `onSubmit: (data: {inventoryText: string}) => Promise<InventoryUploadResult>` prop  
+  - [ ] Update `StoreCreateForm.svelte` to match original test interface
+- [ ] **Transform pages into data-fetching wrappers**
+  - [ ] `src/routes/stores/[id]/+page.svelte` - loads data and passes to `InventoryTable`
+  - [ ] `src/routes/stores/[id]/upload/+page.svelte` - handles API calls and passes handler to `InventoryUpload`
+  - [ ] `src/routes/stores/create/+page.svelte` - handles API calls and passes handler to `StoreCreateForm`
+- [ ] **Update component tests to use pure components**
+  - [ ] Update test imports to use `$lib/components/` instead of pages
+  - [ ] Remove SvelteKit mocking (`$page.params.id`, `apiGet`/`apiPost`, `goto`)
+  - [ ] Test pure UI behavior with mock data
+
+**Root Cause**: Original test structure indicates hybrid architecture was intended design - pure components for testability, page wrappers for SvelteKit integration.
+
+**Success Criteria**: All tests pass, manual functionality identical, TypeScript compilation succeeds, components can be rendered in isolation.
 
 ---
 

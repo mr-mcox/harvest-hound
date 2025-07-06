@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { validateStoreForm, type ValidationResult } from '$lib/validation.js';
 
-	export let onSubmit = (data: {
+	export let onSubmit: (data: {
 		name: string;
 		description: string;
 		infinite_supply: boolean;
-	}) => {};
+	}) => void = () => {};
 
 	let name = '';
 	let description = '';

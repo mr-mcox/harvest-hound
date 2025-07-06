@@ -1,7 +1,7 @@
 import { page } from '@vitest/browser/context';
 import { describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import InventoryTablePage from './+page.svelte';
+import InventoryTable from '$lib/components/InventoryTable.svelte';
 import type { InventoryItemWithIngredient } from '$lib/types.js';
 
 describe('Inventory Table Display', () => {
@@ -20,7 +20,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { inventory: mockInventory });
+		render(InventoryTable, { inventory: mockInventory });
 
 		// Assert - Check all required column headers are present in table
 		const table = page.getByRole('table');
@@ -62,7 +62,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { inventory: mockInventory });
+		render(InventoryTable, { inventory: mockInventory });
 
 		// Assert - Check first row data
 		const carrotCell = page.getByRole('cell', { name: 'Carrots' });
@@ -88,7 +88,7 @@ describe('Inventory Table Display', () => {
 		const emptyInventory: InventoryItemWithIngredient[] = [];
 
 		// Act
-		render(InventoryTablePage, { inventory: emptyInventory });
+		render(InventoryTable, { inventory: emptyInventory });
 
 		// Assert
 		const emptyMessage = page.getByText('No inventory items found.');
@@ -132,7 +132,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { inventory: mockInventory });
+		render(InventoryTable, { inventory: mockInventory });
 
 		// Assert
 		const headerWithCount = page.getByText('Inventory (3 items)');
@@ -154,7 +154,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { inventory: mockInventory });
+		render(InventoryTable, { inventory: mockInventory });
 
 		// Assert - Should show dash for missing notes
 		const dashCell = page.getByRole('cell', { name: '-' });
@@ -194,7 +194,7 @@ describe('Inventory Table Display', () => {
 		];
 
 		// Act
-		render(InventoryTablePage, { inventory: mockInventory });
+		render(InventoryTable, { inventory: mockInventory });
 
 		// Assert - All items should be visible
 		await expect.element(page.getByRole('cell', { name: 'Carrots' })).toBeInTheDocument();
