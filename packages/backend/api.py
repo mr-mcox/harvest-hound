@@ -62,33 +62,11 @@ store_repository = StoreRepository(event_store)
 ingredient_repository = IngredientRepository(event_store)
 
 
-# Create a smart mock parser for API testing
-class SmartMockInventoryParserClient(MockInventoryParserClient):
-    """Mock client that provides realistic results based on input."""
+# Import the fixture-based mock parser for comprehensive testing
+from tests.mocks.llm_service import MockLLMInventoryParser
 
-    def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
-        """Return parsed results based on input text."""
-        if not inventory_text.strip():
-            return []
-
-        # Simulate parsing errors for specific inputs
-        if (
-            "invalid" in inventory_text.lower()
-            or "unparseable" in inventory_text.lower()
-        ):
-            raise ValueError("Failed to parse inventory text")
-
-        # Simple mapping for common test cases
-        if "carrots" in inventory_text.lower():
-            return [ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound")]
-        elif "kale" in inventory_text.lower():
-            return [ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch")]
-        else:
-            # Default fallback
-            return [ParsedInventoryItem(name="unknown", quantity=1.0, unit="item")]
-
-
-inventory_parser = SmartMockInventoryParserClient()
+# Use fixture-based mock parser for comprehensive testing scenarios
+inventory_parser = MockLLMInventoryParser()
 store_service = StoreService(store_repository, ingredient_repository, inventory_parser)
 
 
