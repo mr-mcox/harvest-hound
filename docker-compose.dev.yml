@@ -20,7 +20,12 @@ services:
       - backend_cache:/app/packages/backend/.uv
     networks:
       - harvest-hound-dev
-    command: ["sh", "-c", "cd packages/backend && uv run uvicorn api:app --reload --host 0.0.0.0 --port 8000"]
+    command:
+      [
+        "sh",
+        "-c",
+        "cd packages/backend && uv run uvicorn api:app --reload --host 0.0.0.0 --port 8000",
+      ]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -34,9 +39,9 @@ services:
       dockerfile: ./packages/frontend/Dockerfile.dev
     ports:
       - "3000:3000"
-      - "6006:6006"  # Storybook port
+      - "6006:6006" # Storybook port
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://backend:8000
       - NODE_ENV=development
     volumes:
       - .:/app
@@ -46,7 +51,17 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    command: ["pnpm", "--filter", "frontend", "dev", "--host", "0.0.0.0", "--port", "3000"]
+    command:
+      [
+        "pnpm",
+        "--filter",
+        "frontend",
+        "dev",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "3000",
+      ]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -67,7 +82,17 @@ services:
       - frontend_cache:/app/node_modules
     networks:
       - harvest-hound-dev
-    command: ["pnpm", "--filter", "frontend", "storybook", "--host", "0.0.0.0", "--port", "6006"]
+    command:
+      [
+        "pnpm",
+        "--filter",
+        "frontend",
+        "storybook",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "6006",
+      ]
     profiles:
       - storybook
 

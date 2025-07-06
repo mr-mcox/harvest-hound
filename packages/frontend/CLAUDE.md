@@ -38,24 +38,28 @@ pnpm format
 ## Key Frontend Guidelines
 
 ### Development Approach
+
 - **Red/Green TDD**: Test-driven development adapted for UI components
 - **Meaningful Testing**: Test component behavior and user interactions, not implementation details
 - **Component vs Behavior**: Distinguish between basic component structure (minimal tests) and meaningful user interactions (comprehensive tests)
 - **Concrete Task Planning**: Tasks should be specific and actionable, not abstract concepts
 
 ### Test Construction Preferences
+
 - **Test Organization**: Use Vitest `describe` blocks to group related component behaviors logically (e.g., `describe('InventoryTable - Creation')`, `describe('InventoryTable - Interaction')`)
 - **Focused Tests**: Each test should verify one specific user behavior - avoid multiple assertions testing different UI concepts
 - **User-Centric Testing**: Test what users see and do, not internal component state
 - **Integration Testing**: Prefer testing component integration over isolated unit tests
 
 ### Component Design Principles
+
 - Keep components focused on single responsibilities
 - Use TypeScript interfaces for prop definitions
 - Leverage Svelte's reactivity for state management
 - Prefer composition over inheritance for component reuse
 
 ### State Management
+
 - Use Svelte stores for application-wide state
 - Component-level state for local UI concerns
 - Reactive statements for derived state
@@ -104,18 +108,21 @@ packages/frontend/
 ## Component Guidelines
 
 ### Svelte Component Best Practices
+
 - Use `<script lang="ts">` for TypeScript support
 - Export props with explicit types
 - Use reactive statements (`$:`) for derived values
 - Leverage Svelte's event system for component communication
 
 ### Testing Patterns
+
 - Test component rendering with various prop combinations
 - Test user interactions (clicks, form submissions, etc.)
 - Test component state changes and reactivity
 - Use Playwright for full user journey testing
 
 ### Type Safety
+
 - Import generated API types from `lib/generated/api-types.ts`
 - Define component prop interfaces
 - Use discriminated unions for component variants

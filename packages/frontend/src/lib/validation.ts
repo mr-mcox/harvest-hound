@@ -10,9 +10,7 @@ export interface StoreFormData {
 /**
  * Validation result types
  */
-export type ValidationResult =
-	| { valid: true }
-	| { error: string };
+export type ValidationResult = { valid: true } | { error: string };
 
 /**
  * Validates store form data

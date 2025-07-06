@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { InventoryUploadResult } from '$lib/types.js';
 
-	export let onSubmit: (data: { inventoryText: string }) => Promise<InventoryUploadResult> = async () => ({ items_added: 0 });
+	export let onSubmit: (data: {
+		inventoryText: string;
+	}) => Promise<InventoryUploadResult> = async () => ({ items_added: 0 });
 
 	let inventoryText = '';
 	let loading = false;
@@ -27,8 +29,8 @@
 	}
 </script>
 
-<div class="container mx-auto p-4 max-w-4xl">
-	<h1 class="text-2xl font-bold mb-6">Upload Inventory</h1>
+<div class="container mx-auto max-w-4xl p-4">
+	<h1 class="mb-6 text-2xl font-bold">Upload Inventory</h1>
 
 	<form on:submit={handleSubmit} class="space-y-4">
 		<div class="form-control">
@@ -60,11 +62,7 @@
 		{/if}
 
 		<div class="flex gap-4">
-			<button
-				type="submit"
-				disabled={loading}
-				class="btn variant-filled-primary"
-			>
+			<button type="submit" disabled={loading} class="btn variant-filled-primary">
 				{loading ? 'Uploading...' : 'Upload Inventory'}
 			</button>
 			<a href="/stores" class="btn variant-ghost">Cancel</a>

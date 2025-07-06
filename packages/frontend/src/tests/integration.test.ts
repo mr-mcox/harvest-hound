@@ -11,7 +11,7 @@ vi.mock('$app/navigation', () => ({
 }));
 
 // Test configuration
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:8000';
 const TEST_TIMEOUT = 10000;
 
 // Type definitions for API responses

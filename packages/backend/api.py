@@ -3,6 +3,7 @@ from uuid import UUID
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.infrastructure.event_store import EventStore
@@ -15,6 +16,15 @@ from app.services.inventory_parser import (
 from app.services.store_service import StoreService
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
+
+# Add CORS middleware to allow frontend to access the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Request/Response models

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { InventoryItemWithIngredient } from '$lib/types.js';
-	
+
 	export let inventory: InventoryItemWithIngredient[] = [];
 </script>
 
@@ -16,7 +16,7 @@
 			</div>
 		{:else}
 			<div class="table-container">
-				<table class="table table-hover">
+				<table class="table-hover table">
 					<thead>
 						<tr>
 							<th>Ingredient</th>

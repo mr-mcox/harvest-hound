@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { validateStoreForm, type ValidationResult } from '$lib/validation.js';
 
-	export let onSubmit = (data: { name: string; description: string; infinite_supply: boolean }) => {};
+	export let onSubmit = (data: {
+		name: string;
+		description: string;
+		infinite_supply: boolean;
+	}) => {};
 
 	let name = '';
 	let description = '';
@@ -23,8 +27,8 @@
 	}
 </script>
 
-<div class="container mx-auto p-4 max-w-2xl">
-	<h1 class="text-2xl font-bold mb-6">Create New Store</h1>
+<div class="container mx-auto max-w-2xl p-4">
+	<h1 class="mb-6 text-2xl font-bold">Create New Store</h1>
 
 	<form on:submit={handleSubmit} class="space-y-4">
 		<div class="form-control">
