@@ -128,13 +128,13 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [✓] **Test**: Concurrent store creation handles 10 simultaneous requests
 
 ### 9.7 Manual Testing Options (*No tests needed - documentation*)
-- [ ] **Create manual test scenarios** in `docs/testing/manual-tests.md`
-  - [ ] Real LLM integration test procedures
-  - [ ] Performance testing with actual API calls
-  - [ ] Edge case exploration guidelines
-- [ ] **Create testing environment configs**
-  - [ ] `config/test-real-llm.env` - Real LLM service configuration
-  - [ ] `config/test-mock-llm.env` - Mocked LLM service configuration
+- [✓] **Create manual test scenarios** in `docs/testing/manual-tests.md`
+  - [✓] Real LLM integration test procedures
+  - [✓] Performance testing with actual API calls
+  - [✓] Edge case exploration guidelines
+- [✓] **Create testing environment configs**
+  - [✓] `config/test-real-llm.env` - Real LLM service configuration
+  - [✓] `config/test-mock-llm.env` - Mocked LLM service configuration
 
 
 
