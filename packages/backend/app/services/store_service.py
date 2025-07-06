@@ -111,7 +111,8 @@ class StoreService:
 
     def get_all_stores(self) -> List[Dict[str, Any]]:
         """Get list of all stores with item counts."""
-        return self.store_repository.event_store.get_stores_with_item_count()
+        # TODO: Update to use new view stores in Task 10.3
+        raise NotImplementedError("Legacy method removed - update to use view stores")
 
     def get_store_inventory(self, store_id: UUID) -> List[Dict[str, Any]]:
         """Get current inventory for a store with ingredient names."""

@@ -159,13 +159,6 @@ class TestEventStoreWithProjectionRegistry:
         event_store.append_event(f"ingredient-{ingredient_id}", ingredient_event)
         event_store.append_event(f"store-{store_id}", inventory_event)
         
-        # Assert - existing query methods should still work
-        stores = event_store.get_stores_with_item_count()
-        assert len(stores) >= 1
-        
-        inventory = event_store.get_store_inventory(str(store_id))
-        assert len(inventory) >= 1
-        
-        ingredient = event_store.get_ingredient_by_id(str(ingredient_id))
-        assert ingredient is not None
-        assert ingredient["name"] == "Carrots"
+        # Assert - event storage should still work
+        events = event_store.load_events(f"store-{store_id}")
+        assert len(events) >= 2  # store created + inventory added
