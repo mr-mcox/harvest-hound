@@ -122,10 +122,10 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 - [x] **Test**: Partial parsing results display correctly
 
 ### 9.6 Performance Testing Setup (*Tests needed*)
-- [ ] **Test**: Store creation completes in <1 second
-- [ ] **Test**: Mocked LLM parsing completes in <100ms (baseline)
-- [ ] **Test**: Inventory display loads in <2 seconds
-- [ ] **Test**: Concurrent store creation handles 10 simultaneous requests
+- [✓] **Test**: Store creation completes in <1 second
+- [✓] **Test**: Mocked LLM parsing completes in <100ms (baseline)
+- [✓] **Test**: Inventory display loads in <2 seconds
+- [✓] **Test**: Concurrent store creation handles 10 simultaneous requests
 
 ### 9.7 Manual Testing Options (*No tests needed - documentation*)
 - [ ] **Create manual test scenarios** in `docs/testing/manual-tests.md`
