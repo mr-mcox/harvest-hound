@@ -92,13 +92,13 @@ inventory_parser = SmartMockInventoryParserClient()
 store_service = StoreService(store_repository, ingredient_repository, inventory_parser)
 
 
-@app.get("/health")  # type: ignore[misc]
+@app.get("/health")
 async def health_check() -> dict[str, str]:
     """Health check endpoint for Docker containers."""
     return {"status": "healthy", "service": "harvest-hound-backend"}
 
 
-@app.post("/stores", response_model=CreateStoreResponse, status_code=201)  # type: ignore[misc]
+@app.post("/stores", response_model=CreateStoreResponse, status_code=201)
 async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
     """Create a new inventory store."""
     store_id = store_service.create_store(
@@ -115,7 +115,7 @@ async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
     )
 
 
-@app.get("/stores", response_model=List[StoreListItem])  # type: ignore[misc]
+@app.get("/stores", response_model=List[StoreListItem])
 async def get_stores() -> List[StoreListItem]:
     """Get list of all stores."""
     stores_data = store_service.get_all_stores()
@@ -130,7 +130,7 @@ async def get_stores() -> List[StoreListItem]:
     ]
 
 
-@app.post(  # type: ignore[misc]
+@app.post(
     "/stores/{store_id}/inventory",
     response_model=InventoryUploadResponse,
     status_code=201,
@@ -162,7 +162,7 @@ async def upload_inventory(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@app.get("/stores/{store_id}/inventory", response_model=List[InventoryItem])  # type: ignore[misc]
+@app.get("/stores/{store_id}/inventory", response_model=List[InventoryItem])
 async def get_store_inventory(store_id: UUID) -> List[InventoryItem]:
     """Get current inventory for a store."""
     try:
