@@ -14,17 +14,17 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 **Goal**: Implement read model projections to eliminate frontend "smell" and optimize query performance
 
 ### 10.1 Backend Read Model Infrastructure (*Tests needed*)
-- [ ] **Create read model classes** in `/packages/backend/app/models/read_models.py`
-  - [ ] `InventoryItemView` with denormalized fields (ingredient_name, store_name)
-  - [ ] `StoreView` with computed fields (item_count)
-- [ ] **Create projection handlers** in `/packages/backend/app/projections/handlers.py`
-  - [ ] `InventoryProjectionHandler` for inventory events
-  - [ ] `StoreProjectionHandler` for store events
-- [ ] **Create view stores** in `/packages/backend/app/infrastructure/view_stores.py`
-  - [ ] `InventoryItemViewStore` using SQLAlchemy Core
-  - [ ] `StoreViewStore` using SQLAlchemy Core
-- [ ] **Create projection registry** in `/packages/backend/app/projections/registry.py`
-  - [ ] `ProjectionRegistry` for managing event handlers
+- [✓] **Create read model classes** in `/packages/backend/app/models/read_models.py`
+  - [✓] `InventoryItemView` with denormalized fields (ingredient_name, store_name)
+  - [✓] `StoreView` with computed fields (item_count)
+- [✓] **Create projection handlers** in `/packages/backend/app/projections/handlers.py`
+  - [✓] `InventoryProjectionHandler` for inventory events
+  - [✓] `StoreProjectionHandler` for store events
+- [✓] **Create view stores** in `/packages/backend/app/infrastructure/view_stores.py`
+  - [✓] `InventoryItemViewStore` using SQLite Core
+  - [✓] `StoreViewStore` using SQLite Core
+- [✓] **Create projection registry** in `/packages/backend/app/projections/registry.py`
+  - [✓] `ProjectionRegistry` for managing event handlers
 
 ### 10.2 Database Schema Updates (*No tests needed - migration*)
 - [ ] **Create read model tables** with proper indexes
