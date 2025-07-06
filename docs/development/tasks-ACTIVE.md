@@ -110,16 +110,16 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] Real HTTP communication, mocked external services
 
 ### 9.4 Happy Path Integration (*Tests needed*)
-- [ ] **Test**: Create "CSA Box" store → upload "2 lbs carrots, 1 bunch kale" → see 2 items in table
-- [ ] **Test**: Store list shows "CSA Box" with item_count=2
-- [ ] **Test**: Page refresh preserves all data (event sourcing working)
-- [ ] **Test**: Multiple stores maintain separate inventories
+- [x] **Test**: Create "CSA Box" store → upload "2 lbs carrots, 1 bunch kale" → see 2 items in table
+- [x] **Test**: Store list shows "CSA Box" with item_count=2
+- [x] **Test**: Page refresh preserves all data (event sourcing working)
+- [x] **Test**: Multiple stores maintain separate inventories
 
 ### 9.5 Error Handling Integration (*Tests needed*)
-- [ ] **Test**: Invalid inventory text shows error without crashing
-- [ ] **Test**: Network errors show appropriate user messages
-- [ ] **Test**: LLM service unavailable shows graceful error
-- [ ] **Test**: Partial parsing results display correctly
+- [x] **Test**: Invalid inventory text shows error without crashing
+- [x] **Test**: Network errors show appropriate user messages
+- [x] **Test**: LLM service unavailable shows graceful error
+- [x] **Test**: Partial parsing results display correctly
 
 ### 9.6 Performance Testing Setup (*Tests needed*)
 - [ ] **Test**: Store creation completes in <1 second
