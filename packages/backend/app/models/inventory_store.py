@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Self, Tuple, Union
+from typing import List, Self, Sequence, Tuple, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -29,7 +29,7 @@ class InventoryStore(BaseModel):
         name: str,
         description: str = "",
         infinite_supply: bool = False,
-    ) -> Tuple[Self, List[DomainEvent]]:
+    ) -> Tuple[Self, List[StoreCreated]]:
         """Create a new InventoryStore and generate StoreCreated event."""
         created_at = datetime.now()
 
@@ -57,7 +57,7 @@ class InventoryStore(BaseModel):
         quantity: float,
         unit: str,
         notes: str | None = None,
-    ) -> Tuple[Self, List[DomainEvent]]:
+    ) -> Tuple[Self, List[InventoryItemAdded]]:
         """Add an inventory item to the store and generate InventoryItemAdded event."""
         added_at = datetime.now()
 
@@ -88,7 +88,7 @@ class InventoryStore(BaseModel):
         return updated_store, [event]
 
     @classmethod
-    def from_events(cls, events: List[Union[StoreCreated, InventoryItemAdded]]) -> Self:
+    def from_events(cls, events: Sequence[Union[StoreCreated, InventoryItemAdded]]) -> Self:
         """Rebuild InventoryStore from a sequence of events."""
         store = None
 
