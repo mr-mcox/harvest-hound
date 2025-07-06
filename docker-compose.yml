@@ -6,9 +6,15 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Test environment settings
       - DATABASE_URL=sqlite:///tmp/test.db
       - BAML_ENV=test
       - PYTHONPATH=/app/packages/backend
+      # Secret API keys from host environment
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - BAML_API_KEY=${BAML_API_KEY}
     volumes:
       - .:/app
     networks:

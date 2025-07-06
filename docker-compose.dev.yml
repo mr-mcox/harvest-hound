@@ -6,9 +6,15 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Default development settings
       - DATABASE_URL=sqlite:///tmp/dev.db
       - BAML_ENV=development
       - PYTHONPATH=/app/packages/backend
+      # Secret API keys from host environment
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - BAML_API_KEY=${BAML_API_KEY}
     volumes:
       - .:/app
       - backend_cache:/app/packages/backend/.uv
