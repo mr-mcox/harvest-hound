@@ -27,13 +27,13 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] `ProjectionRegistry` for managing event handlers
 
 ### 10.2 Database Schema Updates (*No tests needed - migration*)
-- [ ] **Create read model tables** with proper indexes
-  - [ ] `inventory_item_views` table with denormalized fields
-  - [ ] `store_views` table with computed fields
-  - [ ] Add indexes for common query patterns
-- [ ] **Update EventStore** to trigger projections
-  - [ ] Remove inline projection logic
-  - [ ] Add projection registry integration
+- [✓] **Create read model tables** with proper indexes
+  - [✓] `inventory_item_views` table with denormalized fields
+  - [✓] `store_views` table with computed fields  
+  - [✓] Add indexes for common query patterns
+- [✓] **Update EventStore** to trigger projections
+  - [Partial] Keep inline projection logic for backward compatibility
+  - [✓] Add projection registry integration
 
 ### 10.3 API Layer Updates (*Tests needed*)
 - [ ] **Add new read model endpoints**
