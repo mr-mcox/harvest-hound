@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Sequence, Union
 from uuid import UUID
 
 from ..events.domain_events import (
@@ -30,7 +30,7 @@ class IngredientRepository:
     def __init__(self, event_store: EventStore):
         self.event_store = event_store
 
-    def save(self, ingredient: Ingredient, events: List[DomainEvent]) -> None:
+    def save(self, ingredient: Ingredient, events: Sequence[DomainEvent]) -> None:
         """Save ingredient by persisting its events."""
         stream_id = f"ingredient-{ingredient.ingredient_id}"
         for event in events:
@@ -64,7 +64,7 @@ class StoreRepository:
     def __init__(self, event_store: EventStore):
         self.event_store = event_store
 
-    def save(self, store: InventoryStore, events: List[DomainEvent]) -> None:
+    def save(self, store: InventoryStore, events: Sequence[DomainEvent]) -> None:
         """Save store by persisting its events."""
         stream_id = f"store-{store.store_id}"
         for event in events:

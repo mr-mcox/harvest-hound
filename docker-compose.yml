@@ -1,0 +1,58 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./packages/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Test environment settings
+      - DATABASE_URL=sqlite:///tmp/test.db
+      - BAML_ENV=test
+      - PYTHONPATH=/app/packages/backend
+      # Secret API keys from host environment
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - BAML_API_KEY=${BAML_API_KEY}
+    volumes:
+      - .:/app
+    networks:
+      - harvest-hound
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./packages/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://backend:8000
+      - NODE_ENV=production
+    volumes:
+      - ./packages/frontend:/app
+    networks:
+      - harvest-hound
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  harvest-hound:
+    driver: bridge
+
+volumes:
+  backend_data:
+    driver: local

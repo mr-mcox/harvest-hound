@@ -14,7 +14,9 @@
       "mcp__puppeteer__puppeteer_click",
       "mcp__puppeteer__puppeteer_screenshot",
       "mcp__puppeteer__puppeteer_navigate",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "mcp__puppeteer__puppeteer_evaluate"
     ],
     "deny": []
   }

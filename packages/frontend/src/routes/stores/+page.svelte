@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { apiGet } from '$lib/api';
 
-	let stores: any[] = [];
+	let stores: Array<{ store_id: string; name: string; description: string; item_count: number }> =
+		[];
 	let loading = false;
 	let error = '';
 
@@ -13,7 +15,7 @@
 		loading = true;
 		error = '';
 		try {
-			const response = await fetch('/api/stores');
+			const response = await apiGet('/stores');
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -27,7 +29,7 @@
 </script>
 
 <div class="container mx-auto p-4">
-	<h1 class="text-2xl font-bold mb-6">Inventory Stores</h1>
+	<h1 class="mb-6 text-2xl font-bold">Inventory Stores</h1>
 
 	<div class="mb-6">
 		<a href="/stores/create" class="btn variant-filled-primary">Create New Store</a>
@@ -49,15 +51,19 @@
 		</div>
 	{:else}
 		<div class="grid gap-4">
-			{#each stores as store}
+			{#each stores as store (store.store_id)}
 				<div class="card p-4">
 					<h3 class="text-lg font-semibold">{store.name}</h3>
 					{#if store.description}
-						<p class="text-gray-600 mt-1">{store.description}</p>
+						<p class="mt-1 text-gray-600">{store.description}</p>
 					{/if}
 					<div class="mt-2 flex gap-2">
-						<a href="/stores/{store.store_id}" class="btn variant-filled-secondary btn-sm">View Inventory</a>
-						<a href="/stores/{store.store_id}/upload" class="btn variant-filled-primary btn-sm">Upload Items</a>
+						<a href="/stores/{store.store_id}" class="btn variant-filled-secondary btn-sm"
+							>View Inventory</a
+						>
+						<a href="/stores/{store.store_id}/upload" class="btn variant-filled-primary btn-sm"
+							>Upload Items</a
+						>
 					</div>
 				</div>
 			{/each}

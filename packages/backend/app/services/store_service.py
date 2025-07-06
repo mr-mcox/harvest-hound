@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import Any, Dict, List
 from uuid import UUID, uuid4
 
 from ..infrastructure.repositories import (
@@ -109,11 +109,11 @@ class StoreService:
         except Exception as e:
             return InventoryUploadResult.error_result([str(e)])
 
-    def get_all_stores(self) -> List[dict]:
+    def get_all_stores(self) -> List[Dict[str, Any]]:
         """Get list of all stores with item counts."""
         return self.store_repository.event_store.get_stores_with_item_count()
 
-    def get_store_inventory(self, store_id: UUID) -> List[dict]:
+    def get_store_inventory(self, store_id: UUID) -> List[Dict[str, Any]]:
         """Get current inventory for a store with ingredient names."""
         store = self.store_repository.load(store_id)
 

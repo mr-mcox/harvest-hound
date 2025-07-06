@@ -15,19 +15,19 @@
  * for explicit event tracking without infrastructure concerns.
  */
 export interface Ingredient {
-ingredient_id: string
-name: string
-default_unit: string
-created_at: string
+	ingredient_id: string;
+	name: string;
+	default_unit: string;
+	created_at: string;
 }
 
 export interface InventoryItem {
-store_id: string
-ingredient_id: string
-quantity: number
-unit: string
-notes?: (string | null)
-added_at: string
+	store_id: string;
+	ingredient_id: string;
+	quantity: number;
+	unit: string;
+	notes?: string | null;
+	added_at: string;
 }
 
 /**
@@ -37,40 +37,40 @@ added_at: string
  * for explicit event tracking without infrastructure concerns.
  */
 export interface InventoryStore {
-store_id: string
-name: string
-description?: string
-infinite_supply?: boolean
-inventory_items?: {
-store_id: string
-ingredient_id: string
-quantity: number
-unit: string
-notes?: (string | null)
-added_at: string
-}[]
+	store_id: string;
+	name: string;
+	description?: string;
+	infinite_supply?: boolean;
+	inventory_items?: {
+		store_id: string;
+		ingredient_id: string;
+		quantity: number;
+		unit: string;
+		notes?: string | null;
+		added_at: string;
+	}[];
 }
 
 export interface IngredientCreated {
-ingredient_id: string
-name: string
-default_unit: string
-created_at: string
+	ingredient_id: string;
+	name: string;
+	default_unit: string;
+	created_at: string;
 }
 
 export interface StoreCreated {
-store_id: string
-name: string
-description: string
-infinite_supply: boolean
-created_at: string
+	store_id: string;
+	name: string;
+	description: string;
+	infinite_supply: boolean;
+	created_at: string;
 }
 
 export interface InventoryItemAdded {
-store_id: string
-ingredient_id: string
-quantity: number
-unit: string
-notes?: (string | null)
-added_at: string
+	store_id: string;
+	ingredient_id: string;
+	quantity: number;
+	unit: string;
+	notes?: string | null;
+	added_at: string;
 }

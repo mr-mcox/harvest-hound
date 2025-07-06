@@ -1,0 +1,34 @@
+# Development Dockerfile for Frontend
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy workspace configuration files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy all package files to ensure workspace resolution
+COPY packages/frontend/package.json packages/frontend/
+
+# Install dependencies (including dev dependencies)
+RUN pnpm install --frozen-lockfile
+
+# Copy application code
+COPY packages/frontend/ packages/frontend/
+
+# Stay in workspace root for proper pnpm command execution
+WORKDIR /app
+
+# Expose ports
+EXPOSE 3000
+EXPOSE 6006
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000 || exit 1
+
+# Run the development server using pnpm workspace commands
+CMD ["pnpm", "--filter", "frontend", "dev", "--host", "0.0.0.0", "--port", "3000"]

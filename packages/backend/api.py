@@ -3,17 +3,23 @@ from uuid import UUID
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
-from app.models.parsed_inventory import ParsedInventoryItem
-from app.services.inventory_parser import (
-    MockInventoryParserClient,
-)
 from app.services.store_service import StoreService
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
+
+# Add CORS middleware to allow frontend to access the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Request/Response models
@@ -61,34 +67,18 @@ store_repository = StoreRepository(event_store)
 ingredient_repository = IngredientRepository(event_store)
 
 
-# Create a smart mock parser for API testing
-class SmartMockInventoryParserClient(MockInventoryParserClient):
-    """Mock client that provides realistic results based on input."""
+# Import the fixture-based mock parser for comprehensive testing
+from tests.mocks.llm_service import MockLLMInventoryParser
 
-    def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
-        """Return parsed results based on input text."""
-        if not inventory_text.strip():
-            return []
-
-        # Simulate parsing errors for specific inputs
-        if (
-            "invalid" in inventory_text.lower()
-            or "unparseable" in inventory_text.lower()
-        ):
-            raise ValueError("Failed to parse inventory text")
-
-        # Simple mapping for common test cases
-        if "carrots" in inventory_text.lower():
-            return [ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound")]
-        elif "kale" in inventory_text.lower():
-            return [ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch")]
-        else:
-            # Default fallback
-            return [ParsedInventoryItem(name="unknown", quantity=1.0, unit="item")]
-
-
-inventory_parser = SmartMockInventoryParserClient()
+# Use fixture-based mock parser for comprehensive testing scenarios
+inventory_parser = MockLLMInventoryParser()
 store_service = StoreService(store_repository, ingredient_repository, inventory_parser)
+
+
+@app.get("/health")
+async def health_check() -> dict[str, str]:
+    """Health check endpoint for Docker containers."""
+    return {"status": "healthy", "service": "harvest-hound-backend"}
 
 
 @app.post("/stores", response_model=CreateStoreResponse, status_code=201)

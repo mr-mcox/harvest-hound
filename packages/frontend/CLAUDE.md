@@ -38,24 +38,68 @@ pnpm format
 ## Key Frontend Guidelines
 
 ### Development Approach
+
 - **Red/Green TDD**: Test-driven development adapted for UI components
 - **Meaningful Testing**: Test component behavior and user interactions, not implementation details
 - **Component vs Behavior**: Distinguish between basic component structure (minimal tests) and meaningful user interactions (comprehensive tests)
 - **Concrete Task Planning**: Tasks should be specific and actionable, not abstract concepts
 
 ### Test Construction Preferences
+
 - **Test Organization**: Use Vitest `describe` blocks to group related component behaviors logically (e.g., `describe('InventoryTable - Creation')`, `describe('InventoryTable - Interaction')`)
 - **Focused Tests**: Each test should verify one specific user behavior - avoid multiple assertions testing different UI concepts
 - **User-Centric Testing**: Test what users see and do, not internal component state
 - **Integration Testing**: Prefer testing component integration over isolated unit tests
 
+### Component Architecture: Container/Presentation Pattern
+
+**CRITICAL**: Strict separation between pure UI components and data-fetching page wrappers.
+
+#### Pure Components (`src/lib/components/`)
+- ✅ Accept data via props, emit events via prop functions
+- ✅ Handle UI state (loading, validation)
+- ❌ NO API calls, SvelteKit imports (`$app/*`), or navigation
+
+```svelte
+<!-- ✅ GOOD: Pure component -->
+<script lang="ts">
+  export let inventory: InventoryItem[];
+  export let onSubmit: (data: FormData) => void = () => {};
+</script>
+```
+
+#### Page Wrappers (`src/routes/**/+page.svelte`)
+- ✅ Handle data fetching, routing, SvelteKit APIs
+- ✅ Pass data to pure components, handle their events
+- ❌ NO complex UI rendering (delegate to components)
+
+```svelte
+<!-- ✅ GOOD: Page wrapper -->
+<script lang="ts">
+  import { apiGet } from '$lib/api';
+  import InventoryTable from '$lib/components/InventoryTable.svelte';
+  
+  let inventory = [];
+  onMount(async () => {
+    inventory = await apiGet('/inventory').then(r => r.json());
+  });
+</script>
+
+<InventoryTable {inventory} />
+```
+
+**Why?** Testability (`render(PureComponent, {props})`), reusability, Storybook compatibility.
+
 ### Component Design Principles
+
 - Keep components focused on single responsibilities
 - Use TypeScript interfaces for prop definitions
 - Leverage Svelte's reactivity for state management
 - Prefer composition over inheritance for component reuse
+- **Strictly separate presentation from data fetching**
 
 ### State Management
+
 - Use Svelte stores for application-wide state
 - Component-level state for local UI concerns
 - Reactive statements for derived state
@@ -63,10 +107,11 @@ pnpm format
 
 ### Testing Guidelines
 
-- **Component Testing**: Use Vitest with `@testing-library/svelte` for component behavior
+- **Test Pure Components Only**: Import from `$lib/components/`, never `src/routes/`
+- **Mock Data, Not Dependencies**: Pass mock data as props instead of mocking APIs
+- **Component Testing**: Use Vitest with `@testing-library/svelte` 
 - **E2E Testing**: Use Playwright for user journey testing
-- **Mock External Dependencies**: Mock API calls and backend services
-- **Test User Interactions**: Focus on what users can see and do
+- **Focus on User Interactions**: Test what users see and do, not internal state
 
 ## Code Quality Guidelines
 
@@ -87,16 +132,15 @@ pnpm format
 ```
 packages/frontend/
 ├── src/
-│   ├── lib/                 # Shared utilities and types
+│   ├── lib/
+│   │   ├── components/      # Pure UI components (testable, reusable)
 │   │   ├── generated/       # Generated API types
+│   │   ├── api.ts           # API client functions
 │   │   ├── types.ts         # Frontend-specific types
 │   │   └── validation.ts    # Form validation utilities
-│   ├── routes/              # SvelteKit routes
-│   │   ├── +layout.svelte   # App layout
-│   │   ├── +page.svelte     # Home page
-│   │   └── stores/          # Store management pages
-│   └── stories/             # Storybook stories
-├── tests/                   # Test files
+│   ├── routes/              # Page wrappers (data fetching, routing)
+│   └── stories/             # Storybook stories (pure components only)
+├── tests/                   # Component tests (pure components only)
 ├── e2e/                     # End-to-end tests
 └── static/                  # Static assets
 ```
@@ -104,18 +148,21 @@ packages/frontend/
 ## Component Guidelines
 
 ### Svelte Component Best Practices
+
 - Use `<script lang="ts">` for TypeScript support
 - Export props with explicit types
 - Use reactive statements (`$:`) for derived values
 - Leverage Svelte's event system for component communication
 
 ### Testing Patterns
+
 - Test component rendering with various prop combinations
 - Test user interactions (clicks, form submissions, etc.)
 - Test component state changes and reactivity
 - Use Playwright for full user journey testing
 
 ### Type Safety
+
 - Import generated API types from `lib/generated/api-types.ts`
 - Define component prop interfaces
 - Use discriminated unions for component variants

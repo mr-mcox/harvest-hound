@@ -1,7 +1,7 @@
 import { page } from '@vitest/browser/context';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import CreateStorePage from './+page.svelte';
+import StoreCreateForm from '$lib/components/StoreCreateForm.svelte';
 
 describe('Store Creation Form UI Behavior', () => {
 	beforeEach(() => {
@@ -11,7 +11,7 @@ describe('Store Creation Form UI Behavior', () => {
 	it('should call onSubmit handler with form data when valid form is submitted', async () => {
 		// Arrange
 		const submitHandler = vi.fn();
-		render(CreateStorePage, {
+		render(StoreCreateForm, {
 			onSubmit: submitHandler
 		});
 
@@ -37,7 +37,7 @@ describe('Store Creation Form UI Behavior', () => {
 	it('should display validation error in UI when form submission fails validation', async () => {
 		// Arrange
 		const submitHandler = vi.fn();
-		render(CreateStorePage, {
+		render(StoreCreateForm, {
 			onSubmit: submitHandler
 		});
 
@@ -54,7 +54,7 @@ describe('Store Creation Form UI Behavior', () => {
 	it('should clear error message when valid form is submitted after error', async () => {
 		// Arrange
 		const submitHandler = vi.fn();
-		render(CreateStorePage, {
+		render(StoreCreateForm, {
 			onSubmit: submitHandler
 		});
 

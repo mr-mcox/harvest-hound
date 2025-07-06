@@ -1,7 +1,7 @@
 import { page } from '@vitest/browser/context';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import InventoryUploadPage from './+page.svelte';
+import InventoryUpload from '$lib/components/InventoryUpload.svelte';
 import type { InventoryUploadResult } from '$lib/types.js';
 
 describe('Inventory Upload Component UI Behavior', () => {
@@ -12,7 +12,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 	it('should call onSubmit handler with inventory text when form is submitted', async () => {
 		// Arrange
 		const submitHandler = vi.fn().mockResolvedValue({ items_added: 3 } as InventoryUploadResult);
-		render(InventoryUploadPage, {
+		render(InventoryUpload, {
 			onSubmit: submitHandler
 		});
 
@@ -37,7 +37,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 					setTimeout(() => resolve({ items_added: 1 }), 100)
 				)
 		);
-		render(InventoryUploadPage, {
+		render(InventoryUpload, {
 			onSubmit: submitHandler
 		});
 
@@ -59,7 +59,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 	it('should display success message with items count after successful upload', async () => {
 		// Arrange
 		const submitHandler = vi.fn().mockResolvedValue({ items_added: 3 } as InventoryUploadResult);
-		render(InventoryUploadPage, {
+		render(InventoryUpload, {
 			onSubmit: submitHandler
 		});
 
@@ -78,7 +78,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 	it('should display error message when upload fails with parse error', async () => {
 		// Arrange
 		const submitHandler = vi.fn().mockRejectedValue(new Error('Failed to parse: invalid format'));
-		render(InventoryUploadPage, {
+		render(InventoryUpload, {
 			onSubmit: submitHandler
 		});
 
@@ -101,7 +101,7 @@ describe('Inventory Upload Component UI Behavior', () => {
 			.mockRejectedValueOnce(new Error('First error'))
 			.mockResolvedValueOnce({ items_added: 2 } as InventoryUploadResult);
 
-		render(InventoryUploadPage, {
+		render(InventoryUpload, {
 			onSubmit: submitHandler
 		});
 
