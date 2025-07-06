@@ -96,18 +96,18 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] Performance testing with fast mocked responses
 
 ### 9.3 Integration Testing Infrastructure (*Tests needed*)
-- [ ] **Backend integration test suite**
-  - [ ] Real database (SQLite in-memory for speed)
-  - [ ] Mocked LLM service for predictable responses
-  - [ ] Full HTTP request/response cycle testing
-- [ ] **Frontend integration test suite**
-  - [ ] Real API calls to test backend
-  - [ ] Mocked LLM service via backend mock
-  - [ ] Full UI interaction workflows
-- [ ] **Cross-service integration tests**
-  - [ ] Docker Compose test environment
-  - [ ] Frontend → Backend → Database flow
-  - [ ] Real HTTP communication, mocked external services
+- [✓] **Backend integration test suite**
+  - [✓] Real database (SQLite in-memory for speed)
+  - [✓] Mocked LLM service for predictable responses
+  - [✓] Full HTTP request/response cycle testing
+- [✓] **Frontend integration test suite**
+  - [✓] Real API calls to test backend
+  - [✓] Mocked LLM service via backend mock
+  - [✓] Full UI interaction workflows
+- [✓] **Cross-service integration tests**
+  - [✓] Docker Compose test environment
+  - [✓] Frontend → Backend → Database flow
+  - [✓] Real HTTP communication, mocked external services
 
 ### 9.4 Happy Path Integration (*Tests needed*)
 - [ ] **Test**: Create "CSA Box" store → upload "2 lbs carrots, 1 bunch kale" → see 2 items in table
