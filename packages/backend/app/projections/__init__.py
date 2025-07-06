@@ -1,0 +1,1 @@
+# Projections package for read model event handlers
