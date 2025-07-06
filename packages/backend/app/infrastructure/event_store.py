@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..events.domain_events import (
     DomainEvent,
@@ -9,13 +9,15 @@ from ..events.domain_events import (
     InventoryItemAdded,
     StoreCreated,
 )
+from ..projections.registry import ProjectionRegistry
 
 
 class EventStore:
     """SQLite-based event store for domain events."""
 
-    def __init__(self, db_path: str = "events.db"):
+    def __init__(self, db_path: str = "events.db", projection_registry: Optional[ProjectionRegistry] = None):
         self.db_path = db_path
+        self.projection_registry = projection_registry
         self._ensure_table_exists()
 
     def _ensure_table_exists(self) -> None:
@@ -113,8 +115,17 @@ class EventStore:
                 (stream_id, event_type, event_data, timestamp),
             )
 
-            # Update projection tables
+            # Keep legacy projection tables for backward compatibility
             self._update_projections(conn, event)
+
+        # Trigger new projection registry (external to transaction for safety)
+        if self.projection_registry is not None:
+            try:
+                self.projection_registry.handle(event)
+            except Exception as e:
+                # In production, this would use proper logging
+                # For now, we don't want projection failures to break event storage
+                pass
 
     def _update_projections(self, conn: sqlite3.Connection, event: DomainEvent) -> None:
         """Update projection tables based on domain events."""
