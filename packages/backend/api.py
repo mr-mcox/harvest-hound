@@ -8,11 +8,6 @@ from pydantic import BaseModel
 
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
-from app.models.parsed_inventory import ParsedInventoryItem
-from app.services.inventory_parser import (
-    MockInventoryParserClient,
-    create_inventory_parser_client,
-)
 from app.services.store_service import StoreService
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")

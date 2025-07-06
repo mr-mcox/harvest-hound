@@ -8,13 +8,14 @@ Following our three-tier testing strategy:
 - Full HTTP request/response cycle testing
 """
 
-import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import patch
 
+import pytest
+from fastapi.testclient import TestClient
+
 from api import app
-from tests.mocks.llm_service import FailingMockLLMParser, ConfigurableMockLLMParser
 from app.models.parsed_inventory import ParsedInventoryItem
+from tests.mocks.llm_service import ConfigurableMockLLMParser, FailingMockLLMParser
 
 
 class TestErrorHandlingIntegration:

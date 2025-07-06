@@ -1,14 +1,19 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { apiPost } from '$lib/api';
 	import type { InventoryUploadResult } from '$lib/types.js';
-
-	export let onSubmit: (data: {
-		inventoryText: string;
-	}) => Promise<InventoryUploadResult> = async () => ({ items_added: 0 });
 
 	let inventoryText = '';
 	let loading = false;
 	let error = '';
 	let success = '';
+	let storeId = '';
+
+	onMount(() => {
+		storeId = $page.params.id;
+	});
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
@@ -19,8 +24,19 @@
 		loading = true;
 
 		try {
-			const result = await onSubmit({ inventoryText });
+			const response = await apiPost(`/stores/${storeId}/inventory`, {
+				inventory_text: inventoryText
+			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
+			const result: InventoryUploadResult = await response.json();
 			success = `Successfully added ${result.items_added} items to inventory`;
+			
+			// Clear the form on success
+			inventoryText = '';
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Upload failed';
 		} finally {
@@ -65,7 +81,7 @@
 			<button type="submit" disabled={loading} class="btn variant-filled-primary">
 				{loading ? 'Uploading...' : 'Upload Inventory'}
 			</button>
-			<a href="/stores" class="btn variant-ghost">Cancel</a>
+			<a href="/stores/{storeId}" class="btn variant-ghost">Cancel</a>
 		</div>
 	</form>
 </div>

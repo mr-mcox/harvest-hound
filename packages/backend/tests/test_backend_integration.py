@@ -2,7 +2,6 @@
 
 import os
 import tempfile
-from pathlib import Path
 from unittest.mock import patch
 from uuid import UUID
 
@@ -13,8 +12,7 @@ from api import app
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
 from app.services.store_service import StoreService
-from tests.mocks.llm_service import MockLLMInventoryParser, ConfigurableMockLLMParser
-from app.models.parsed_inventory import ParsedInventoryItem
+from tests.mocks.llm_service import ConfigurableMockLLMParser, MockLLMInventoryParser
 
 
 class TestBackendIntegrationWithRealDatabase:

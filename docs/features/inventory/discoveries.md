@@ -2,6 +2,7 @@
 ## Features
 - We'll need websockets for UC2 and beyond
 - Strategy of determining whether to create a new ingredient or re-use something that's close
+- When submitting ingredients, we should direct to the inventory page
 
 ## Tech Debt
 - We're using CORS on backend - nginx within docker-compose is more secure

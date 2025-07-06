@@ -1,19 +1,16 @@
 """Integration tests with mocked LLM service for predictable testing."""
 
-import os
 from unittest.mock import patch
-from uuid import UUID
 
-import pytest
 from fastapi.testclient import TestClient
 
 from api import app
+from app.models.parsed_inventory import ParsedInventoryItem
 from tests.mocks.llm_service import (
-    MockLLMInventoryParser,
     ConfigurableMockLLMParser,
     FailingMockLLMParser,
+    MockLLMInventoryParser,
 )
-from app.models.parsed_inventory import ParsedInventoryItem
 
 client = TestClient(app)
 

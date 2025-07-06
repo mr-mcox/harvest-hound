@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..events import DomainEvent, InventoryItemAdded, StoreCreated
+from ..events import InventoryItemAdded, StoreCreated
 from .inventory_item import InventoryItem
 
 
