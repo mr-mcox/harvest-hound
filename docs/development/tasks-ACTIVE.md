@@ -85,9 +85,9 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] `docs/features/inventory/design.md` - flat response structures
 - [✓] **Update domain documentation**
   - [✓] `docs/architecture/domain-model.md` - read model concepts
-- [✓] **Create implementation guides**
-  - [✓] `docs/architecture/read-models-guide.md` - Read model architecture guide
-  - [✓] `docs/architecture/frontend-integration-guide.md` - Frontend integration guide
+- [✓] **Update package guidelines**
+  - [✓] `packages/backend/CLAUDE.md` - read model patterns
+  - [✓] `packages/frontend/CLAUDE.md` - denormalized data consumption
 
 ### 10.8 Integration Testing (*Modify existing tests*)
 - [ ] **Update end-to-end workflow tests**

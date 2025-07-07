@@ -55,6 +55,14 @@ uv run mypy .
 - Projections materialize query models
 - Outbox pattern for reliable event publishing
 
+### Read Models & CQRS
+- **Commands modify aggregates, queries read denormalized views**
+- Read models in `app/models/read_models.py` (e.g., `InventoryItemView`, `StoreView`)
+- View stores in `app/infrastructure/view_stores.py` handle database operations
+- Projection handlers in `app/projections/handlers.py` update views on events
+- Register handlers: `projection_registry.register(EventType, handler.method)`
+- API endpoints return denormalized data directly (no frontend merging)
+
 ### AI Integration
 - RecipePlanner handles all recipe generation and adaptation
 - Natural language MealPlanSpec inputs

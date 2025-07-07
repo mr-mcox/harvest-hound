@@ -178,6 +178,20 @@ packages/frontend/
 
 ## Integration with Backend
 
+### Read Model Consumption
+- **API responses are denormalized** - no frontend data merging required
+- Types in `lib/generated/api-types.ts` match backend read models exactly
+- Components consume denormalized data directly: `item.ingredient_name`, `item.store_name`
+- **Never** create interface extensions like `InventoryItemWithIngredient`
+
+### Type Generation
+```bash
+# Regenerate types when backend schemas change
+cd packages/backend && python scripts/export_schemas.py
+cd packages/frontend && pnpm generate-types
+```
+
+### API Patterns
 - Use generated TypeScript types from backend schemas
 - Implement type-safe API client functions
 - Handle loading states and error conditions
