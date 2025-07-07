@@ -4,3 +4,4 @@
 .env
 *.db
 node_modules/*
+.coverage

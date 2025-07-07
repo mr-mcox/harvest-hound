@@ -27,6 +27,9 @@ COPY packages/backend/ .
 # Go back to workspace root for runtime
 WORKDIR /app
 
+# Create data directory for database files with proper permissions
+RUN mkdir -p /app/data && chmod 755 /app/data
+
 # Expose port
 EXPOSE 8000
 

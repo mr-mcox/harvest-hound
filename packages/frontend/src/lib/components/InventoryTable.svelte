@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { InventoryItemWithIngredient } from '$lib/types.js';
+	import type { InventoryItemView } from '$lib/types.js';
 
-	export let inventory: InventoryItemWithIngredient[];
+	export let inventory: InventoryItemView[];
 	export let storeId: string = '';
 </script>
 

@@ -16,7 +16,11 @@
       "mcp__puppeteer__puppeteer_navigate",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "mcp__puppeteer__puppeteer_evaluate"
+      "mcp__puppeteer__puppeteer_evaluate",
+      "Bash(mv:*)",
+      "Bash(ls:*)",
+      "Bash(npm run check:*)",
+      "Bash(npm run generate-types:*)"
     ],
     "deny": []
   }

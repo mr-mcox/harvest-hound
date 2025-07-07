@@ -2,10 +2,10 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { apiGet } from '$lib/api';
-	import type { InventoryItemWithIngredient } from '$lib/types.js';
+	import type { InventoryItemView } from '$lib/types.js';
 	import InventoryTable from '$lib/components/InventoryTable.svelte';
 
-	let inventory: InventoryItemWithIngredient[] = [];
+	let inventory: InventoryItemView[] = [];
 	let loading = true;
 	let error = '';
 	let storeId = '';

@@ -150,59 +150,55 @@ POST /stores
 
 POST /stores/{store_id}/inventory
 {
-  "raw_text": "2 lbs carrots\n1 bunch kale\n3 tomatoes"
+  "inventory_text": "2 lbs carrots\n1 bunch kale\n3 tomatoes"
 }
 → {
     "items_added": 3,
-    "items": [
-      {
-        "ingredient_id": "uuid1",
-        "ingredient_name": "carrots",
-        "quantity": 2.0,
-        "unit": "lbs"
-      },
-      {
-        "ingredient_id": "uuid2",
-        "ingredient_name": "kale",
-        "quantity": 1.0,
-        "unit": "bunch"
-      },
-      {
-        "ingredient_id": "uuid3",
-        "ingredient_name": "tomatoes",
-        "quantity": 3.0,
-        "unit": "whole"
-      }
-    ]
+    "errors": [],
+    "success": true
   }
 
 GET /stores/{store_id}/inventory
-→ {
-    "store_id": "uuid",
-    "store_name": "CSA Box",
-    "items": [
-      {
-        "ingredient_id": "uuid1",
-        "ingredient_name": "carrots",
-        "quantity": 2.0,
-        "unit": "lbs"
-      }
-    ]
-  }
+→ [
+    {
+      "store_id": "uuid",
+      "ingredient_id": "uuid1", 
+      "ingredient_name": "carrots",    // Denormalized from ingredient
+      "store_name": "CSA Box",         // Denormalized from store
+      "quantity": 2.0,
+      "unit": "lbs",
+      "notes": "",
+      "added_at": "2025-07-07T10:30:00Z"
+    },
+    {
+      "store_id": "uuid",
+      "ingredient_id": "uuid2",
+      "ingredient_name": "kale",
+      "store_name": "CSA Box", 
+      "quantity": 1.0,
+      "unit": "bunch",
+      "notes": "",
+      "added_at": "2025-07-07T10:30:00Z"
+    }
+  ]
 
 GET /stores
-→ {
-    "stores": [
-      {
-        "store_id": "uuid",
-        "name": "CSA Box",
-        "description": "Weekly delivery",
-        "item_count": 3,
-        "infinite_supply": false
-      }
-    ]
-  }
+→ [
+    {
+      "store_id": "uuid",
+      "name": "CSA Box",
+      "description": "Weekly delivery",
+      "item_count": 3,              // Computed from inventory items
+      "infinite_supply": false
+    }
+  ]
 ```
+
+**Key Changes from Read Model Implementation:**
+- **Denormalized responses**: `ingredient_name` and `store_name` included in inventory items
+- **Flat array responses**: Direct arrays instead of nested objects
+- **Computed fields**: `item_count` calculated from actual inventory
+- **Simplified upload response**: Focus on success/error status rather than item details
 
 ## Infrastructure - MVP
 
@@ -211,10 +207,12 @@ GET /stores
 - Stream per aggregate: `ingredient-{id}`, `store-{id}`
 - No snapshots initially - rebuild aggregates from events
 
-### Read Models
-- `stores` table: Fast store list queries
-- `current_inventory` view: Join stores + inventory_items + ingredients
-- Updated synchronously from events (no eventual consistency)
+### Read Models (Event Projections)
+- **`store_views` table**: Denormalized store data with computed `item_count`
+- **`inventory_item_views` table**: Flat view with `ingredient_name` and `store_name` denormalized
+- **Projection handlers**: `StoreProjectionHandler` and `InventoryProjectionHandler` update views on events
+- **Synchronous updates**: Views updated immediately when events are stored (no eventual consistency)
+- **Optimized queries**: Eliminates N+1 queries and frontend data merging
 
 ### LLM Integration
 - BAML integration for structured parsing

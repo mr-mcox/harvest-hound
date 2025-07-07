@@ -78,7 +78,7 @@ pnpm format
 <script lang="ts">
   import { apiGet } from '$lib/api';
   import InventoryTable from '$lib/components/InventoryTable.svelte';
-  
+
   let inventory = [];
   onMount(async () => {
     inventory = await apiGet('/inventory').then(r => r.json());
@@ -109,7 +109,7 @@ pnpm format
 
 - **Test Pure Components Only**: Import from `$lib/components/`, never `src/routes/`
 - **Mock Data, Not Dependencies**: Pass mock data as props instead of mocking APIs
-- **Component Testing**: Use Vitest with `@testing-library/svelte` 
+- **Component Testing**: Use Vitest with `@testing-library/svelte`
 - **E2E Testing**: Use Playwright for user journey testing
 - **Focus on User Interactions**: Test what users see and do, not internal state
 
@@ -178,6 +178,20 @@ packages/frontend/
 
 ## Integration with Backend
 
+### Read Model Consumption
+- **API responses are denormalized** - no frontend data merging required
+- Types in `lib/generated/api-types.ts` match backend read models exactly
+- Components consume denormalized data directly: `item.ingredient_name`, `item.store_name`
+- **Never** create interface extensions like `InventoryItemWithIngredient`
+
+### Type Generation
+```bash
+# Regenerate types when backend schemas change
+cd packages/backend && uv run python scripts/export_schemas.py
+cd packages/frontend && pnpm generate-types
+```
+
+### API Patterns
 - Use generated TypeScript types from backend schemas
 - Implement type-safe API client functions
 - Handle loading states and error conditions

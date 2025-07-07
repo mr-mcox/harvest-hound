@@ -57,6 +57,10 @@ class MockLLMInventoryParser(InventoryParserClient):
             latency = response_data["simulated_latency_ms"] / 1000.0
             time.sleep(latency)
         
+        # Check for parsing errors in fixture
+        if "errors" in response_data and response_data["errors"]:
+            raise ValueError(f"Parsing failed: {response_data['errors'][0]}")
+        
         # Convert fixture data to domain objects
         output = response_data.get("output", [])
         return [
@@ -70,7 +74,7 @@ class MockLLMInventoryParser(InventoryParserClient):
     
     def _find_matching_fixture(self, inventory_text: str) -> Dict[str, Any]:
         """Find fixture that matches the input text."""
-        # First try exact matches
+        # First try exact matches across all categories
         for category in self.fixtures.values():
             if not isinstance(category, dict):
                 continue
@@ -85,12 +89,18 @@ class MockLLMInventoryParser(InventoryParserClient):
         if not inventory_text.strip():
             return self.fixtures["edge_cases"]["empty_input"]  # type: ignore[no-any-return]
         
-        # Single item
-        if len(inventory_text.split(",")) == 1 and "apple" in text_lower:
+        # Single item patterns - be more specific
+        if inventory_text.strip() == "1 apple":
             return self.fixtures["edge_cases"]["single_item"]  # type: ignore[no-any-return]
         
-        # Default to simple items for basic parsing
-        if any(word in text_lower for word in ["carrot", "kale"]):
+        # Specific single ingredients
+        if inventory_text.strip() in ["2 lbs carrots", "- 2 lbs carrots"]:
+            return self.fixtures["baml_test_patterns"]["carrots_single_ingredient"]  # type: ignore[no-any-return]
+        if inventory_text.strip() == "1 bunch kale":
+            return self.fixtures["baml_test_patterns"]["kale_with_bunch"]  # type: ignore[no-any-return]
+        
+        # Default to simple items for basic parsing (only if both ingredients mentioned)
+        if all(word in text_lower for word in ["carrot", "kale"]):
             return self.fixtures["successful_parsing"]["simple_items"]  # type: ignore[no-any-return]
         
         # Unicode or special characters

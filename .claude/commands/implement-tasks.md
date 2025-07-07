@@ -27,19 +27,27 @@ You are implementing tasks from the implementation plan using a self-managing re
      - Run tests after each change
      - Commit refactoring: "REFACTOR: Clean up [component]"
 
-4. **After completing each task:**
+4. **For tasks marked "Modify existing tests" or "Update existing tests":**
+   - **ADJUST Phase**: Modify existing tests for new data structures/interfaces
+     - Update test data/mocks to match new response shapes
+     - Modify assertions to expect new field names or structures
+     - Ensure existing behavior is preserved through refactor
+     - Run tests to confirm they pass with new implementation
+     - Commit test updates: "UPDATE: Modify tests for [new structure]"
+
+5. **After completing each task:**
    - Update @tasks-ACTIVE.md to mark task as ✓ completed
    - Run full test suite to ensure no regressions
    - Commit the progress update: "Progress: Complete [task name]"
    - **PAUSE** and ask for user review/feedback
 
-5. **Quality Gates:**
+6. **Quality Gates:**
    - All tests must pass before moving to next task
    - Code must follow project conventions (use existing patterns)
    - Commit messages must be clear and descriptive
    - Each test should focus on ONE specific behavior
 
-6. **Context Management:**
+7. **Context Management:**
    - If a task seems too large, break it into smaller steps
    - If unclear about requirements, ask for clarification before coding
    - If tests become complex, simplify the behavior being tested

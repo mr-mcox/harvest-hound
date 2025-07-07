@@ -2,16 +2,17 @@ import { page } from '@vitest/browser/context';
 import { describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import InventoryTable from '$lib/components/InventoryTable.svelte';
-import type { InventoryItemWithIngredient } from '$lib/types.js';
+import type { InventoryItemView } from '$lib/types.js';
 
 describe('Inventory Table Display', () => {
 	it('should display correct table headers for inventory columns', async () => {
 		// Arrange
-		const mockInventory: InventoryItemWithIngredient[] = [
+		const mockInventory: InventoryItemView[] = [
 			{
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id',
 				ingredient_name: 'Carrots',
+				store_name: 'Test Store',
 				quantity: 2,
 				unit: 'lbs',
 				notes: 'Fresh from garden',
@@ -40,11 +41,12 @@ describe('Inventory Table Display', () => {
 
 	it('should display inventory data in correct table columns', async () => {
 		// Arrange
-		const mockInventory: InventoryItemWithIngredient[] = [
+		const mockInventory: InventoryItemView[] = [
 			{
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-1',
 				ingredient_name: 'Carrots',
+				store_name: 'Test Store',
 				quantity: 2,
 				unit: 'lbs',
 				notes: 'Fresh from garden',
@@ -54,6 +56,7 @@ describe('Inventory Table Display', () => {
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-2',
 				ingredient_name: 'Kale',
+				store_name: 'Test Store',
 				quantity: 1,
 				unit: 'bunch',
 				notes: null,
@@ -85,7 +88,7 @@ describe('Inventory Table Display', () => {
 
 	it('should display empty state message when no inventory items provided', async () => {
 		// Arrange
-		const emptyInventory: InventoryItemWithIngredient[] = [];
+		const emptyInventory: InventoryItemView[] = [];
 
 		// Act
 		render(InventoryTable, { inventory: emptyInventory });
@@ -101,11 +104,12 @@ describe('Inventory Table Display', () => {
 
 	it('should display item count in header', async () => {
 		// Arrange
-		const mockInventory: InventoryItemWithIngredient[] = [
+		const mockInventory: InventoryItemView[] = [
 			{
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-1',
 				ingredient_name: 'Carrots',
+				store_name: 'Test Store',
 				quantity: 2,
 				unit: 'lbs',
 				notes: null,
@@ -115,6 +119,7 @@ describe('Inventory Table Display', () => {
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-2',
 				ingredient_name: 'Kale',
+				store_name: 'Test Store',
 				quantity: 1,
 				unit: 'bunch',
 				notes: null,
@@ -124,6 +129,7 @@ describe('Inventory Table Display', () => {
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-3',
 				ingredient_name: 'Tomatoes',
+				store_name: 'Test Store',
 				quantity: 3,
 				unit: 'pieces',
 				notes: null,
@@ -141,11 +147,12 @@ describe('Inventory Table Display', () => {
 
 	it('should handle missing notes field gracefully', async () => {
 		// Arrange
-		const mockInventory: InventoryItemWithIngredient[] = [
+		const mockInventory: InventoryItemView[] = [
 			{
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id',
 				ingredient_name: 'Carrots',
+				store_name: 'Test Store',
 				quantity: 2,
 				unit: 'lbs',
 				notes: null, // null notes should show as dash
@@ -163,11 +170,12 @@ describe('Inventory Table Display', () => {
 
 	it('should display multiple inventory items in separate table rows', async () => {
 		// Arrange
-		const mockInventory: InventoryItemWithIngredient[] = [
+		const mockInventory: InventoryItemView[] = [
 			{
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-1',
 				ingredient_name: 'Carrots',
+				store_name: 'Test Store',
 				quantity: 2,
 				unit: 'lbs',
 				notes: 'Fresh',
@@ -177,6 +185,7 @@ describe('Inventory Table Display', () => {
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-2',
 				ingredient_name: 'Kale',
+				store_name: 'Test Store',
 				quantity: 1,
 				unit: 'bunch',
 				notes: 'Organic',
@@ -186,6 +195,7 @@ describe('Inventory Table Display', () => {
 				store_id: 'test-store-id',
 				ingredient_id: 'test-ingredient-id-3',
 				ingredient_name: 'Tomatoes',
+				store_name: 'Test Store',
 				quantity: 5,
 				unit: 'pieces',
 				notes: null,

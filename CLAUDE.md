@@ -79,8 +79,8 @@ This is a **Domain-Driven Design (DDD)** application with **Event Sourcing** pat
 
 Each package has its own CLAUDE.md file with specific development guidelines:
 
-- **Backend**: See `packages/backend/CLAUDE.md` for Python, FastAPI, and domain modeling guidelines
-- **Frontend**: See `packages/frontend/CLAUDE.md` for Svelte, TypeScript, and UI development guidelines
+- **Backend**: See `packages/backend/CLAUDE.md` for Python, FastAPI, and domain modeling guidelines. Backend uses uv as a package manager.
+- **Frontend**: See `packages/frontend/CLAUDE.md` for Svelte, TypeScript, and UI development guidelines. Frontend uses pnpm as a package manager.
 
 ## Global Development Guidelines
 

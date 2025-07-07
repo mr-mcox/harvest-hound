@@ -1,13 +1,16 @@
-import os
-import tempfile
-from typing import Generator, List
+from typing import List
 from uuid import uuid4
+from unittest.mock import Mock
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
+from app.infrastructure.database import metadata
+from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.models.parsed_inventory import ParsedInventoryItem
 from app.services.inventory_parser import MockInventoryParserClient
 from app.services.store_service import InventoryUploadResult, StoreService
@@ -15,21 +18,55 @@ from tests.test_utils import assert_event_matches, get_typed_events
 
 
 @pytest.fixture
-def temp_db() -> Generator[str, None, None]:
-    """Create a temporary database for testing."""
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db_path = tmp.name
-
-    yield db_path
-
-    # Clean up
-    os.unlink(db_path)
+def db_session():
+    """Create isolated test database session."""
+    engine = create_engine("sqlite:///:memory:")
+    metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    yield session
+    
+    session.close()
 
 
 @pytest.fixture
-def event_store(temp_db: str) -> EventStore:
-    """Create an EventStore instance for testing."""
-    return EventStore(temp_db)
+def event_store(db_session, store_view_store, inventory_item_view_store) -> EventStore:
+    """Create an EventStore instance for testing with projection registry."""
+    from app.projections.registry import ProjectionRegistry
+    from app.projections.handlers import StoreProjectionHandler, InventoryProjectionHandler
+    from app.events.domain_events import StoreCreated, InventoryItemAdded, IngredientCreated
+    
+    # Set up projection registry and handlers
+    projection_registry = ProjectionRegistry()
+    store_projection_handler = StoreProjectionHandler(store_view_store)
+    
+    # Create ingredient and store repositories for the inventory projection handler
+    temp_event_store = EventStore(session=db_session)
+    from app.infrastructure.repositories import IngredientRepository, StoreRepository
+    ingredient_repository = IngredientRepository(temp_event_store)
+    store_repository = StoreRepository(temp_event_store) 
+    
+    inventory_projection_handler = InventoryProjectionHandler(
+        ingredient_repository,
+        store_repository,
+        inventory_item_view_store
+    )
+    
+    # Register event handlers
+    projection_registry.register(StoreCreated, store_projection_handler.handle_store_created)
+    projection_registry.register(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
+    projection_registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
+    projection_registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
+    
+    # Create EventStore with projection registry
+    event_store = EventStore(session=db_session, projection_registry=projection_registry)
+    
+    # Update the temporary repositories to use the new event store
+    ingredient_repository.event_store = event_store
+    store_repository.event_store = event_store
+    
+    return event_store
 
 
 @pytest.fixture
@@ -51,20 +88,40 @@ def inventory_parser() -> MockInventoryParserClient:
 
 
 @pytest.fixture
+def store_view_store(db_session) -> StoreViewStore:
+    """Create a StoreViewStore for testing."""
+    return StoreViewStore(session=db_session)
+
+
+@pytest.fixture
+def inventory_item_view_store(db_session) -> InventoryItemViewStore:
+    """Create an InventoryItemViewStore for testing."""
+    return InventoryItemViewStore(session=db_session)
+
+
+@pytest.fixture
 def store_service(
     store_repository: StoreRepository,
     ingredient_repository: IngredientRepository,
     inventory_parser: MockInventoryParserClient,
+    store_view_store: StoreViewStore,
+    inventory_item_view_store: InventoryItemViewStore,
 ) -> StoreService:
     """Create a StoreService for testing."""
-    return StoreService(store_repository, ingredient_repository, inventory_parser)
+    return StoreService(
+        store_repository, 
+        ingredient_repository, 
+        inventory_parser,
+        store_view_store,
+        inventory_item_view_store
+    )
 
 
 class TestStoreCreation:
     """Test store creation behavior."""
 
     def test_create_store_returns_uuid_and_persists_store_created_event(
-        self, store_service: StoreService, event_store: EventStore
+        self, store_service: StoreService, event_store: EventStore, store_view_store: StoreViewStore
     ) -> None:
         """Test that create_store returns UUID and persists StoreCreated event."""
         # Act
@@ -86,6 +143,15 @@ class TestStoreCreation:
                 "infinite_supply": False,
             },
         )
+        
+        # Check that StoreView was created (view propagation)
+        store_view = store_view_store.get_by_store_id(store_id)
+        assert store_view is not None
+        assert store_view.store_id == store_id
+        assert store_view.name == "CSA Box"
+        assert store_view.description == "Weekly vegetable box"
+        assert store_view.infinite_supply is False
+        assert store_view.item_count == 0  # New store starts with 0 items
 
     def test_create_store_with_infinite_supply_true_sets_flag_correctly(
         self, store_service: StoreService, event_store: EventStore
@@ -138,6 +204,8 @@ class TestInventoryUpload:
         store_service: StoreService,
         event_store: EventStore,
         inventory_parser: MockInventoryParserClient,
+        store_view_store: StoreViewStore,
+        inventory_item_view_store: InventoryItemViewStore,
     ) -> None:
         """Test that upload_inventory parses text and creates new Ingredient."""
         # Arrange
@@ -175,6 +243,23 @@ class TestInventoryUpload:
         assert_event_matches(
             ingredient_events[0], {"name": "carrots", "default_unit": "pound"}
         )
+        
+        # Check that InventoryItemView was created (view propagation)
+        inventory_views = inventory_item_view_store.get_all_for_store(store_id)
+        assert len(inventory_views) == 1
+        
+        inventory_view = inventory_views[0]
+        assert inventory_view.store_id == store_id
+        assert inventory_view.ingredient_id == ingredient_id
+        assert inventory_view.ingredient_name == "carrots"
+        assert inventory_view.store_name == "CSA Box"
+        assert inventory_view.quantity == 2.0
+        assert inventory_view.unit == "pound"
+        
+        # Check that StoreView item_count was updated (view propagation)
+        store_view = store_view_store.get_by_store_id(store_id)
+        assert store_view is not None
+        assert store_view.item_count == 1
 
     def test_upload_inventory_creates_inventory_item_linking_to_ingredient(
         self,

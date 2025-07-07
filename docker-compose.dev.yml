@@ -6,8 +6,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Default development settings
-      - DATABASE_URL=sqlite:///tmp/dev.db
+      # Default development settings - use a path that exists and has proper permissions
+      - DATABASE_URL=sqlite:////app/data/dev.db
       - BAML_ENV=development
       - PYTHONPATH=/app/packages/backend
       # Secret API keys from host environment
@@ -16,7 +16,12 @@ services:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - BAML_API_KEY=${BAML_API_KEY}
     volumes:
-      - .:/app
+      # Mount only source code and configs for hot reload, exclude build artifacts
+      - ./packages/backend/app:/app/packages/backend/app
+      - ./packages/backend/api.py:/app/packages/backend/api.py
+      - ./packages/backend/pyproject.toml:/app/packages/backend/pyproject.toml
+      - ./packages/backend/scripts:/app/packages/backend/scripts
+      - ./packages/backend/tests:/app/packages/backend/tests
       - backend_cache:/app/packages/backend/.uv
     networks:
       - harvest-hound-dev
@@ -44,7 +49,16 @@ services:
       - VITE_API_URL=http://backend:8000
       - NODE_ENV=development
     volumes:
-      - .:/app
+      # Mount only source code for hot reload, exclude node_modules
+      - ./packages/frontend/src:/app/packages/frontend/src
+      - ./packages/frontend/static:/app/packages/frontend/static
+      - ./packages/frontend/package.json:/app/packages/frontend/package.json
+      - ./packages/frontend/vite.config.ts:/app/packages/frontend/vite.config.ts
+      - ./packages/frontend/tsconfig.json:/app/packages/frontend/tsconfig.json
+      - ./packages/frontend/vitest.config.ts:/app/packages/frontend/vitest.config.ts
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
       - frontend_cache:/app/node_modules
     networks:
       - harvest-hound-dev
@@ -78,7 +92,15 @@ services:
     environment:
       - NODE_ENV=development
     volumes:
-      - .:/app
+      # Mount only source code for hot reload, exclude node_modules  
+      - ./packages/frontend/src:/app/packages/frontend/src
+      - ./packages/frontend/static:/app/packages/frontend/static
+      - ./packages/frontend/package.json:/app/packages/frontend/package.json
+      - ./packages/frontend/.storybook:/app/packages/frontend/.storybook
+      - ./packages/frontend/vite.config.ts:/app/packages/frontend/vite.config.ts
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
       - frontend_cache:/app/node_modules
     networks:
       - harvest-hound-dev

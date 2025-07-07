@@ -51,6 +51,36 @@ export interface InventoryStore {
 	}[];
 }
 
+/**
+ * Denormalized read model for inventory items with ingredient and store names.
+ *
+ * Optimized for UI consumption with flat structure and computed properties.
+ */
+export interface InventoryItemView {
+	store_id: string;
+	ingredient_id: string;
+	ingredient_name: string;
+	store_name: string;
+	quantity: number;
+	unit: string;
+	notes?: string | null;
+	added_at: string;
+}
+
+/**
+ * Denormalized read model for inventory stores with computed fields.
+ *
+ * Includes computed item_count for efficient store listing views.
+ */
+export interface StoreView {
+	store_id: string;
+	name: string;
+	description?: string;
+	infinite_supply?: boolean;
+	item_count?: number;
+	created_at: string;
+}
+
 export interface IngredientCreated {
 	ingredient_id: string;
 	name: string;

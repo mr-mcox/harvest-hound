@@ -7,18 +7,9 @@
 // Re-export all generated types from backend
 export * from './generated/api-types.js';
 
-// Import specific types for extending
-import type { InventoryItem } from './generated/api-types.js';
-
 /**
- * Frontend-specific types that extend backend types
+ * Frontend-specific types (backend types are re-exported above)
  */
-
-/** InventoryItem with ingredient name joined from ingredient table */
-export interface InventoryItemWithIngredient extends InventoryItem {
-	/** Name of the ingredient (from ingredient table join) */
-	ingredient_name: string;
-}
 
 /** API Response types for frontend operations */
 export interface StoreListResponse {
