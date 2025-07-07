@@ -14,6 +14,8 @@
 
 ## Concerns
 - There's a lot of extra configuration in the docker setup
+- Imports not at the top of the file
+- Patching within tests
 
 ## Scratch
 ### 9.8 Future Work Notes (*No tests needed - planning*)
