@@ -13,6 +13,8 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 ## Task 10: Read Model Projections Implementation (ADR-005)
 **Goal**: Implement read model projections to eliminate frontend "smell" and optimize query performance
 
+**REFACTOR NOTE**: This is primarily a refactor changing data structures, not behavior. Most tasks should modify existing tests rather than create new ones.
+
 ### 10.1 Backend Read Model Infrastructure (*Tests needed*)
 - [✓] **Create read model classes** in `/packages/backend/app/models/read_models.py`
   - [✓] `InventoryItemView` with denormalized fields (ingredient_name, store_name)
@@ -29,36 +31,36 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
 ### 10.2 Database Schema Updates (*No tests needed - migration*)
 - [✓] **Create read model tables** with proper indexes
   - [✓] `inventory_item_views` table with denormalized fields
-  - [✓] `store_views` table with computed fields  
+  - [✓] `store_views` table with computed fields
   - [✓] Add indexes for common query patterns
 - [✓] **Update EventStore** to trigger projections
   - [Partial] Keep inline projection logic for backward compatibility
   - [✓] Add projection registry integration
 
 ### 10.3 API Layer Updates (*Tests needed*)
-- [ ] **Add new read model endpoints**
-  - [ ] `GET /stores/{id}/inventory-view` returning `InventoryItemView[]`
-  - [ ] `GET /stores-view` returning denormalized store list
-- [ ] **Update existing endpoints** to use read models
-  - [ ] Modify `GET /stores/{id}/inventory` to use view store
-  - [ ] Modify `GET /stores` to use store view
-- [ ] **Update service layer** to use view stores instead of joins
-  - [ ] Remove N+1 queries from `StoreService.get_store_inventory()`
-  - [ ] Add view store dependency injection
+- [x] **Add new read model endpoints**
+  - [x] `GET /stores/{id}/inventory-view` returning `InventoryItemView[]`
+  - [x] `GET /stores-view` returning denormalized store list
+- [x] **Update existing endpoints** to use read models
+  - [x] Modify `GET /stores/{id}/inventory` to use view store
+  - [x] Modify `GET /stores` to use store view
+- [x] **Update service layer** to use view stores instead of joins
+  - [x] Remove N+1 queries from `StoreService.get_store_inventory()`
+  - [x] Add view store dependency injection
 
-### 10.4 Backend Testing (*Tests needed*)
-- [ ] **Test projection handlers**
-  - [ ] `InventoryItemAdded` event updates `InventoryItemView`
-  - [ ] `IngredientCreated` event updates existing inventory views
-  - [ ] `StoreCreated` event creates `StoreView`
-- [ ] **Test view stores**
-  - [ ] Roundtrip tests for read model persistence
-  - [ ] Query performance tests
-- [ ] **Test API endpoints**
-  - [ ] New endpoints return correct denormalized data
-  - [ ] Response schemas match `InventoryItemView` structure
+### 10.4 Backend Testing (*Modify existing tests*)
+- [ ] **Update projection handler tests**
+  - [ ] Modify existing event handler tests to verify `InventoryItemView` updates
+  - [ ] Update ingredient tests to check view propagation
+  - [ ] Update store tests to verify `StoreView` creation
+- [ ] **Update view store tests**
+  - [ ] Modify existing persistence tests for read model roundtrips
+  - [ ] Update query tests to use view stores
+- [ ] **Update API endpoint tests**
+  - [ ] Modify existing endpoint tests to expect denormalized data
+  - [ ] Update response schema assertions to match `InventoryItemView`
 
-### 10.5 Frontend Migration (*Tests needed*)
+### 10.5 Frontend Migration (*Update existing tests*)
 - [ ] **Remove interface extensions** (eliminate the "smell")
   - [ ] Delete `InventoryItemWithIngredient` from `/packages/frontend/src/lib/types.ts`
   - [ ] Update imports across all components
@@ -72,13 +74,13 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [ ] Run `python scripts/export_schemas.py`
   - [ ] Run `npm run generate-types`
 
-### 10.6 Frontend Testing (*Tests needed*)
+### 10.6 Frontend Testing (*Modify existing tests*)
 - [ ] **Update component tests**
-  - [ ] Mock data includes `store_name` field
-  - [ ] Type annotations use `InventoryItemView`
+  - [ ] Modify mock data to include `store_name` field
+  - [ ] Update type annotations to use `InventoryItemView`
 - [ ] **Update integration tests**
-  - [ ] API endpoint URLs point to new view endpoints
-  - [ ] Response structure matches flat view models
+  - [ ] Change API endpoint URLs to point to new view endpoints
+  - [ ] Update response structure expectations to match flat view models
 
 ### 10.7 Documentation Updates (*No tests needed - documentation*)
 - [ ] **Update API documentation**
@@ -92,26 +94,11 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [ ] Event projection development guide
   - [ ] Frontend integration guide
 
-### 10.8 Integration Testing (*Tests needed*)
-- [ ] **End-to-end workflow tests**
-  - [ ] Create store → upload inventory → view denormalized data
-  - [ ] Multiple stores maintain separate read models
-  - [ ] Ingredient name updates propagate to all inventory views
-- [ ] **Performance verification**
-  - [ ] Read model queries faster than joined queries
-  - [ ] Event projection latency acceptable (<100ms)
-  - [ ] No N+1 queries in service layer
-
-### 10.9 Migration Strategy (*Tests needed*)
-- [ ] **Dual endpoint support** during transition
-  - [ ] Keep old endpoints functional
-  - [ ] Add read model endpoints in parallel
-- [ ] **Data migration**
-  - [ ] Populate read model tables from existing events
-  - [ ] Verify projection consistency
-- [ ] **Cleanup phase**
-  - [ ] Remove old join-based endpoints
-  - [ ] Remove frontend interface extensions
+### 10.8 Integration Testing (*Modify existing tests*)
+- [ ] **Update end-to-end workflow tests**
+  - [ ] Modify store creation tests to expect denormalized data
+  - [ ] Update inventory upload tests to verify view model responses
+  - [ ] Update ingredient update tests to verify view propagation
 
 ---
 
