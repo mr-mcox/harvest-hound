@@ -28,20 +28,11 @@ class StoreViewStoreProtocol(Protocol):
         """
         ...
 
-    def create_store_view(self, store_view: StoreView) -> None:
-        """Create a new store view record.
+    def save_store_view(self, store_view: StoreView) -> None:
+        """Save a store view record.
         
         Args:
-            store_view: The store view to create
-        """
-        ...
-
-    def update_item_count(self, store_id: UUID, new_count: int) -> None:
-        """Update the item count for a store.
-        
-        Args:
-            store_id: Unique identifier for the store
-            new_count: New item count
+            store_view: The store view to save
         """
         ...
 
@@ -60,10 +51,21 @@ class InventoryItemViewStoreProtocol(Protocol):
         """
         ...
 
-    def create_inventory_item_view(self, item_view: InventoryItemView) -> None:
-        """Create a new inventory item view record.
+    def save_inventory_item_view(self, item_view: InventoryItemView) -> None:
+        """Save an inventory item view record.
         
         Args:
-            item_view: The inventory item view to create
+            item_view: The inventory item view to save
+        """
+        ...
+    
+    def get_by_ingredient_id(self, ingredient_id: UUID) -> List[InventoryItemView]:
+        """Get all inventory items for an ingredient.
+        
+        Args:
+            ingredient_id: Unique identifier for the ingredient
+            
+        Returns:
+            List of inventory item views for the ingredient
         """
         ...

@@ -1,6 +1,6 @@
 """Repository interface protocols."""
 
-from typing import List, Protocol
+from typing import List, Protocol, Sequence
 from uuid import UUID
 
 from ..events.domain_events import DomainEvent
@@ -11,7 +11,7 @@ from ..models.inventory_store import InventoryStore
 class StoreRepositoryProtocol(Protocol):
     """Protocol for store repository operations."""
 
-    def save(self, store: InventoryStore, events: List[DomainEvent]) -> None:
+    def save(self, store: InventoryStore, events: Sequence[DomainEvent]) -> None:
         """Save store aggregate and publish events.
         
         Args:
@@ -38,7 +38,7 @@ class StoreRepositoryProtocol(Protocol):
 class IngredientRepositoryProtocol(Protocol):
     """Protocol for ingredient repository operations."""
 
-    def save(self, ingredient: Ingredient, events: List[DomainEvent]) -> None:
+    def save(self, ingredient: Ingredient, events: Sequence[DomainEvent]) -> None:
         """Save ingredient aggregate and publish events.
         
         Args:
