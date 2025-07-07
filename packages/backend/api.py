@@ -6,8 +6,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
+from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
+from app.projections.registry import ProjectionRegistry
 from app.services.store_service import StoreService
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
@@ -61,18 +67,64 @@ class InventoryItem(BaseModel):
     added_at: str
 
 
+# Database setup for view stores
+# Use temporary database for tests, persistent for production
+import os
+import tempfile
+
+if os.getenv("PYTEST_CURRENT_TEST"):
+    # For tests, use a temporary file that gets cleaned up
+    temp_dir = tempfile.mkdtemp()
+    DATABASE_URL = f"sqlite:///{temp_dir}/test_view_store.db"
+else:
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///view_store.db")
+
+engine = create_engine(DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(bind=engine)
+
 # Dependency injection setup
-event_store = EventStore()
+session = SessionLocal()
+store_view_store = StoreViewStore(session)
+inventory_item_view_store = InventoryItemViewStore(session)
+
+# Event store with projection registry  
+event_store = EventStore(session=session, projection_registry=None)  # Will add later
 store_repository = StoreRepository(event_store)
 ingredient_repository = IngredientRepository(event_store)
 
+# Set up projection registry and handlers
+projection_registry = ProjectionRegistry()
+store_projection_handler = StoreProjectionHandler(store_view_store)
+inventory_projection_handler = InventoryProjectionHandler(
+    ingredient_repository, 
+    store_repository,
+    inventory_item_view_store
+)
+
+# Import event types for registration
+from app.events.domain_events import StoreCreated, InventoryItemAdded, IngredientCreated
+
+# Register specific event handlers
+projection_registry.register(StoreCreated, store_projection_handler.handle_store_created)
+projection_registry.register(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
+projection_registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
+projection_registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
+
+# Update event store with projection registry
+event_store.projection_registry = projection_registry
 
 # Import the fixture-based mock parser for comprehensive testing
 from tests.mocks.llm_service import MockLLMInventoryParser
 
 # Use fixture-based mock parser for comprehensive testing scenarios
 inventory_parser = MockLLMInventoryParser()
-store_service = StoreService(store_repository, ingredient_repository, inventory_parser)
+store_service = StoreService(
+    store_repository, 
+    ingredient_repository, 
+    inventory_parser,
+    store_view_store,
+    inventory_item_view_store
+)
 
 
 @app.get("/health")

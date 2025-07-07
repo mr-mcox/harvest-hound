@@ -1,13 +1,16 @@
-import os
-import tempfile
-from typing import Generator, List
+from typing import List
 from uuid import uuid4
+from unittest.mock import Mock
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
+from app.infrastructure.database import metadata
+from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.models.parsed_inventory import ParsedInventoryItem
 from app.services.inventory_parser import MockInventoryParserClient
 from app.services.store_service import InventoryUploadResult, StoreService
@@ -15,21 +18,22 @@ from tests.test_utils import assert_event_matches, get_typed_events
 
 
 @pytest.fixture
-def temp_db() -> Generator[str, None, None]:
-    """Create a temporary database for testing."""
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db_path = tmp.name
-
-    yield db_path
-
-    # Clean up
-    os.unlink(db_path)
+def db_session():
+    """Create isolated test database session."""
+    engine = create_engine("sqlite:///:memory:")
+    metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    yield session
+    
+    session.close()
 
 
 @pytest.fixture
-def event_store(temp_db: str) -> EventStore:
+def event_store(db_session) -> EventStore:
     """Create an EventStore instance for testing."""
-    return EventStore(temp_db)
+    return EventStore(session=db_session)
 
 
 @pytest.fixture
@@ -51,13 +55,33 @@ def inventory_parser() -> MockInventoryParserClient:
 
 
 @pytest.fixture
+def store_view_store(db_session) -> StoreViewStore:
+    """Create a StoreViewStore for testing."""
+    return StoreViewStore(session=db_session)
+
+
+@pytest.fixture
+def inventory_item_view_store(db_session) -> InventoryItemViewStore:
+    """Create an InventoryItemViewStore for testing."""
+    return InventoryItemViewStore(session=db_session)
+
+
+@pytest.fixture
 def store_service(
     store_repository: StoreRepository,
     ingredient_repository: IngredientRepository,
     inventory_parser: MockInventoryParserClient,
+    store_view_store: StoreViewStore,
+    inventory_item_view_store: InventoryItemViewStore,
 ) -> StoreService:
     """Create a StoreService for testing."""
-    return StoreService(store_repository, ingredient_repository, inventory_parser)
+    return StoreService(
+        store_repository, 
+        ingredient_repository, 
+        inventory_parser,
+        store_view_store,
+        inventory_item_view_store
+    )
 
 
 class TestStoreCreation:

@@ -5,7 +5,8 @@ Testing integration between projection handlers and view stores
 using SQLAlchemy Core per ADR-005.
 """
 from datetime import datetime
-from uuid import uuid4
+from typing import Dict
+from uuid import uuid4, UUID
 
 import pytest
 from sqlalchemy import create_engine
@@ -22,30 +23,36 @@ class MockIngredientRepository:
     """Mock ingredient repository for testing."""
     
     def __init__(self):
-        self._ingredients = {}
+        self._ingredients: Dict[UUID, Ingredient] = {}
     
     def add_ingredient(self, ingredient: Ingredient):
         """Add ingredient to mock store."""
         self._ingredients[ingredient.ingredient_id] = ingredient
     
-    def get_by_id(self, ingredient_id) -> Ingredient | None:
-        """Get ingredient by ID."""
-        return self._ingredients.get(ingredient_id)
+    def load(self, ingredient_id: UUID) -> Ingredient:
+        """Load ingredient by ID."""
+        ingredient = self._ingredients.get(ingredient_id)
+        if ingredient is None:
+            raise ValueError(f"Ingredient {ingredient_id} not found")
+        return ingredient
 
 
 class MockStoreRepository:
     """Mock store repository for testing."""
     
     def __init__(self):
-        self._stores = {}
+        self._stores: Dict[UUID, InventoryStore] = {}
     
     def add_store(self, store: InventoryStore):
         """Add store to mock store."""
         self._stores[store.store_id] = store
     
-    def get_by_id(self, store_id) -> InventoryStore | None:
-        """Get store by ID."""
-        return self._stores.get(store_id)
+    def load(self, store_id: UUID) -> InventoryStore:
+        """Load store by ID."""
+        store = self._stores.get(store_id)
+        if store is None:
+            raise ValueError(f"Store {store_id} not found")
+        return store
 
 
 class TestInventoryProjectionHandler:

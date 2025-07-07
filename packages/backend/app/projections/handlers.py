@@ -15,16 +15,16 @@ from ..models.read_models import InventoryItemView, StoreView
 class IngredientRepository(Protocol):
     """Protocol for ingredient repository dependency."""
     
-    def get_by_id(self, ingredient_id: UUID) -> Ingredient | None:
-        """Get ingredient by ID."""
+    def load(self, ingredient_id: UUID) -> Ingredient:
+        """Load ingredient by ID, raises AggregateNotFoundError if not found."""
         ...
 
 
 class StoreRepository(Protocol):
     """Protocol for store repository dependency."""
     
-    def get_by_id(self, store_id: UUID) -> InventoryStore | None:
-        """Get store by ID."""
+    def load(self, store_id: UUID) -> InventoryStore:
+        """Load store by ID, raises AggregateNotFoundError if not found."""
         ...
 
 
@@ -71,12 +71,12 @@ class InventoryProjectionHandler:
     
     def handle_inventory_item_added(self, event: InventoryItemAdded) -> None:
         """Create InventoryItemView when inventory item is added."""
-        # Fetch related data for denormalization
-        ingredient = self.ingredient_repo.get_by_id(event.ingredient_id)
-        store = self.store_repo.get_by_id(event.store_id)
-        
-        if not ingredient or not store:
-            # Log error in real implementation
+        try:
+            # Fetch related data for denormalization
+            ingredient = self.ingredient_repo.load(event.ingredient_id)
+            store = self.store_repo.load(event.store_id)
+        except Exception:
+            # Log error in real implementation - skip projection if data missing
             return
         
         # Create flat view model with denormalized fields

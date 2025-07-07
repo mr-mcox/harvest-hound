@@ -9,22 +9,37 @@ from uuid import uuid4
 from unittest.mock import Mock
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.events.domain_events import InventoryItemAdded, StoreCreated, IngredientCreated
 from app.infrastructure.event_store import EventStore
+from app.infrastructure.database import metadata
 from app.projections.registry import ProjectionRegistry
+
+
+@pytest.fixture
+def db_session():
+    """Create isolated test database session."""
+    engine = create_engine("sqlite:///:memory:")
+    metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    yield session
+    
+    session.close()
 
 
 class TestEventStoreWithProjectionRegistry:
     """Test EventStore integration with projection registry."""
 
-    def test_append_event_triggers_projections(self, tmp_path):
+    def test_append_event_triggers_projections(self, db_session):
         """EventStore should trigger projection registry when appending events."""
         # Arrange
-        db_path = str(tmp_path / "test_events.db")
         mock_registry = Mock(spec=ProjectionRegistry)
         
-        event_store = EventStore(db_path=db_path, projection_registry=mock_registry)
+        event_store = EventStore(session=db_session, projection_registry=mock_registry)
         
         event = StoreCreated(
             store_id=uuid4(),
@@ -40,13 +55,12 @@ class TestEventStoreWithProjectionRegistry:
         # Assert
         mock_registry.handle.assert_called_once_with(event)
 
-    def test_append_event_multiple_events_triggers_all(self, tmp_path):
+    def test_append_event_multiple_events_triggers_all(self, db_session):
         """EventStore should trigger projections for all events."""
         # Arrange
-        db_path = str(tmp_path / "test_events.db")
         mock_registry = Mock(spec=ProjectionRegistry)
         
-        event_store = EventStore(db_path=db_path, projection_registry=mock_registry)
+        event_store = EventStore(session=db_session, projection_registry=mock_registry)
         
         store_event = StoreCreated(
             store_id=uuid4(),
@@ -72,13 +86,11 @@ class TestEventStoreWithProjectionRegistry:
         mock_registry.handle.assert_any_call(store_event)
         mock_registry.handle.assert_any_call(ingredient_event)
 
-    def test_eventstore_without_registry_works(self, tmp_path):
+    def test_eventstore_without_registry_works(self, db_session):
         """EventStore should work without projection registry (optional dependency)."""
         # Arrange
-        db_path = str(tmp_path / "test_events.db")
-        
         # EventStore without projection registry
-        event_store = EventStore(db_path=db_path, projection_registry=None)
+        event_store = EventStore(session=db_session, projection_registry=None)
         
         event = StoreCreated(
             store_id=uuid4(),
@@ -96,14 +108,13 @@ class TestEventStoreWithProjectionRegistry:
         assert len(events) == 1
         assert events[0]["event_type"] == "StoreCreated"
 
-    def test_projection_errors_dont_break_event_storage(self, tmp_path):
+    def test_projection_errors_dont_break_event_storage(self, db_session):
         """EventStore should store events even if projections fail."""
         # Arrange
-        db_path = str(tmp_path / "test_events.db")
         mock_registry = Mock(spec=ProjectionRegistry)
         mock_registry.handle.side_effect = Exception("Projection failed")
         
-        event_store = EventStore(db_path=db_path, projection_registry=mock_registry)
+        event_store = EventStore(session=db_session, projection_registry=mock_registry)
         
         event = StoreCreated(
             store_id=uuid4(),
@@ -121,11 +132,10 @@ class TestEventStoreWithProjectionRegistry:
         assert len(events) == 1
         assert events[0]["event_type"] == "StoreCreated"
 
-    def test_eventstore_maintains_existing_query_methods(self, tmp_path):
+    def test_eventstore_maintains_existing_query_methods(self, db_session):
         """EventStore should maintain backward compatibility with existing query methods."""
         # Arrange
-        db_path = str(tmp_path / "test_events.db")
-        event_store = EventStore(db_path=db_path, projection_registry=None)
+        event_store = EventStore(session=db_session, projection_registry=None)
         
         store_id = uuid4()
         ingredient_id = uuid4()

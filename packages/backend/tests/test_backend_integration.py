@@ -1,16 +1,18 @@
 """Backend integration tests with real database and full HTTP request/response cycle."""
 
-import os
-import tempfile
 from unittest.mock import patch
 from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from api import app
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
+from app.infrastructure.database import metadata
+from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.services.store_service import StoreService
 from tests.mocks.llm_service import ConfigurableMockLLMParser, MockLLMInventoryParser
 
@@ -19,26 +21,38 @@ class TestBackendIntegrationWithRealDatabase:
     """Integration tests using real SQLite database and full HTTP stack."""
     
     @pytest.fixture
-    def temp_db_file(self):
-        """Create a temporary database file for testing."""
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
-        temp_file.close()
-        yield temp_file.name
-        # Cleanup
-        if os.path.exists(temp_file.name):
-            os.unlink(temp_file.name)
+    def db_session(self):
+        """Create isolated test database session."""
+        engine = create_engine("sqlite:///:memory:")
+        metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        
+        yield session
+        
+        session.close()
     
     @pytest.fixture 
-    def integration_client(self, temp_db_file):
+    def integration_client(self, db_session):
         """Create test client with real database and dependency injection."""
         # Create fresh event store with temporary database
-        event_store = EventStore(db_path=temp_db_file)
+        event_store = EventStore(session=db_session)
         store_repository = StoreRepository(event_store)
         ingredient_repository = IngredientRepository(event_store)
         
+        # Create view stores
+        store_view_store = StoreViewStore(session=db_session)
+        inventory_item_view_store = InventoryItemViewStore(session=db_session)
+        
         # Use mocked LLM for predictable testing
         mock_parser = MockLLMInventoryParser()
-        store_service = StoreService(store_repository, ingredient_repository, mock_parser)
+        store_service = StoreService(
+            store_repository, 
+            ingredient_repository, 
+            mock_parser,
+            store_view_store,
+            inventory_item_view_store
+        )
         
         # Override app dependencies for testing
         with patch('api.store_service', store_service):
@@ -231,13 +245,28 @@ class TestBackendIntegrationPerformance:
     def performance_client(self):
         """Create test client optimized for performance testing."""
         # Use in-memory SQLite for fastest possible database operations
-        event_store = EventStore(db_path=":memory:")
+        engine = create_engine("sqlite:///:memory:")
+        metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        
+        event_store = EventStore(session=session)
         store_repository = StoreRepository(event_store)
         ingredient_repository = IngredientRepository(event_store)
         
+        # Create view stores
+        store_view_store = StoreViewStore(session=session)
+        inventory_item_view_store = InventoryItemViewStore(session=session)
+        
         # Use fast mock without timing simulation
         mock_parser = MockLLMInventoryParser(simulate_timing=False)
-        store_service = StoreService(store_repository, ingredient_repository, mock_parser)
+        store_service = StoreService(
+            store_repository, 
+            ingredient_repository, 
+            mock_parser,
+            store_view_store,
+            inventory_item_view_store
+        )
         
         with patch('api.store_service', store_service):
             with patch('api.create_inventory_parser_client', return_value=mock_parser):
@@ -302,26 +331,33 @@ class TestBackendIntegrationEventSourcing:
     """Test event sourcing behavior in backend integration scenarios."""
     
     @pytest.fixture
-    def event_test_client(self, temp_db_file):
+    def event_test_client(self):
         """Create test client that allows inspection of event store."""
-        event_store = EventStore(db_path=temp_db_file)
+        engine = create_engine("sqlite:///:memory:")
+        metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        
+        event_store = EventStore(session=session)
         store_repository = StoreRepository(event_store)
         ingredient_repository = IngredientRepository(event_store)
+        
+        # Create view stores
+        store_view_store = StoreViewStore(session=session)
+        inventory_item_view_store = InventoryItemViewStore(session=session)
+        
         mock_parser = MockLLMInventoryParser()
-        store_service = StoreService(store_repository, ingredient_repository, mock_parser)
+        store_service = StoreService(
+            store_repository, 
+            ingredient_repository, 
+            mock_parser,
+            store_view_store,
+            inventory_item_view_store
+        )
         
         with patch('api.store_service', store_service):
             with patch('api.create_inventory_parser_client', return_value=mock_parser):
                 yield TestClient(app), event_store
-    
-    @pytest.fixture
-    def temp_db_file(self):
-        """Create a temporary database file for testing."""
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
-        temp_file.close()
-        yield temp_file.name
-        if os.path.exists(temp_file.name):
-            os.unlink(temp_file.name)
     
     def test_events_are_persisted_during_workflow(self, event_test_client):
         """Test that domain events are properly persisted during API operations."""

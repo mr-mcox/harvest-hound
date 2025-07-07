@@ -120,7 +120,7 @@
     "carrots_single_ingredient": {
       "input": "- 2 lbs carrots",
       "output": [
-        {"name": "carrot", "quantity": 2.0, "unit": "pound"}
+        {"name": "carrots", "quantity": 2.0, "unit": "pound"}
       ]
     },
     "kale_with_bunch": {

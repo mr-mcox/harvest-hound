@@ -4,7 +4,7 @@ Projection registry for managing event handlers.
 Central registry that routes domain events to appropriate projection handlers
 following the event-driven architecture pattern from ADR-005.
 """
-from typing import Callable, DefaultDict, List, Type
+from typing import Any, Callable, DefaultDict, List, Type
 from collections import defaultdict
 
 from ..events.domain_events import DomainEvent
@@ -20,9 +20,9 @@ class ProjectionRegistry:
     
     def __init__(self) -> None:
         # Use defaultdict to store lists of handlers per event type
-        self._handlers: DefaultDict[Type[DomainEvent], List[Callable[[DomainEvent], None]]] = defaultdict(list)
+        self._handlers: DefaultDict[Type[DomainEvent], List[Callable[[Any], None]]] = defaultdict(list)
     
-    def register(self, event_type: Type[DomainEvent], handler: Callable[[DomainEvent], None]) -> None:
+    def register(self, event_type: Type[DomainEvent], handler: Callable[[Any], None]) -> None:
         """
         Register a handler for a specific event type.
         

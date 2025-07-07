@@ -55,6 +55,19 @@ store_views = Table(
     Index("idx_store_views_name", "name"),
 )
 
+# Event store table for domain events
+events = Table(
+    "events",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("stream_id", String, nullable=False),
+    Column("event_type", String, nullable=False),
+    Column("event_data", String, nullable=False),  # JSON string
+    Column("timestamp", String, nullable=False),   # ISO format string
+    # Index for event stream queries
+    Index("idx_stream_id_timestamp", "stream_id", "timestamp"),
+)
+
 
 def create_tables(engine: Union[Engine, Connection]) -> None:
     """Create all read model tables."""

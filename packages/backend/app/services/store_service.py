@@ -7,6 +7,7 @@ from ..infrastructure.repositories import (
     IngredientRepository,
     StoreRepository,
 )
+from ..infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem
@@ -40,10 +41,14 @@ class StoreService:
         store_repository: StoreRepository,
         ingredient_repository: IngredientRepository,
         inventory_parser: InventoryParserClient,
+        store_view_store: StoreViewStore,
+        inventory_item_view_store: InventoryItemViewStore,
     ):
         self.store_repository = store_repository
         self.ingredient_repository = ingredient_repository
         self.inventory_parser = inventory_parser
+        self.store_view_store = store_view_store
+        self.inventory_item_view_store = inventory_item_view_store
 
     def create_store(
         self,
@@ -111,29 +116,34 @@ class StoreService:
 
     def get_all_stores(self) -> List[Dict[str, Any]]:
         """Get list of all stores with item counts."""
-        # TODO: Update to use new view stores in Task 10.3
-        raise NotImplementedError("Legacy method removed - update to use view stores")
+        store_views = self.store_view_store.get_all_stores()
+        
+        return [
+            {
+                "store_id": str(view.store_id),
+                "name": view.name,
+                "description": view.description,
+                "infinite_supply": view.infinite_supply,
+                "item_count": view.item_count,
+                "created_at": view.created_at,
+            }
+            for view in store_views
+        ]
 
     def get_store_inventory(self, store_id: UUID) -> List[Dict[str, Any]]:
         """Get current inventory for a store with ingredient names."""
-        store = self.store_repository.load(store_id)
-
-        inventory_with_names = []
-        for item in store.inventory_items:
-            # Load ingredient to get name
-            ingredient = self.ingredient_repository.load(item.ingredient_id)
-
-            inventory_with_names.append(
-                {
-                    "ingredient_name": ingredient.name,
-                    "quantity": item.quantity,
-                    "unit": item.unit,
-                    "notes": item.notes,
-                    "added_at": item.added_at,
-                }
-            )
-
-        return inventory_with_names
+        inventory_views = self.inventory_item_view_store.get_all_for_store(store_id)
+        
+        return [
+            {
+                "ingredient_name": view.ingredient_name,
+                "quantity": view.quantity,
+                "unit": view.unit,
+                "notes": view.notes,
+                "added_at": view.added_at,
+            }
+            for view in inventory_views
+        ]
 
     def _parse_inventory_text(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text using injected parser client."""
