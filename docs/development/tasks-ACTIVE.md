@@ -49,10 +49,10 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [x] Add view store dependency injection
 
 ### 10.4 Backend Testing (*Modify existing tests*)
-- [ ] **Update projection handler tests**
-  - [ ] Modify existing event handler tests to verify `InventoryItemView` updates
-  - [ ] Update ingredient tests to check view propagation
-  - [ ] Update store tests to verify `StoreView` creation
+- [✓] **Update projection handler tests**
+  - [✓] Modify existing event handler tests to verify `InventoryItemView` updates
+  - [✓] Update ingredient tests to check view propagation
+  - [✓] Update store tests to verify `StoreView` creation
 - [ ] **Update view store tests**
   - [ ] Modify existing persistence tests for read model roundtrips
   - [ ] Update query tests to use view stores

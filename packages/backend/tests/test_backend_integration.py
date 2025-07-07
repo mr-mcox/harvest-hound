@@ -56,9 +56,8 @@ class TestBackendIntegrationWithRealDatabase:
         
         # Override app dependencies for testing
         with patch('api.store_service', store_service):
-            with patch('api.create_inventory_parser_client', return_value=mock_parser):
-                client = TestClient(app)
-                yield client
+            client = TestClient(app)
+            yield client
     
     def test_complete_store_workflow_with_real_database(self, integration_client):
         """Test complete workflow: create store → upload inventory → query data with real database persistence."""
@@ -186,7 +185,7 @@ class TestBackendIntegrationErrorHandling:
         """Create test client with configurable mock for error testing."""
         mock_parser = ConfigurableMockLLMParser()
         
-        with patch('api.create_inventory_parser_client', return_value=mock_parser):
+        with patch('api.inventory_parser', mock_parser):
             yield TestClient(app), mock_parser
     
     def test_inventory_upload_with_parsing_errors(self, error_test_client):
@@ -269,8 +268,7 @@ class TestBackendIntegrationPerformance:
         )
         
         with patch('api.store_service', store_service):
-            with patch('api.create_inventory_parser_client', return_value=mock_parser):
-                yield TestClient(app)
+            yield TestClient(app)
     
     def test_rapid_store_creation_performance(self, performance_client):
         """Test performance of rapid store creation."""
@@ -356,8 +354,7 @@ class TestBackendIntegrationEventSourcing:
         )
         
         with patch('api.store_service', store_service):
-            with patch('api.create_inventory_parser_client', return_value=mock_parser):
-                yield TestClient(app), event_store
+            yield TestClient(app), event_store
     
     def test_events_are_persisted_during_workflow(self, event_test_client):
         """Test that domain events are properly persisted during API operations."""

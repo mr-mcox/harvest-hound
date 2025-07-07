@@ -11,7 +11,7 @@ Following our three-tier testing strategy:
 import pytest
 from fastapi.testclient import TestClient
 
-from api import app
+from api import app, store_view_store, inventory_item_view_store
 
 
 class TestHappyPathIntegration:
@@ -81,6 +81,29 @@ class TestHappyPathIntegration:
             assert isinstance(item["quantity"], (int, float))
             assert item["quantity"] > 0
 
+        # Verify read model views are created correctly (view propagation)
+        from uuid import UUID
+        store_uuid = UUID(store_id)
+        
+        # Check StoreView is created
+        store_view = store_view_store.get_by_store_id(store_uuid)
+        assert store_view is not None
+        assert store_view.name == "CSA Box"
+        assert store_view.description == "Weekly CSA delivery store"
+        assert store_view.item_count == 2
+        
+        # Check InventoryItemView records are created
+        inventory_views = inventory_item_view_store.get_all_for_store(store_uuid)
+        assert len(inventory_views) == 2
+        
+        # Verify view data matches API response
+        view_ingredient_names = {view.ingredient_name for view in inventory_views}
+        assert view_ingredient_names == {"carrot", "kale"}
+        
+        # Verify each view has denormalized store name
+        for view in inventory_views:
+            assert view.store_name == "CSA Box"
+
     def test_store_list_shows_csa_box_with_item_count_2(self, client):
         """Test: Store list shows "CSA Box" with item_count=2."""
         # First create the store and add inventory
@@ -107,6 +130,13 @@ class TestHappyPathIntegration:
         assert csa_box_store is not None
         assert csa_box_store["item_count"] == 2
         assert csa_box_store["description"] == "Weekly CSA delivery store"
+        
+        # Verify StoreView reflects correct item count (view propagation)
+        from uuid import UUID
+        store_uuid = UUID(store_id)
+        store_view = store_view_store.get_by_store_id(store_uuid)
+        assert store_view is not None
+        assert store_view.item_count == 2
 
     def test_data_persists_across_requests_event_sourcing_verification(self, client):
         """Test: Page refresh preserves all data (event sourcing working)."""
@@ -160,6 +190,23 @@ class TestHappyPathIntegration:
         assert carrot_item["unit"] == "pound"
         assert kale_item["quantity"] == 1.0
         assert kale_item["unit"] == "bunch"
+        
+        # Verify view models persist correctly (view propagation)
+        from uuid import UUID
+        store_uuid = UUID(store_id)
+        
+        # Check StoreView persistence
+        store_view = store_view_store.get_by_store_id(store_uuid)
+        assert store_view is not None
+        assert store_view.item_count == 2
+        
+        # Check InventoryItemView persistence  
+        inventory_views = inventory_item_view_store.get_all_for_store(store_uuid)
+        assert len(inventory_views) == 2
+        
+        # Verify denormalized data is correct
+        for view in inventory_views:
+            assert view.store_name == "CSA Box"
 
     def test_multiple_stores_maintain_separate_inventories(self, client):
         """Test: Multiple stores maintain separate inventories."""
@@ -208,6 +255,33 @@ class TestHappyPathIntegration:
 
         assert csa_store["item_count"] == 2
         assert pantry_store["item_count"] == 1
+        
+        # Verify each store's view models are separate (view propagation)
+        from uuid import UUID
+        csa_uuid = UUID(csa_store_id)
+        pantry_uuid = UUID(pantry_store_id)
+        
+        # Check StoreView separation
+        csa_store_view = store_view_store.get_by_store_id(csa_uuid)
+        pantry_store_view = store_view_store.get_by_store_id(pantry_uuid)
+        
+        assert csa_store_view is not None
+        assert pantry_store_view is not None
+        assert csa_store_view.item_count == 2
+        assert pantry_store_view.item_count == 1
+        
+        # Check InventoryItemView separation
+        csa_inventory_views = inventory_item_view_store.get_all_for_store(csa_uuid)
+        pantry_inventory_views = inventory_item_view_store.get_all_for_store(pantry_uuid)
+        
+        assert len(csa_inventory_views) == 2
+        assert len(pantry_inventory_views) == 1
+        
+        # Verify denormalized store names are correct
+        for view in csa_inventory_views:
+            assert view.store_name == "CSA Box"
+        for view in pantry_inventory_views:
+            assert view.store_name == "Pantry Store"
 
 
 class TestHappyPathEdgeCases:
