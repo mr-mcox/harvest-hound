@@ -80,16 +80,14 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] Response structure expectations already match flat view models
 
 ### 10.7 Documentation Updates (*No tests needed - documentation*)
-- [ ] **Update API documentation**
-  - [ ] `docs/architecture/interface.md` - new read model endpoints
-  - [ ] `docs/features/inventory/design.md` - flat response structures
-- [ ] **Update domain documentation**
-  - [ ] `docs/architecture/domain-model.md` - read model concepts
-  - [ ] `docs/architecture/overview.md` - CQRS patterns
-- [ ] **Create implementation guides**
-  - [ ] Read model architecture guide
-  - [ ] Event projection development guide
-  - [ ] Frontend integration guide
+- [✓] **Update API documentation**
+  - [✓] `docs/architecture/interface.md` - new read model endpoints
+  - [✓] `docs/features/inventory/design.md` - flat response structures
+- [✓] **Update domain documentation**
+  - [✓] `docs/architecture/domain-model.md` - read model concepts
+- [✓] **Create implementation guides**
+  - [✓] `docs/architecture/read-models-guide.md` - Read model architecture guide
+  - [✓] `docs/architecture/frontend-integration-guide.md` - Frontend integration guide
 
 ### 10.8 Integration Testing (*Modify existing tests*)
 - [ ] **Update end-to-end workflow tests**

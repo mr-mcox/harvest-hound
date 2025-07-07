@@ -244,10 +244,47 @@ State transitions are emitted as **Planning Events** (`RecipeProposed`, `ClaimAc
 
 - **Snapshots** every *N* events per stream for fast rebuilds.
 - **Projections** materialise query models (e.g., *CurrentInventoryView*, *ShoppingList*).
+- **Read Models** provide denormalized views optimized for UI consumption (see Section 7.3).
 
 ### 7.2 Outbox Pattern
 
 Every domain event written adds an *Outbox* record → publisher relay → **Event Bus** (e.g., NATS, local in‑process EventEmitter).
+
+### 7.3 Read Models & CQRS Pattern
+
+The application implements **Command Query Responsibility Segregation (CQRS)** with dedicated read models optimized for query performance and UI consumption.
+
+#### 7.3.1 Read Model Architecture
+
+Read models are **denormalized projections** maintained through event handlers:
+
+| Read Model | Purpose | Updated By |
+|------------|---------|------------|
+| `InventoryItemView` | Flat view of inventory with ingredient_name and store_name | `InventoryProjectionHandler` |
+| `StoreView` | Store data with computed item_count | `StoreProjectionHandler` |
+
+#### 7.3.2 Projection Handlers
+
+Event-driven projection handlers maintain read model consistency:
+
+```python
+class InventoryProjectionHandler:
+    def handle_inventory_item_added(self, event: InventoryItemAdded):
+        # Update denormalized view with ingredient and store names
+        
+class StoreProjectionHandler:  
+    def handle_store_created(self, event: StoreCreated):
+        # Create store view entry
+    def handle_inventory_item_added(self, event: InventoryItemAdded):
+        # Update item_count in store view
+```
+
+#### 7.3.3 Benefits
+
+- **Query Performance**: Eliminates N+1 queries and complex joins
+- **Frontend Simplification**: No data merging logic required in UI
+- **API Clarity**: Responses match exactly what UI needs to display
+- **Consistency**: Synchronous updates ensure immediate consistency
 
 ---
 

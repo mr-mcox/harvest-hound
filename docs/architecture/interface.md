@@ -17,11 +17,12 @@
 
 | Verb   | Path                         | Body / Params                     | Purpose                                                         |
 |--------|------------------------------|-----------------------------------|-----------------------------------------------------------------|
-| GET    | `/stores`                    | –                                 | List stores & high-level stats                                  |
-| POST   | `/stores`                    | `{type, name, priority}`          | Create a new store                                              |
+| GET    | `/stores`                    | –                                 | List stores with denormalized view (item_count included)        |
+| POST   | `/stores`                    | `{name, description?, infinite_supply?}` | Create a new store                                              |
 | PUT    | `/stores/{storeId}`          | `{priority?, name?}`              | Edit store metadata                                             |
 | DELETE | `/stores/{storeId}`          | –                                 | Remove a store                                                  |
-| POST   | `/stores/{storeId}/inventory`| free-text or CSV blob             | Bulk add lots; backend parses quantities                        |
+| POST   | `/stores/{storeId}/inventory`| `{inventory_text: string}`        | Bulk add inventory; backend parses using LLM                    |
+| GET    | `/stores/{storeId}/inventory`| –                                 | Get denormalized inventory items (includes ingredient_name, store_name) |
 | GET    | `/inventory/current`         | `?storeId=`                       | Projection of current inventory for UI                          |
 
 ### 2.2 Planning Sessions
@@ -50,9 +51,43 @@
 
 ---
 
-## 3 · WebSocket API
+## 3 · Response Models (Read Models)
 
-### 3.1 Endpoint & Handshake
+The API uses denormalized read models optimized for UI consumption. These eliminate N+1 queries and reduce frontend complexity.
+
+### 3.1 Store View Model
+
+```typescript
+interface StoreListItem {
+  store_id: string;
+  name: string;
+  description: string;
+  item_count: number;  // Computed from inventory items
+}
+```
+
+### 3.2 Inventory Item View Model
+
+```typescript
+interface InventoryItem {
+  store_id: string;
+  ingredient_id: string;
+  ingredient_name: string;  // Denormalized from ingredient
+  store_name: string;       // Denormalized from store
+  quantity: number;
+  unit: string;
+  notes?: string;
+  added_at: string;         // ISO timestamp
+}
+```
+
+These models are maintained by event projections that update denormalized views whenever domain events occur.
+
+---
+
+## 4 · WebSocket API
+
+### 4.1 Endpoint & Handshake
 
 ```
 ws://{host}/ws?planId={planId}&storeIds=all
@@ -76,7 +111,7 @@ _Server ack:_
 {"type":"subscribed","heartbeat":30}
 ```
 
-### 3.2 Event Envelope
+### 4.2 Event Envelope
 
 ```json
 {
@@ -87,7 +122,7 @@ _Server ack:_
 }
 ```
 
-### 3.3 Event Catalogue (v0)
+### 4.3 Event Catalogue (v0)
 
 | Event                          | Sent When                       | Payload Fields                                  |
 |--------------------------------|---------------------------------|-------------------------------------------------|
@@ -101,7 +136,7 @@ _Server ack:_
 
 ---
 
-## 4 · Interface Sequence (Happy Path)
+## 5 · Interface Sequence (Happy Path)
 
 1. **POST** `/meal-plans` → `201 Created` + `planId`.
 2. Front end opens **WS** `ws://.../ws?planId={planId}`.
