@@ -53,26 +53,23 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] Modify existing event handler tests to verify `InventoryItemView` updates
   - [✓] Update ingredient tests to check view propagation
   - [✓] Update store tests to verify `StoreView` creation
-- [ ] **Update view store tests**
-  - [ ] Modify existing persistence tests for read model roundtrips
-  - [ ] Update query tests to use view stores
-- [ ] **Update API endpoint tests**
-  - [ ] Modify existing endpoint tests to expect denormalized data
-  - [ ] Update response schema assertions to match `InventoryItemView`
+- [✓] **Update view store tests**
+  - [✓] Modify existing persistence tests for read model roundtrips
+  - [✓] Update query tests to use view stores
+- [✓] **Update API endpoint tests**
+  - [✓] Modify existing endpoint tests to expect denormalized data
+  - [✓] Update response schema assertions to match `InventoryItemView`
 
 ### 10.5 Frontend Migration (*Update existing tests*)
-- [ ] **Remove interface extensions** (eliminate the "smell")
-  - [ ] Delete `InventoryItemWithIngredient` from `/packages/frontend/src/lib/types.ts`
-  - [ ] Update imports across all components
-- [ ] **Update API calls** to use new endpoints
-  - [ ] Change inventory endpoints from `/inventory` to `/inventory-view`
-  - [ ] Update store listing endpoints
-- [ ] **Update component types**
-  - [ ] Replace `InventoryItemWithIngredient` with `InventoryItemView`
-  - [ ] Update all component prop types
 - [ ] **Regenerate types** from updated backend schemas
   - [ ] Run `python scripts/export_schemas.py`
   - [ ] Run `npm run generate-types`
+- [ ] **Remove interface extensions** (eliminate the "smell")
+  - [ ] Delete `InventoryItemWithIngredient` from `/packages/frontend/src/lib/types.ts`
+  - [ ] Update imports across all components
+- [ ] **Update component types**
+  - [ ] Replace `InventoryItemWithIngredient` with `InventoryItemView`
+  - [ ] Update all component prop types
 
 ### 10.6 Frontend Testing (*Modify existing tests*)
 - [ ] **Update component tests**

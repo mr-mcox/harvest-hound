@@ -174,11 +174,18 @@ class TestInventoryUpload:
         assert len(inventory_items) == 1
         carrot_item = inventory_items[0]
 
-        # Should have correct details
+        # Should have correct details with denormalized data (InventoryItemView structure)
         assert carrot_item["ingredient_name"] == "carrots"
         assert carrot_item["quantity"] == 2.0
         assert carrot_item["unit"] == "pound"
         assert "added_at" in carrot_item
+        
+        # Should include denormalized store information
+        assert carrot_item["store_name"] == "Test Store"
+        assert "store_id" in carrot_item
+        assert carrot_item["store_id"] == store_id
+        assert "ingredient_id" in carrot_item
+        assert carrot_item["notes"] is None  # Default notes value
 
     def test_upload_inventory_with_parsing_errors_returns_400(self) -> None:
         """Test that POST /stores/{id}/inventory returns 400 for parsing errors."""
@@ -243,21 +250,27 @@ class TestInventoryRetrieval:
         # Sort by ingredient name for consistent testing
         inventory_items.sort(key=lambda x: x["ingredient_name"])
 
-        # Check carrots
+        # Check carrots with denormalized data (InventoryItemView structure)
         carrots_item = inventory_items[0]
         assert carrots_item["ingredient_name"] == "carrots"
         assert carrots_item["quantity"] == 2.0
         assert carrots_item["unit"] == "pound"
         assert carrots_item["notes"] is None
         assert "added_at" in carrots_item
+        assert carrots_item["store_name"] == "Test Store"
+        assert "store_id" in carrots_item
+        assert "ingredient_id" in carrots_item
 
-        # Check kale
+        # Check kale with denormalized data (InventoryItemView structure)
         kale_item = inventory_items[1]
         assert kale_item["ingredient_name"] == "kale"
         assert kale_item["quantity"] == 1.0
         assert kale_item["unit"] == "bunch"
         assert kale_item["notes"] is None
         assert "added_at" in kale_item
+        assert kale_item["store_name"] == "Test Store"
+        assert "store_id" in kale_item
+        assert "ingredient_id" in kale_item
 
     def test_upload_inventory_to_non_existent_store_returns_404(self) -> None:
         """Test that POST inventory to non-existent store returns 404."""

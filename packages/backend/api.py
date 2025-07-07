@@ -60,7 +60,10 @@ class InventoryUploadResponse(BaseModel):
 
 
 class InventoryItem(BaseModel):
+    store_id: str
+    ingredient_id: str
     ingredient_name: str
+    store_name: str
     quantity: float
     unit: str
     notes: Optional[str]
@@ -204,7 +207,10 @@ async def get_store_inventory(store_id: UUID) -> List[InventoryItem]:
         inventory = store_service.get_store_inventory(store_id)
         return [
             InventoryItem(
+                store_id=item["store_id"],
+                ingredient_id=item["ingredient_id"],
                 ingredient_name=item["ingredient_name"],
+                store_name=item["store_name"],
                 quantity=item["quantity"],
                 unit=item["unit"],
                 notes=item["notes"],

@@ -95,14 +95,20 @@ class TestBackendIntegrationWithRealDatabase:
         inventory_items = inventory_response.json()
         assert len(inventory_items) == 2
         
-        # Verify data structure and content
+        # Verify data structure and content with denormalized fields
         carrot_item = next(item for item in inventory_items if "carrot" in item["ingredient_name"].lower())
         assert carrot_item["quantity"] == 2.0
         assert carrot_item["unit"] == "pound"
+        assert carrot_item["store_name"] == "Integration Test CSA"
+        assert "store_id" in carrot_item
+        assert "ingredient_id" in carrot_item
         
         kale_item = next(item for item in inventory_items if "kale" in item["ingredient_name"].lower())
         assert kale_item["quantity"] == 1.0
         assert kale_item["unit"] == "bunch"
+        assert kale_item["store_name"] == "Integration Test CSA"
+        assert "store_id" in kale_item
+        assert "ingredient_id" in kale_item
         
         # Verify store list includes new store with correct item count
         stores_response = client.get("/stores")
@@ -166,6 +172,9 @@ class TestBackendIntegrationWithRealDatabase:
             inventory = inventory_response.json()
             assert len(inventory) == 1
             assert inventory[0]["ingredient_name"] == "apple"
+            assert inventory[0]["store_name"] == "Persistence Test"
+            assert "store_id" in inventory[0]
+            assert "ingredient_id" in inventory[0]
         
         # Add more inventory
         client.post(f"/stores/{store_id}/inventory", json={

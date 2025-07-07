@@ -131,12 +131,15 @@ class StoreService:
         ]
 
     def get_store_inventory(self, store_id: UUID) -> List[Dict[str, Any]]:
-        """Get current inventory for a store with ingredient names."""
+        """Get current inventory for a store with denormalized view data."""
         inventory_views = self.inventory_item_view_store.get_all_for_store(store_id)
         
         return [
             {
+                "store_id": str(view.store_id),
+                "ingredient_id": str(view.ingredient_id),
                 "ingredient_name": view.ingredient_name,
+                "store_name": view.store_name,
                 "quantity": view.quantity,
                 "unit": view.unit,
                 "notes": view.notes,
