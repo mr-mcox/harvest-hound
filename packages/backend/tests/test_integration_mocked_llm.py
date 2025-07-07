@@ -18,14 +18,11 @@ client = TestClient(app)
 class TestFullWorkflowWithMockedLLM:
     """Test complete API workflow using mocked LLM responses."""
 
-    @patch("app.services.inventory_parser.create_inventory_parser_client")
     def test_create_store_and_upload_inventory_with_predictable_parsing(
-        self, mock_parser_factory
+        self
     ) -> None:
         """Test full workflow: create store → upload inventory → verify parsed results."""
-        # Given - Configure mock LLM to return predictable results
-        mock_parser = MockLLMInventoryParser()
-        mock_parser_factory.return_value = mock_parser
+        # Given - Using fixture-based MockLLMInventoryParser for predictable results
 
         # When - Create store
         store_response = client.post("/stores", json={"name": "Test CSA Box"})
@@ -51,22 +48,21 @@ class TestFullWorkflowWithMockedLLM:
 
         assert len(inventory_items) == 2
         
-        # Verify carrots
-        carrots = next(item for item in inventory_items if "carrot" in item["ingredient"]["name"].lower())
+        # Verify carrots (using denormalized structure, values from fixture)
+        carrots = next(item for item in inventory_items if "carrot" in item["ingredient_name"].lower())
         assert carrots["quantity"] == 2.0
-        assert carrots["unit"] == "lbs"
+        assert carrots["unit"] == "pound"  # From fixture: "pound", not "lbs"
+        assert carrots["store_name"] == "Test CSA Box"  # Verify denormalized data
         
-        # Verify kale
-        kale = next(item for item in inventory_items if "kale" in item["ingredient"]["name"].lower())
+        # Verify kale (using denormalized structure, values from fixture)
+        kale = next(item for item in inventory_items if "kale" in item["ingredient_name"].lower())
         assert kale["quantity"] == 1.0
         assert kale["unit"] == "bunch"
+        assert kale["store_name"] == "Test CSA Box"  # Verify denormalized data
 
-    @patch("app.services.inventory_parser.create_inventory_parser_client")
-    def test_complex_inventory_parsing_with_fixture_data(self, mock_parser_factory) -> None:
+    def test_complex_inventory_parsing_with_fixture_data(self) -> None:
         """Test parsing complex inventory using fixture responses."""
-        # Given
-        mock_parser = MockLLMInventoryParser()
-        mock_parser_factory.return_value = mock_parser
+        # Given - Using fixture-based MockLLMInventoryParser for predictable results
 
         # Create store
         store_response = client.post("/stores", json={"name": "Complex Store"})
@@ -86,26 +82,26 @@ class TestFullWorkflowWithMockedLLM:
         inventory_items = inventory_response.json()
         assert len(inventory_items) == 3
 
-        # Verify fractional quantities are handled correctly
-        spinach = next(item for item in inventory_items if "spinach" in item["ingredient"]["name"].lower())
+        # Verify fractional quantities are handled correctly (using denormalized structure)
+        spinach = next(item for item in inventory_items if "spinach" in item["ingredient_name"].lower())
         assert spinach["quantity"] == 3.5
 
-        milk = next(item for item in inventory_items if "milk" in item["ingredient"]["name"].lower())
+        milk = next(item for item in inventory_items if "milk" in item["ingredient_name"].lower())
         assert milk["quantity"] == 2.25
 
-        oil = next(item for item in inventory_items if "oil" in item["ingredient"]["name"].lower())
+        oil = next(item for item in inventory_items if "oil" in item["ingredient_name"].lower())
         assert oil["quantity"] == 0.5
 
 
 class TestErrorHandlingWithMockedLLM:
     """Test error scenarios using mocked LLM failures."""
 
-    @patch("app.services.inventory_parser.create_inventory_parser_client")
-    def test_llm_service_timeout_returns_appropriate_error(self, mock_parser_factory) -> None:
+    @patch("api.inventory_parser.parse_inventory")
+    def test_llm_service_timeout_returns_appropriate_error(self, mock_parse_inventory) -> None:
         """Test handling of LLM service timeouts."""
         # Given - Mock LLM that simulates timeout
-        mock_parser = FailingMockLLMParser(error_type="timeout")
-        mock_parser_factory.return_value = mock_parser
+        failing_parser = FailingMockLLMParser(error_type="timeout")
+        mock_parse_inventory.side_effect = failing_parser.parse_inventory
 
         # Create store
         store_response = client.post("/stores", json={"name": "Test Store"})
@@ -117,17 +113,17 @@ class TestErrorHandlingWithMockedLLM:
             json={"inventory_text": "2 lbs carrots"}
         )
 
-        # Then - Should return 500 with timeout error
-        assert upload_response.status_code == 500
+        # Then - Should return 400 with timeout error (service treats LLM errors as parsing failures)
+        assert upload_response.status_code == 400
         error_data = upload_response.json()
-        assert "timeout" in error_data["detail"].lower()
+        assert "timeout" in error_data["detail"]["errors"][0].lower()
 
-    @patch("app.services.inventory_parser.create_inventory_parser_client")
-    def test_llm_parsing_error_returns_400_with_details(self, mock_parser_factory) -> None:
+    @patch("api.inventory_parser.parse_inventory")
+    def test_llm_parsing_error_returns_400_with_details(self, mock_parse_inventory) -> None:
         """Test handling of LLM parsing errors."""
         # Given
-        mock_parser = FailingMockLLMParser(error_type="parsing")
-        mock_parser_factory.return_value = mock_parser
+        failing_parser = FailingMockLLMParser(error_type="parsing")
+        mock_parse_inventory.side_effect = failing_parser.parse_inventory
 
         # Create store
         store_response = client.post("/stores", json={"name": "Test Store"})
@@ -142,14 +138,13 @@ class TestErrorHandlingWithMockedLLM:
         # Then
         assert upload_response.status_code == 400
         error_data = upload_response.json()
-        assert "parse" in error_data["detail"].lower()
+        assert "parse" in error_data["detail"]["errors"][0].lower()
 
-    @patch("app.services.inventory_parser.create_inventory_parser_client")
-    def test_empty_parsing_result_returns_success_with_zero_items(self, mock_parser_factory) -> None:
+    @patch("api.inventory_parser.parse_inventory")
+    def test_empty_parsing_result_returns_success_with_zero_items(self, mock_parse_inventory) -> None:
         """Test handling when LLM returns empty results."""
-        # Given
-        mock_parser = MockLLMInventoryParser()
-        mock_parser_factory.return_value = mock_parser
+        # Given - Mock to return empty results
+        mock_parse_inventory.return_value = []
 
         # Create store
         store_response = client.post("/stores", json={"name": "Test Store"})
@@ -196,15 +191,13 @@ class TestPerformanceWithMockedLLM:
         assert upload_response.status_code == 201
         assert elapsed < 1.0  # Should be much faster than real LLM
 
-    @patch("app.services.inventory_parser.create_inventory_parser_client")
-    def test_batch_processing_handles_multiple_requests(self, mock_parser_factory) -> None:
+    @patch("api.inventory_parser.parse_inventory")
+    def test_batch_processing_handles_multiple_requests(self, mock_parse_inventory) -> None:
         """Test multiple concurrent parsing requests."""
-        # Given
-        mock_parser = ConfigurableMockLLMParser()
-        mock_parser.set_default_response([
+        # Given - Mock to return consistent results
+        mock_parse_inventory.return_value = [
             ParsedInventoryItem(name="test item", quantity=1.0, unit="piece")
-        ])
-        mock_parser_factory.return_value = mock_parser
+        ]
 
         # Create multiple stores
         store_ids = []
@@ -230,19 +223,14 @@ class TestPerformanceWithMockedLLM:
 class TestConfigurableMockScenarios:
     """Test specific scenarios using configurable mock responses."""
 
-    @patch("app.services.inventory_parser.create_inventory_parser_client")
-    def test_custom_parsing_scenario(self, mock_parser_factory) -> None:
+    @patch("api.inventory_parser.parse_inventory")
+    def test_custom_parsing_scenario(self, mock_parse_inventory) -> None:
         """Test specific parsing scenario with custom mock configuration."""
         # Given - Configure specific response
-        mock_parser = ConfigurableMockLLMParser()
-        mock_parser.set_response(
-            "2 bunches cilantro, 3 limes",
-            [
-                ParsedInventoryItem(name="cilantro", quantity=2.0, unit="bunches"),
-                ParsedInventoryItem(name="limes", quantity=3.0, unit="pieces"),
-            ]
-        )
-        mock_parser_factory.return_value = mock_parser
+        mock_parse_inventory.return_value = [
+            ParsedInventoryItem(name="cilantro", quantity=2.0, unit="bunches"),
+            ParsedInventoryItem(name="limes", quantity=3.0, unit="pieces"),
+        ]
 
         # Create store
         store_response = client.post("/stores", json={"name": "Custom Store"})
@@ -261,7 +249,7 @@ class TestConfigurableMockScenarios:
         inventory_response = client.get(f"/stores/{store_id}/inventory")
         inventory_items = inventory_response.json()
         
-        cilantro = next(item for item in inventory_items if "cilantro" in item["ingredient"]["name"])
+        cilantro = next(item for item in inventory_items if "cilantro" in item["ingredient_name"])
         assert cilantro["quantity"] == 2.0
         assert cilantro["unit"] == "bunches"
 

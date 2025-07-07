@@ -101,7 +101,7 @@ class TestErrorHandlingIntegration:
             ]
         )
         
-        with patch("api.inventory_parser", partial_parser):
+        with patch("api.inventory_parser.parse_inventory", side_effect=partial_parser.parse_inventory):
             inventory_response = client.post(
                 f"/stores/{sample_store}/inventory", 
                 json={"inventory_text": "2 lbs carrots, some kale, 3 tomatoes"}

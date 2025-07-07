@@ -17,6 +17,12 @@
 - Imports not at the top of the file
 - Patching within tests
 
+## Testing improvements
+- Revisit mypy overrides and determine whether they are warranted.
+- Look for ways to reduce the number of tests while keeping coverage about the same
+- Reduce patching within tests
+- Reduce imports not at the top of the file
+
 ## Scratch
 ### 9.8 Future Work Notes (*No tests needed - planning*)
 - [ ] **WebSocket testing infrastructure** (deferred)

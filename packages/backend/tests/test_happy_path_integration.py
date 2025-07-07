@@ -304,7 +304,13 @@ class TestHappyPathEdgeCases:
         # Verify store starts with 0 items
         initial_stores_response = client.get("/stores")
         initial_stores = initial_stores_response.json()
-        empty_store = next(s for s in initial_stores if s["name"] == "Empty Store Test")
+        empty_store = next(s for s in initial_stores if s["store_id"] == store_id)
+        
+        # Verify inventory is actually empty
+        inventory_response = client.get(f"/stores/{store_id}/inventory")
+        inventory_items = inventory_response.json()
+        
+        assert len(inventory_items) == 0
         assert empty_store["item_count"] == 0
 
         # Add inventory
