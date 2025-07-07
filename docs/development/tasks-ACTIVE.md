@@ -72,12 +72,12 @@ User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV in
   - [✓] Update all component prop types
 
 ### 10.6 Frontend Testing (*Modify existing tests*)
-- [ ] **Update component tests**
-  - [ ] Modify mock data to include `store_name` field
-  - [ ] Update type annotations to use `InventoryItemView`
-- [ ] **Update integration tests**
-  - [ ] Change API endpoint URLs to point to new view endpoints
-  - [ ] Update response structure expectations to match flat view models
+- [✓] **Update component tests**
+  - [✓] Modify mock data to include `store_name` field
+  - [✓] Update type annotations to use `InventoryItemView`
+- [✓] **Update integration tests**
+  - [✓] API endpoints already use correct read model endpoints
+  - [✓] Response structure expectations already match flat view models
 
 ### 10.7 Documentation Updates (*No tests needed - documentation*)
 - [ ] **Update API documentation**
