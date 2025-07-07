@@ -7,7 +7,7 @@ to JSON Schema format, enabling type-safe frontend integration.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, Union
 
 from pydantic import BaseModel
 
@@ -37,7 +37,7 @@ class SchemaExportService:
             ("InventoryItemAdded", InventoryItemAdded),
         ]
     
-    def export_model_schema(self, model_class: Type[BaseModel], title: str | None = None) -> Dict[str, Any]:
+    def export_model_schema(self, model_class: Union[Type[BaseModel], Any], title: str | None = None) -> Dict[str, Any]:
         """Export a Pydantic model to JSON Schema."""
         # Generate schema with mode that avoids complex types
         schema = model_class.model_json_schema(mode="serialization")
@@ -100,18 +100,22 @@ class SchemaExportService:
             # Create a copy to avoid modifying the original
             result = {}
             for k, v in obj.items():
-                # Keep title for root level schemas, but skip for nested simple types
-                if k == "title" and not is_root:
+                # Skip titles for simple types and anyOf patterns to prevent type aliases
+                if k == "title":
+                    # Always skip titles for simple primitive types to avoid type aliases
                     if isinstance(obj.get("type"), str) and obj.get("type") in [
                         "string",
                         "number",
+                        "integer", 
                         "boolean",
                         "array",
-                        "object",
                     ]:
                         continue
                     elif "anyOf" in obj:
                         # Skip title for anyOf patterns (like optional fields)
+                        continue
+                    # Only keep titles for object types at root level
+                    elif not is_root and obj.get("type") == "object":
                         continue
                 result[k] = self._simplify_schema(v, is_root=False)
             return result

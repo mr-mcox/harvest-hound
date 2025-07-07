@@ -213,7 +213,6 @@
         },
         "item_count": {
           "default": 0,
-          "title": "Item Count",
           "type": "integer"
         },
         "created_at": {
