@@ -98,7 +98,19 @@ class ConnectionManager:
             message: The message to broadcast
             room: The room to broadcast to
         """
-        raise NotImplementedError("TODO: implement in NEW BEHAVIOR task")
+        if room in self.connections:
+            # Send message to all connections in the room
+            connections_to_remove = []
+            for websocket in self.connections[room]:
+                try:
+                    await websocket.send_json(message.model_dump())
+                except Exception:
+                    # Connection is broken, mark for removal
+                    connections_to_remove.append(websocket)
+            
+            # Clean up broken connections
+            for websocket in connections_to_remove:
+                await self.disconnect(websocket)
     
     def get_room_connections(self, room: str) -> List[WebSocket]:
         """

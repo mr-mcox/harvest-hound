@@ -127,7 +127,8 @@ async def startup_event() -> None:
                 store_view_store,
                 inventory_item_view_store,
                 store_repository,
-                ingredient_repository
+                ingredient_repository,
+                app.state.connection_manager
             )
             
             session.commit()
