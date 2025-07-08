@@ -8,7 +8,7 @@ from app.models.parsed_inventory import ParsedInventoryItem
 class TestBamlToDomainTranslation:
     """Test translation from BAML types to domain models."""
 
-    def test_baml_ingredient_converts_to_domain_parsed_item(self):
+    def test_baml_ingredient_converts_to_domain_parsed_item(self) -> None:
         """Test: BAML InventoryParseResult converts to domain ParsedInventoryItem"""
         baml_ingredient = BamlIngredient(name="carrot", quantity=2.0, unit="pound")
 
@@ -20,7 +20,7 @@ class TestBamlToDomainTranslation:
         assert domain_item.quantity == 2.0
         assert domain_item.unit == "pound"
 
-    def test_translation_preserves_all_data_fields(self):
+    def test_translation_preserves_all_data_fields(self) -> None:
         """Test: Translation preserves all data fields correctly"""
         baml_ingredient = BamlIngredient(name="kale", quantity=1.0, unit="bunch")
 
@@ -32,7 +32,7 @@ class TestBamlToDomainTranslation:
         assert domain_item.quantity == baml_ingredient.quantity
         assert domain_item.unit == baml_ingredient.unit
 
-    def test_translation_handles_missing_fields_gracefully(self):
+    def test_translation_handles_missing_fields_gracefully(self) -> None:
         """Test: Translation handles missing/null fields gracefully"""
         # Test with edge case values that are still valid
         baml_ingredient = BamlIngredient(
@@ -49,7 +49,7 @@ class TestBamlToDomainTranslation:
         assert domain_item.quantity == 0.1
         assert domain_item.unit == "pound"
 
-    def test_translation_validates_domain_constraints(self):
+    def test_translation_validates_domain_constraints(self) -> None:
         """Test: Translation validates domain constraints (positive quantities)"""
         baml_ingredient = BamlIngredient(
             name="invalid",
@@ -66,7 +66,7 @@ class TestBamlToDomainTranslation:
         assert "quantity" in str(exc_info.value).lower()
         assert "positive" in str(exc_info.value).lower()
 
-    def test_translation_validates_empty_name(self):
+    def test_translation_validates_empty_name(self) -> None:
         """Test: Translation validates empty ingredient names"""
         baml_ingredient = BamlIngredient(
             name="",  # Invalid: empty name
@@ -82,7 +82,7 @@ class TestBamlToDomainTranslation:
 
         assert "name" in str(exc_info.value).lower()
 
-    def test_translation_validates_empty_unit(self):
+    def test_translation_validates_empty_unit(self) -> None:
         """Test: Translation validates empty units"""
         baml_ingredient = BamlIngredient(
             name="carrot",

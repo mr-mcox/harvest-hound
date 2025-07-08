@@ -1,113 +1,159 @@
-# Active Development Tasks
----
+# Test Quality Improvement - Active Tasks
 
-# UC #1 Implementation Plan: Create Inventory Store & Bulk-Upload Inventory
+## Purpose
 
-## Overview
-User creates a new store (e.g., "CSA Box") and uploads inventory via text/CSV input. The system parses ingredients using LLM, creates dynamic ingredient entities, and displays the parsed inventory immediately.
+Address critical code smells in the test suite that indicate fundamental architectural problems:
 
-**Target Observable Behavior**: User pastes "2 lbs carrots, 1 bunch kale, 3 tomatoes" and sees structured inventory table within 30 seconds.
+1. **Excessive @patch usage** (8+ decorators per file) masking poor dependency injection
+2. **Typing overrides in pyproject.toml** hiding interface design issues
+3. **Import disorganization** violating PEP8 and obscuring dependencies
+4. **Test duplication** across multiple integration test files
+5. **Complex multi-concern tests** mixing API, event sourcing, and view model testing
 
----
+**Goal**: Eliminate code smells through proper architecture, not configuration workarounds. Reduce total test count by 30-40% while maintaining coverage.
 
-## Task 10: Read Model Projections Implementation (ADR-005)
-**Goal**: Implement read model projections to eliminate frontend "smell" and optimize query performance
+## Current State Assessment
 
-**REFACTOR NOTE**: This is primarily a refactor changing data structures, not behavior. Most tasks should modify existing tests rather than create new ones.
+### ✅ Foundation Work Completed
+- Created typed service interfaces (`app/interfaces/`)
+- Implemented dependency injection (`app/dependencies.py`)
+- Demonstrated zero-patch approach (`tests/test_dependency_injection.py`)
+- Validated strict mypy compliance is achievable
 
-### 10.1 Backend Read Model Infrastructure (*Tests needed*)
-- [✓] **Create read model classes** in `/packages/backend/app/models/read_models.py`
-  - [✓] `InventoryItemView` with denormalized fields (ingredient_name, store_name)
-  - [✓] `StoreView` with computed fields (item_count)
-- [✓] **Create projection handlers** in `/packages/backend/app/projections/handlers.py`
-  - [✓] `InventoryProjectionHandler` for inventory events
-  - [✓] `StoreProjectionHandler` for store events
-- [✓] **Create view stores** in `/packages/backend/app/infrastructure/view_stores.py`
-  - [✓] `InventoryItemViewStore` using SQLite Core
-  - [✓] `StoreViewStore` using SQLite Core
-- [✓] **Create projection registry** in `/packages/backend/app/projections/registry.py`
-  - [✓] `ProjectionRegistry` for managing event handlers
+### ⚠️ Critical Issues Discovered
+- **Database integration failure**: `items_added=2` but `inventory=[]` in tests
+- **Legacy test files unchanged**: Still using @patch decorators and poor typing
+- **Parallel infrastructure**: Created new files without removing old ones
+- **Root cause unclear**: Dependency injection may have broken event sourcing or view projections
 
-### 10.2 Database Schema Updates (*No tests needed - migration*)
-- [✓] **Create read model tables** with proper indexes
-  - [✓] `inventory_item_views` table with denormalized fields
-  - [✓] `store_views` table with computed fields
-  - [✓] Add indexes for common query patterns
-- [✓] **Update EventStore** to trigger projections
-  - [Partial] Keep inline projection logic for backward compatibility
-  - [✓] Add projection registry integration
+### 📁 Files Created (Some Placeholders)
+```
+app/interfaces/           # Keep - core typed interfaces
+app/dependencies.py       # Keep - DI implementation
+tests/conftest.py        # Keep - centralized fixtures
+tests/implementations/   # Review - may consolidate
+tests/utils/             # Review - api_helpers useful, fixtures redundant
+tests/test_dependency_injection.py  # Keep - working example
+tests/test_integration_typed.py     # REMOVE - placeholder with DB issues
+```
 
-### 10.3 API Layer Updates (*Tests needed*)
-- [x] **Add new read model endpoints**
-  - [x] `GET /stores/{id}/inventory-view` returning `InventoryItemView[]`
-  - [x] `GET /stores-view` returning denormalized store list
-- [x] **Update existing endpoints** to use read models
-  - [x] Modify `GET /stores/{id}/inventory` to use view store
-  - [x] Modify `GET /stores` to use store view
-- [x] **Update service layer** to use view stores instead of joins
-  - [x] Remove N+1 queries from `StoreService.get_store_inventory()`
-  - [x] Add view store dependency injection
+## Systematic Plan Forward
 
-### 10.4 Backend Testing (*Modify existing tests*)
-- [✓] **Update projection handler tests**
-  - [✓] Modify existing event handler tests to verify `InventoryItemView` updates
-  - [✓] Update ingredient tests to check view propagation
-  - [✓] Update store tests to verify `StoreView` creation
-- [✓] **Update view store tests**
-  - [✓] Modify existing persistence tests for read model roundtrips
-  - [✓] Update query tests to use view stores
-- [✓] **Update API endpoint tests**
-  - [✓] Modify existing endpoint tests to expect denormalized data
-  - [✓] Update response schema assertions to match `InventoryItemView`
+### Phase 1: Root Cause Analysis & Database Fix (HIGH PRIORITY)
+**Objective**: Understand why integration tests are failing and fix fundamental issues
 
-### 10.5 Frontend Migration (*Update existing tests*)
-- [✓] **Regenerate types** from updated backend schemas
-  - [✓] Run `python scripts/export_schemas.py`
-  - [✓] Run `npm run generate-types`
-- [✓] **Remove interface extensions** (eliminate the "smell")
-  - [✓] Delete `InventoryItemWithIngredient` from `/packages/frontend/src/lib/types.ts`
-  - [✓] Update imports across all components
-- [✓] **Update component types**
-  - [✓] Replace `InventoryItemWithIngredient` with `InventoryItemView`
-  - [✓] Update all component prop types
+#### 1.1 Diagnose Database Integration Issues
+- [x] Investigate why `items_added=2` but inventory retrieval returns `[]`
+- [x] Verify event sourcing is working correctly with dependency injection
+- [x] Check if view store projections are being triggered
+- [x] Validate database session management in test environment
 
-### 10.6 Frontend Testing (*Modify existing tests*)
-- [✓] **Update component tests**
-  - [✓] Modify mock data to include `store_name` field
-  - [✓] Update type annotations to use `InventoryItemView`
-- [✓] **Update integration tests**
-  - [✓] API endpoints already use correct read model endpoints
-  - [✓] Response structure expectations already match flat view models
+#### 1.2 Fix Dependency Injection Architecture
+- [x] Ensure event store projection registry is properly initialized
+- [x] Fix database session scoping for tests vs production
+- [x] Verify that FastAPI dependency overrides work correctly
+- [x] Test with simplified end-to-end scenario
 
-### 10.7 Documentation Updates (*No tests needed - documentation*)
-- [✓] **Update API documentation**
-  - [✓] `docs/architecture/interface.md` - new read model endpoints
-  - [✓] `docs/features/inventory/design.md` - flat response structures
-- [✓] **Update domain documentation**
-  - [✓] `docs/architecture/domain-model.md` - read model concepts
-- [✓] **Update package guidelines**
-  - [✓] `packages/backend/CLAUDE.md` - read model patterns
-  - [✓] `packages/frontend/CLAUDE.md` - denormalized data consumption
+#### 1.3 Validate Core Functionality
+- [x] Get one complete integration test working: create store → upload → verify items
+- [x] Ensure test uses dependency injection (no @patch)
+- [x] Confirm proper typing throughout the stack
 
-### 10.8 Integration Testing (*Modify existing tests*)
-- [ ] **Update end-to-end workflow tests**
-  - [ ] Modify store creation tests to expect denormalized data
-  - [ ] Update inventory upload tests to verify view model responses
-  - [ ] Update ingredient update tests to verify view propagation
+### Phase 2: Systematic Migration (One File at a Time)
+**Objective**: Replace problematic test files with improved versions
 
----
+#### 2.1 Consolidate Integration Tests
+**Target**: Replace 4 files with 1 comprehensive file
+- Current files: `test_integration_mocked_llm.py`, `test_backend_integration.py`, `test_happy_path_integration.py`, `test_error_handling_integration.py`
+- New file: `test_integration_comprehensive.py`
 
-## Success Criteria
+**Process**:
+- [x] Catalog all unique test scenarios across the 4 files
+- [x] Design consolidated test structure with typed fixtures
+- [x] Implement using dependency injection (zero @patch decorators)
+- [x] Ensure comprehensive coverage of happy path, error cases, edge cases
+- [x] Validate with strict mypy compliance
+- [x] **Remove the 4 original files**
 
-**MVP Complete When:**
-1. User can create a store in under 30 seconds
-2. User can upload inventory text and see parsed results immediately
-3. LLM correctly parses 90%+ of common inventory formats
-4. All inventory data persists across application restarts
-5. Clean separation between ingredients and inventory enables future recipe features
+#### 2.2 Update Remaining Test Files
+- [x] `test_store_service.py` - Update to use dependency injection
+- [x] `test_view_stores.py` - Remove patches, add proper typing
+- [x] Other files - Audit and update systematically
 
-**Ready for UC #2 When:**
-- All testable behaviors above are working
-- Code is maintainable with proper separation of concerns
-- Error handling covers common failure modes
-- UI provides clear feedback for all user actions
+### Phase 3: Cleanup & Optimization
+**Objective**: Remove redundancy and temporary files
+
+#### 3.1 Remove Placeholder Files
+- [x] Delete `tests/test_integration_typed.py` (failed placeholder)
+- [x] Consolidate `tests/implementations/` (keep only necessary mocks)
+- [x] Remove `tests/utils/typed_fixtures.py` (content moved to conftest.py)
+- [x] Clean up any other duplicate/placeholder files
+
+#### 3.2 Optimize Test Architecture
+- [x] Ensure `tests/utils/api_helpers.py` is used across all integration tests
+- [x] Consolidate mock implementations - keep only essential ones
+- [x] Review test organization for logical grouping
+
+#### 3.3 Remove Legacy Compatibility Layer
+- [x] Remove backward compatibility globals from `api.py`
+- [x] Ensure all tests use proper dependency injection
+
+### Phase 4: Validation & Typing Compliance
+**Objective**: Achieve full typing compliance and validate improvements
+
+#### 4.1 Remove Typing Overrides
+```toml
+# Remove from pyproject.toml:
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+```
+
+#### 4.2 Validate Success Criteria
+- [ ] **Zero @patch decorators** in entire test suite
+- [ ] **All imports at file tops** (PEP8 compliant)
+- [x] **30-40% reduction in test count** while maintaining coverage
+- [ ] **Full mypy compliance** for all test files
+- [ ] **Clear separation of concerns** in test architecture
+
+#### 4.3 Final Validation
+- [ ] Run complete test suite with coverage analysis
+- [ ] Verify mypy passes with strict settings on all files
+- [ ] Confirm performance improvement (faster test execution)
+- [ ] Document the new testing patterns for future development
+
+## Risk Management
+
+### High Risk Issues
+1. **Database integration problems** - Could indicate fundamental architecture issues
+2. **Test coverage regression** - Must maintain existing coverage during consolidation
+3. **Integration complexity** - Event sourcing + view projections + dependency injection
+
+### Mitigation Strategies
+- Fix database issues before any major migrations
+- Run coverage reports before/after each phase
+- Implement changes incrementally with validation
+- Keep working tests as reference during migration
+
+## Success Metrics
+
+### Quantitative Goals
+- **Zero** @patch decorators across test suite
+- **30-40% reduction** in total test file count
+- **Full mypy compliance** without typing overrides
+- **Maintain or improve** test coverage percentage
+
+### Qualitative Goals
+- Tests serve as clear documentation of system behavior
+- Easy to add new tests following established patterns
+- Debugging test failures provides clear insights
+- Type safety prevents common testing mistakes
+
+## Next Immediate Actions
+
+1. **PRIORITY 1**: Investigate and fix the database integration issues in Phase 1.1
+2. **PRIORITY 2**: Get one complete integration test working end-to-end
+3. **PRIORITY 3**: Begin systematic migration of integration test files
+
+The foundation work was valuable, but the real value comes from completing the migration and cleanup phases.

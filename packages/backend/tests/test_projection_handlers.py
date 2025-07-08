@@ -5,12 +5,12 @@ Testing integration between projection handlers and view stores
 using SQLAlchemy Core per ADR-005.
 """
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Generator
 from uuid import uuid4, UUID
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from app.events.domain_events import InventoryItemAdded, StoreCreated, IngredientCreated
 from app.models import Ingredient, InventoryStore
@@ -22,10 +22,10 @@ from app.projections.handlers import InventoryProjectionHandler, StoreProjection
 class MockIngredientRepository:
     """Mock ingredient repository for testing."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._ingredients: Dict[UUID, Ingredient] = {}
     
-    def add_ingredient(self, ingredient: Ingredient):
+    def add_ingredient(self, ingredient: Ingredient) -> None:
         """Add ingredient to mock store."""
         self._ingredients[ingredient.ingredient_id] = ingredient
     
@@ -40,10 +40,10 @@ class MockIngredientRepository:
 class MockStoreRepository:
     """Mock store repository for testing."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._stores: Dict[UUID, InventoryStore] = {}
     
-    def add_store(self, store: InventoryStore):
+    def add_store(self, store: InventoryStore) -> None:
         """Add store to mock store."""
         self._stores[store.store_id] = store
     
@@ -59,29 +59,29 @@ class TestInventoryProjectionHandler:
     """Test InventoryProjectionHandler with view stores."""
 
     @pytest.fixture
-    def session(self):
+    def session(self) -> Session:
         """Create test session with in-memory database."""
         engine = create_engine("sqlite:///:memory:")
         Session = sessionmaker(bind=engine)
         return Session()
     
     @pytest.fixture
-    def ingredient_repo(self):
+    def ingredient_repo(self) -> MockIngredientRepository:
         """Create mock ingredient repository."""
         return MockIngredientRepository()
     
     @pytest.fixture
-    def store_repo(self):
+    def store_repo(self) -> MockStoreRepository:
         """Create mock store repository."""
         return MockStoreRepository()
     
     @pytest.fixture
-    def view_store(self, session):
+    def view_store(self, session: Session) -> InventoryItemViewStore:
         """Create SQLAlchemy view store."""
         return InventoryItemViewStore(session=session)
     
     @pytest.fixture
-    def handler(self, ingredient_repo, store_repo, view_store):
+    def handler(self, ingredient_repo: MockIngredientRepository, store_repo: MockStoreRepository, view_store: InventoryItemViewStore) -> InventoryProjectionHandler:
         """Create projection handler with dependencies."""
         return InventoryProjectionHandler(
             ingredient_repo=ingredient_repo,
@@ -89,7 +89,7 @@ class TestInventoryProjectionHandler:
             view_store=view_store,
         )
 
-    def test_handle_inventory_item_added_creates_view(self, handler, ingredient_repo, store_repo, view_store):
+    def test_handle_inventory_item_added_creates_view(self, handler: InventoryProjectionHandler, ingredient_repo: MockIngredientRepository, store_repo: MockStoreRepository, view_store: InventoryItemViewStore) -> None:
         """Handler should create InventoryItemView when processing InventoryItemAdded event."""
         # Arrange
         store_id = uuid4()
@@ -139,7 +139,7 @@ class TestInventoryProjectionHandler:
         assert view.unit == "lbs"
         assert view.notes == "Fresh from farm"
 
-    def test_handle_ingredient_created_updates_existing_views(self, handler, ingredient_repo, store_repo, view_store):
+    def test_handle_ingredient_created_updates_existing_views(self, handler: InventoryProjectionHandler, ingredient_repo: MockIngredientRepository, store_repo: MockStoreRepository, view_store: InventoryItemViewStore) -> None:
         """Handler should update existing inventory views when ingredient is created/updated."""
         # Arrange
         ingredient_id = uuid4()
@@ -183,23 +183,23 @@ class TestStoreProjectionHandler:
     """Test StoreProjectionHandler with view stores."""
 
     @pytest.fixture
-    def session(self):
+    def session(self) -> Session:
         """Create test session with in-memory database."""
         engine = create_engine("sqlite:///:memory:")
         Session = sessionmaker(bind=engine)
         return Session()
     
     @pytest.fixture
-    def view_store(self, session):
+    def view_store(self, session: Session) -> StoreViewStore:
         """Create SQLAlchemy store view store."""
         return StoreViewStore(session=session)
     
     @pytest.fixture
-    def handler(self, view_store):
+    def handler(self, view_store: StoreViewStore) -> StoreProjectionHandler:
         """Create projection handler with dependencies."""
         return StoreProjectionHandler(view_store=view_store)
 
-    def test_handle_store_created_creates_view(self, handler, view_store):
+    def test_handle_store_created_creates_view(self, handler: StoreProjectionHandler, view_store: StoreViewStore) -> None:
         """Handler should create StoreView when processing StoreCreated event."""
         # Arrange
         store_id = uuid4()
@@ -225,7 +225,7 @@ class TestStoreProjectionHandler:
         assert view.infinite_supply is False
         assert view.item_count == 0  # New store starts with 0 items
 
-    def test_handle_inventory_item_added_updates_count(self, handler, view_store):
+    def test_handle_inventory_item_added_updates_count(self, handler: StoreProjectionHandler, view_store: StoreViewStore) -> None:
         """Handler should increment item_count when processing InventoryItemAdded event."""
         # Arrange
         store_id = uuid4()

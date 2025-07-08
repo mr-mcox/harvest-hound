@@ -5,12 +5,13 @@ Testing the refactored EventStore that uses projection registry instead of
 inline projection logic, following ADR-005 separation of concerns.
 """
 from datetime import datetime
+from typing import Generator
 from uuid import uuid4
 from unittest.mock import Mock
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from app.events.domain_events import InventoryItemAdded, StoreCreated, IngredientCreated
 from app.infrastructure.event_store import EventStore
@@ -19,7 +20,7 @@ from app.projections.registry import ProjectionRegistry
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> Generator[Session, None, None]:
     """Create isolated test database session."""
     engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
@@ -34,7 +35,7 @@ def db_session():
 class TestEventStoreWithProjectionRegistry:
     """Test EventStore integration with projection registry."""
 
-    def test_append_event_triggers_projections(self, db_session):
+    def test_append_event_triggers_projections(self, db_session: Session) -> None:
         """EventStore should trigger projection registry when appending events."""
         # Arrange
         mock_registry = Mock(spec=ProjectionRegistry)
@@ -55,7 +56,7 @@ class TestEventStoreWithProjectionRegistry:
         # Assert
         mock_registry.handle.assert_called_once_with(event)
 
-    def test_append_event_multiple_events_triggers_all(self, db_session):
+    def test_append_event_multiple_events_triggers_all(self, db_session: Session) -> None:
         """EventStore should trigger projections for all events."""
         # Arrange
         mock_registry = Mock(spec=ProjectionRegistry)
@@ -86,7 +87,7 @@ class TestEventStoreWithProjectionRegistry:
         mock_registry.handle.assert_any_call(store_event)
         mock_registry.handle.assert_any_call(ingredient_event)
 
-    def test_eventstore_without_registry_works(self, db_session):
+    def test_eventstore_without_registry_works(self, db_session: Session) -> None:
         """EventStore should work without projection registry (optional dependency)."""
         # Arrange
         # EventStore without projection registry
@@ -108,7 +109,7 @@ class TestEventStoreWithProjectionRegistry:
         assert len(events) == 1
         assert events[0]["event_type"] == "StoreCreated"
 
-    def test_projection_errors_dont_break_event_storage(self, db_session):
+    def test_projection_errors_dont_break_event_storage(self, db_session: Session) -> None:
         """EventStore should store events even if projections fail."""
         # Arrange
         mock_registry = Mock(spec=ProjectionRegistry)
@@ -132,7 +133,7 @@ class TestEventStoreWithProjectionRegistry:
         assert len(events) == 1
         assert events[0]["event_type"] == "StoreCreated"
 
-    def test_eventstore_maintains_existing_query_methods(self, db_session):
+    def test_eventstore_maintains_existing_query_methods(self, db_session: Session) -> None:
         """EventStore should maintain backward compatibility with existing query methods."""
         # Arrange
         event_store = EventStore(session=db_session, projection_registry=None)

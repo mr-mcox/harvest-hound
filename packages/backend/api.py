@@ -1,20 +1,20 @@
-from typing import List, Optional
+from typing import Annotated, List, Optional
 from uuid import UUID
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from app.infrastructure.event_store import EventStore
-from app.infrastructure.repositories import IngredientRepository, StoreRepository
-from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
-from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
-from app.projections.registry import ProjectionRegistry
-from app.services.store_service import StoreService
+from app.dependencies import (
+    get_event_store,
+    get_ingredient_repository,
+    get_inventory_item_view_store,
+    get_store_service,
+    get_store_view_store,
+    setup_projection_registry,
+)
+from app.interfaces.service import StoreServiceProtocol
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
 
@@ -70,64 +70,53 @@ class InventoryItem(BaseModel):
     added_at: str
 
 
-# Database setup for view stores
-# Use temporary database for tests, persistent for production
-import os
-import tempfile
+# Module-level dependency setup for startup
+_startup_completed = False
 
-if os.getenv("PYTEST_CURRENT_TEST"):
-    # For tests, use a temporary file that gets cleaned up
-    temp_dir = tempfile.mkdtemp()
-    DATABASE_URL = f"sqlite:///{temp_dir}/test_view_store.db"
-else:
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///view_store.db")
 
-engine = create_engine(DATABASE_URL, echo=False)
-SessionLocal = sessionmaker(bind=engine)
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Set up projection registry during app startup."""
+    global _startup_completed
+    if not _startup_completed:
+        # Manually create database session for startup
+        from app.dependencies import SessionLocal, engine
+        from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+        from app.infrastructure.event_store import EventStore
+        from app.infrastructure.repositories import IngredientRepository, StoreRepository
+        
+        # Create tables if they don't exist
+        from app.infrastructure.database import metadata
+        metadata.create_all(bind=engine)
+        
+        # Create session and dependencies
+        session = SessionLocal()
+        try:
+            # Create dependencies manually
+            event_store = EventStore(session=session, projection_registry=None)
+            store_view_store = StoreViewStore(session)
+            inventory_item_view_store = InventoryItemViewStore(session)
+            store_repository = StoreRepository(event_store)
+            ingredient_repository = IngredientRepository(event_store)
+            
+            setup_projection_registry(
+                event_store,
+                store_view_store,
+                inventory_item_view_store,
+                store_repository,
+                ingredient_repository
+            )
+            session.commit()
+        finally:
+            session.close()
+        
+        _startup_completed = True
 
-# Dependency injection setup
-session = SessionLocal()
-store_view_store = StoreViewStore(session)
-inventory_item_view_store = InventoryItemViewStore(session)
 
-# Event store with projection registry  
-event_store = EventStore(session=session, projection_registry=None)  # Will add later
-store_repository = StoreRepository(event_store)
-ingredient_repository = IngredientRepository(event_store)
+# Import the get_db_session for startup
+from app.dependencies import get_db_session
 
-# Set up projection registry and handlers
-projection_registry = ProjectionRegistry()
-store_projection_handler = StoreProjectionHandler(store_view_store)
-inventory_projection_handler = InventoryProjectionHandler(
-    ingredient_repository, 
-    store_repository,
-    inventory_item_view_store
-)
-
-# Import event types for registration
-from app.events.domain_events import StoreCreated, InventoryItemAdded, IngredientCreated
-
-# Register specific event handlers
-projection_registry.register(StoreCreated, store_projection_handler.handle_store_created)
-projection_registry.register(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
-projection_registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
-projection_registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
-
-# Update event store with projection registry
-event_store.projection_registry = projection_registry
-
-# Import the fixture-based mock parser for comprehensive testing
-from tests.mocks.llm_service import MockLLMInventoryParser
-
-# Use fixture-based mock parser for comprehensive testing scenarios
-inventory_parser = MockLLMInventoryParser()
-store_service = StoreService(
-    store_repository, 
-    ingredient_repository, 
-    inventory_parser,
-    store_view_store,
-    inventory_item_view_store
-)
+# All tests now use proper dependency injection
 
 
 @app.get("/health")
@@ -137,7 +126,10 @@ async def health_check() -> dict[str, str]:
 
 
 @app.post("/stores", response_model=CreateStoreResponse, status_code=201)
-async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
+async def create_store(
+    request: CreateStoreRequest,
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
+) -> CreateStoreResponse:
     """Create a new inventory store."""
     store_id = store_service.create_store(
         name=request.name,
@@ -154,7 +146,9 @@ async def create_store(request: CreateStoreRequest) -> CreateStoreResponse:
 
 
 @app.get("/stores", response_model=List[StoreListItem])
-async def get_stores() -> List[StoreListItem]:
+async def get_stores(
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
+) -> List[StoreListItem]:
     """Get list of all stores."""
     stores_data = store_service.get_all_stores()
     return [
@@ -174,7 +168,9 @@ async def get_stores() -> List[StoreListItem]:
     status_code=201,
 )
 async def upload_inventory(
-    store_id: UUID, request: InventoryUploadRequest
+    store_id: UUID,
+    request: InventoryUploadRequest,
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
 ) -> InventoryUploadResponse:
     """Upload inventory to a store."""
     try:
@@ -201,7 +197,10 @@ async def upload_inventory(
 
 
 @app.get("/stores/{store_id}/inventory", response_model=List[InventoryItem])
-async def get_store_inventory(store_id: UUID) -> List[InventoryItem]:
+async def get_store_inventory(
+    store_id: UUID,
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
+) -> List[InventoryItem]:
     """Get current inventory for a store."""
     try:
         inventory = store_service.get_store_inventory(store_id)

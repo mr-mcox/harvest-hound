@@ -1,16 +1,52 @@
 from uuid import UUID
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api import app
 
-client = TestClient(app)
+
+@pytest.fixture(scope="module")
+def client() -> TestClient:
+    """Create test client with proper startup initialization."""
+    # Manually trigger startup to initialize projection registry
+    from app.dependencies import SessionLocal, engine
+    from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+    from app.infrastructure.event_store import EventStore
+    from app.infrastructure.repositories import IngredientRepository, StoreRepository
+    from app.dependencies import setup_projection_registry
+    from app.infrastructure.database import metadata
+    
+    # Create tables if they don't exist
+    metadata.create_all(bind=engine)
+    
+    # Set up projection registry
+    session = SessionLocal()
+    try:
+        event_store = EventStore(session=session, projection_registry=None)
+        store_view_store = StoreViewStore(session)
+        inventory_item_view_store = InventoryItemViewStore(session)
+        store_repository = StoreRepository(event_store)
+        ingredient_repository = IngredientRepository(event_store)
+        
+        setup_projection_registry(
+            event_store,
+            store_view_store,
+            inventory_item_view_store,
+            store_repository,
+            ingredient_repository
+        )
+        session.commit()
+    finally:
+        session.close()
+    
+    return TestClient(app)
 
 
 class TestStoreCreation:
     """Test POST /stores endpoint behavior."""
 
-    def test_create_store_with_valid_data_returns_201_with_store_details(self) -> None:
+    def test_create_store_with_valid_data_returns_201_with_store_details(self, client: TestClient) -> None:
         """Test that POST /stores with valid data returns 201 with store details."""
         # Given
         store_data = {"name": "CSA Box"}
@@ -47,7 +83,7 @@ class TestStoreCreation:
         assert created_store["name"] == "CSA Box"
         assert created_store["item_count"] == 0
 
-    def test_create_store_with_missing_name_returns_400_validation_error(self) -> None:
+    def test_create_store_with_missing_name_returns_400_validation_error(self, client: TestClient) -> None:
         """Test that POST /stores with missing name returns 400 validation error."""
         # Given
         store_data = {"description": "Missing name field"}
@@ -76,7 +112,7 @@ class TestStoreCreation:
 class TestStoreList:
     """Test GET /stores endpoint behavior."""
 
-    def test_get_stores_returns_list_of_all_stores_with_item_counts(self) -> None:
+    def test_get_stores_returns_list_of_all_stores_with_item_counts(self, client: TestClient) -> None:
         """Test that GET /stores returns list of all stores with item counts."""
         # Given - Create multiple stores
         store1_data = {"name": "CSA Box", "description": "Fresh vegetables"}
@@ -143,7 +179,7 @@ class TestInventoryUpload:
     """Test POST /stores/{id}/inventory endpoint behavior."""
 
     def test_upload_inventory_with_valid_text_returns_201_with_parsed_items(
-        self,
+        self, client: TestClient
     ) -> None:
         """Test that POST /stores/{id}/inventory with valid text returns 201."""
         # Given - Create a store first
@@ -187,7 +223,7 @@ class TestInventoryUpload:
         assert "ingredient_id" in carrot_item
         assert carrot_item["notes"] is None  # Default notes value
 
-    def test_upload_inventory_with_parsing_errors_returns_400(self) -> None:
+    def test_upload_inventory_with_parsing_errors_returns_400(self, client: TestClient) -> None:
         """Test that POST /stores/{id}/inventory returns 400 for parsing errors."""
         # Given - Create a store first
         store_data = {"name": "Test Store"}
@@ -217,7 +253,7 @@ class TestInventoryUpload:
 class TestInventoryRetrieval:
     """Test GET /stores/{id}/inventory endpoint behavior."""
 
-    def test_get_store_inventory_returns_current_inventory_with_details(self) -> None:
+    def test_get_store_inventory_returns_current_inventory_with_details(self, client: TestClient) -> None:
         """Test that GET /stores/{id}/inventory returns current inventory."""
         # Given - Create a store and add some inventory
         store_data = {"name": "Test Store"}
@@ -272,7 +308,7 @@ class TestInventoryRetrieval:
         assert "store_id" in kale_item
         assert "ingredient_id" in kale_item
 
-    def test_upload_inventory_to_non_existent_store_returns_404(self) -> None:
+    def test_upload_inventory_to_non_existent_store_returns_404(self, client: TestClient) -> None:
         """Test that POST inventory to non-existent store returns 404."""
         # Given - A non-existent store ID
         from uuid import uuid4

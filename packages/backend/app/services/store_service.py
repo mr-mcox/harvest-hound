@@ -2,16 +2,13 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 from uuid import UUID, uuid4
 
-from ..infrastructure.repositories import (
-    AggregateNotFoundError,
-    IngredientRepository,
-    StoreRepository,
-)
-from ..infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+from ..infrastructure.repositories import AggregateNotFoundError
+from ..interfaces.parser import InventoryParserProtocol
+from ..interfaces.repository import IngredientRepositoryProtocol, StoreRepositoryProtocol
+from ..interfaces.view_store import InventoryItemViewStoreProtocol, StoreViewStoreProtocol
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem
-from .inventory_parser import InventoryParserClient
 
 
 @dataclass
@@ -38,11 +35,11 @@ class StoreService:
 
     def __init__(
         self,
-        store_repository: StoreRepository,
-        ingredient_repository: IngredientRepository,
-        inventory_parser: InventoryParserClient,
-        store_view_store: StoreViewStore,
-        inventory_item_view_store: InventoryItemViewStore,
+        store_repository: StoreRepositoryProtocol,
+        ingredient_repository: IngredientRepositoryProtocol,
+        inventory_parser: InventoryParserProtocol,
+        store_view_store: StoreViewStoreProtocol,
+        inventory_item_view_store: InventoryItemViewStoreProtocol,
     ):
         self.store_repository = store_repository
         self.ingredient_repository = ingredient_repository

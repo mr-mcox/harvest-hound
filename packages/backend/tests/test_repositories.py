@@ -1,8 +1,9 @@
+from typing import Generator
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import (
@@ -16,7 +17,7 @@ from app.models.inventory_store import InventoryStore
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> Generator[Session, None, None]:
     """Create isolated test database session."""
     engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
@@ -31,7 +32,7 @@ def db_session():
 class TestIngredientRepository:
     """Test IngredientRepository can save and reload Ingredients from events."""
 
-    def test_save_and_reload_ingredient_from_events(self, db_session):
+    def test_save_and_reload_ingredient_from_events(self, db_session: Session) -> None:
         """IngredientRepository should save Ingredient and reload from events."""
         # Setup
         event_store = EventStore(session=db_session)
@@ -55,7 +56,7 @@ class TestIngredientRepository:
         assert loaded_ingredient.default_unit == ingredient.default_unit
         assert loaded_ingredient.created_at == ingredient.created_at
 
-    def test_load_nonexistent_ingredient_raises_error(self, db_session):
+    def test_load_nonexistent_ingredient_raises_error(self, db_session: Session) -> None:
         """IngredientRepository should raise error for nonexistent ingredient."""
         # Setup
         event_store = EventStore(session=db_session)
@@ -72,7 +73,7 @@ class TestIngredientRepository:
 class TestStoreRepository:
     """Test StoreRepository can save and reload InventoryStores from events."""
 
-    def test_save_and_reload_store_from_events(self, db_session):
+    def test_save_and_reload_store_from_events(self, db_session: Session) -> None:
         """StoreRepository should save InventoryStore and reload from events."""
         # Setup
         event_store = EventStore(session=db_session)
@@ -121,7 +122,7 @@ class TestStoreRepository:
         assert loaded_item.unit == original_item.unit
         assert loaded_item.notes == original_item.notes
 
-    def test_load_nonexistent_store_raises_error(self, db_session):
+    def test_load_nonexistent_store_raises_error(self, db_session: Session) -> None:
         """StoreRepository should raise AggregateNotFoundError for nonexistent store."""
         # Setup
         event_store = EventStore(session=db_session)
@@ -138,7 +139,7 @@ class TestStoreRepository:
 class TestRepositoryErrorHandling:
     """Test Repository error handling for edge cases."""
 
-    def test_repository_handles_empty_event_stream(self):
+    def test_repository_handles_empty_event_stream(self) -> None:
         """Repository should handle empty event streams appropriately."""
         # This test is already covered by the nonexistent aggregate tests above
         # but we could add more specific edge cases here if needed

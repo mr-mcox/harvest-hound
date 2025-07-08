@@ -5,11 +5,12 @@ Testing view stores using SQLAlchemy Core as specified in ADR-005 for better
 schema management, type safety, and database independence.
 """
 from datetime import datetime
+from typing import Generator
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, MetaData, Engine
+from sqlalchemy.orm import sessionmaker, Session
 
 from app.models.read_models import InventoryItemView, StoreView
 from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
@@ -19,17 +20,17 @@ class TestInventoryItemViewStore:
     """Test InventoryItemViewStore."""
 
     @pytest.fixture
-    def engine(self):
+    def engine(self) -> Engine:
         """Create in-memory SQLite engine for testing."""
         return create_engine("sqlite:///:memory:")
     
     @pytest.fixture
-    def session(self, engine):
+    def session(self, engine: Engine) -> Session:
         """Create test session."""
         Session = sessionmaker(bind=engine)
         return Session()
 
-    def test_save_and_retrieve_inventory_item_view(self, session):
+    def test_save_and_retrieve_inventory_item_view(self, session: Session) -> None:
         """SQLAlchemy view store should save and retrieve InventoryItemView."""
         # Arrange
         store = InventoryItemViewStore(session=session)
@@ -60,7 +61,7 @@ class TestInventoryItemViewStore:
         assert retrieved.unit == view.unit
         assert retrieved.notes == view.notes
 
-    def test_get_all_for_store(self, session):
+    def test_get_all_for_store(self, session: Session) -> None:
         """SQLAlchemy view store should retrieve all views for a store."""
         # Arrange
         store = InventoryItemViewStore(session=session)
@@ -98,7 +99,7 @@ class TestInventoryItemViewStore:
         ingredient_names = {v.ingredient_name for v in views}
         assert ingredient_names == {"Carrots", "Kale"}
 
-    def test_upsert_behavior(self, session):
+    def test_upsert_behavior(self, session: Session) -> None:
         """SQLAlchemy view store should update existing records on conflict."""
         # Arrange
         store = InventoryItemViewStore(session=session)
@@ -139,7 +140,7 @@ class TestInventoryItemViewStore:
         assert updated.quantity == 3.0
         assert updated.notes == "Updated"
 
-    def test_complete_read_model_roundtrip_with_complex_data(self, session):
+    def test_complete_read_model_roundtrip_with_complex_data(self, session: Session) -> None:
         """Test complete roundtrip persistence with complex denormalized data scenarios."""
         # Arrange
         store = InventoryItemViewStore(session=session)
@@ -223,17 +224,17 @@ class TestStoreViewStore:
     """Test StoreViewStore."""
 
     @pytest.fixture
-    def engine(self):
+    def engine(self) -> Engine:
         """Create in-memory SQLite engine for testing."""
         return create_engine("sqlite:///:memory:")
     
     @pytest.fixture
-    def session(self, engine):
+    def session(self, engine: Engine) -> Session:
         """Create test session."""
         Session = sessionmaker(bind=engine)
         return Session()
 
-    def test_save_and_retrieve_store_view(self, session):
+    def test_save_and_retrieve_store_view(self, session: Session) -> None:
         """SQLAlchemy view store should save and retrieve StoreView."""
         # Arrange
         store = StoreViewStore(session=session)
@@ -259,7 +260,7 @@ class TestStoreViewStore:
         assert retrieved.infinite_supply == view.infinite_supply
         assert retrieved.item_count == view.item_count
 
-    def test_get_all_stores(self, session):
+    def test_get_all_stores(self, session: Session) -> None:
         """SQLAlchemy view store should retrieve all store views."""
         # Arrange
         store = StoreViewStore(session=session)
@@ -292,7 +293,7 @@ class TestStoreViewStore:
         names = {v.name for v in views}
         assert names == {"CSA Box", "Pantry"}
 
-    def test_get_by_store_id_not_found(self, session):
+    def test_get_by_store_id_not_found(self, session: Session) -> None:
         """SQLAlchemy view store should return None for non-existent store."""
         # Arrange
         store = StoreViewStore(session=session)
@@ -304,7 +305,7 @@ class TestStoreViewStore:
         # Assert
         assert result is None
 
-    def test_complete_store_view_roundtrip_with_item_count_updates(self, session):
+    def test_complete_store_view_roundtrip_with_item_count_updates(self, session: Session) -> None:
         """Test complete store view roundtrip with item count management."""
         # Arrange
         store = StoreViewStore(session=session)
@@ -383,7 +384,7 @@ class TestStoreViewStore:
         assert final_view.infinite_supply is True
         assert final_view.item_count == 5
 
-    def test_store_view_query_operations_comprehensive(self, session):
+    def test_store_view_query_operations_comprehensive(self, session: Session) -> None:
         """Test comprehensive querying scenarios for store views."""
         # Arrange
         store = StoreViewStore(session=session)

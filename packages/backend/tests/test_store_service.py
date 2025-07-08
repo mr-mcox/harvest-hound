@@ -1,10 +1,10 @@
-from typing import List
+from typing import Generator, List
 from uuid import uuid4
 from unittest.mock import Mock
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
 from app.infrastructure.event_store import EventStore
@@ -18,7 +18,7 @@ from tests.test_utils import assert_event_matches, get_typed_events
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> Generator[Session, None, None]:
     """Create isolated test database session."""
     engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
@@ -31,7 +31,7 @@ def db_session():
 
 
 @pytest.fixture
-def event_store(db_session, store_view_store, inventory_item_view_store) -> EventStore:
+def event_store(db_session: Session, store_view_store: StoreViewStore, inventory_item_view_store: InventoryItemViewStore) -> EventStore:
     """Create an EventStore instance for testing with projection registry."""
     from app.projections.registry import ProjectionRegistry
     from app.projections.handlers import StoreProjectionHandler, InventoryProjectionHandler
@@ -88,13 +88,13 @@ def inventory_parser() -> MockInventoryParserClient:
 
 
 @pytest.fixture
-def store_view_store(db_session) -> StoreViewStore:
+def store_view_store(db_session: Session) -> StoreViewStore:
     """Create a StoreViewStore for testing."""
     return StoreViewStore(session=db_session)
 
 
 @pytest.fixture
-def inventory_item_view_store(db_session) -> InventoryItemViewStore:
+def inventory_item_view_store(db_session: Session) -> InventoryItemViewStore:
     """Create an InventoryItemViewStore for testing."""
     return InventoryItemViewStore(session=db_session)
 
