@@ -13,6 +13,7 @@ from .infrastructure.event_publisher import EventPublisher
 from .infrastructure.event_store import EventStore
 from .infrastructure.repositories import IngredientRepository, StoreRepository
 from .infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+from .infrastructure.websocket_manager import ConnectionManager
 from .interfaces.parser import InventoryParserProtocol
 from .interfaces.repository import IngredientRepositoryProtocol, StoreRepositoryProtocol
 from .interfaces.service import StoreServiceProtocol
@@ -82,6 +83,11 @@ def get_event_bus_manager(request: Request) -> EventBusManager:
 def get_projection_registry(request: Request) -> ProjectionRegistry:
     """Provide projection registry implementation from app state."""
     return request.app.state.projection_registry  # type: ignore[no-any-return]
+
+
+def get_connection_manager(request: Request) -> ConnectionManager:
+    """Provide connection manager implementation from app state."""
+    return request.app.state.connection_manager  # type: ignore[no-any-return]
 
 
 def get_event_store(

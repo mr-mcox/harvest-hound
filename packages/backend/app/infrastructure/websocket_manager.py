@@ -43,7 +43,15 @@ class ConnectionManager:
             websocket: The WebSocket connection to accept
             room: The room to join (defaults to "default")
         """
-        raise NotImplementedError("TODO: implement in NEW BEHAVIOR task")
+        await websocket.accept()
+        
+        # Add connection to room
+        if room not in self.connections:
+            self.connections[room] = set()
+        self.connections[room].add(websocket)
+        
+        # Track which room this connection belongs to
+        self.connection_rooms[websocket] = room
     
     async def disconnect(self, websocket: WebSocket) -> None:
         """
@@ -52,7 +60,15 @@ class ConnectionManager:
         Args:
             websocket: The WebSocket connection to remove
         """
-        raise NotImplementedError("TODO: implement in NEW BEHAVIOR task")
+        # Find and remove from room
+        if websocket in self.connection_rooms:
+            room = self.connection_rooms[websocket]
+            if room in self.connections:
+                self.connections[room].discard(websocket)
+                # Clean up empty rooms
+                if not self.connections[room]:
+                    del self.connections[room]
+            del self.connection_rooms[websocket]
     
     async def join_room(self, websocket: WebSocket, room: str) -> None:
         """
