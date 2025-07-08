@@ -226,7 +226,7 @@ class TestEventStoreEventBusIntegration:
         )
 
         # Set up async context
-        async def test_with_event_loop():
+        async def test_with_event_loop() -> None:
             # Append event (this should trigger event bus publish)
             event_store.append_event(stream_id, event)
             
@@ -281,7 +281,7 @@ class TestEventStoreEventBusIntegration:
         )
 
         # Set up async context
-        async def test_with_event_loop():
+        async def test_with_event_loop() -> None:
             # This should not raise any errors despite event bus failure
             event_store.append_event(stream_id, event)
             

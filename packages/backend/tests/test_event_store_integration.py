@@ -60,7 +60,7 @@ class TestEventStoreIntegration:
         )
 
         # Set up async context for event bus
-        async def test_with_event_loop():
+        async def test_with_event_loop() -> None:
             # Append event (should trigger both systems)
             event_store.append_event(stream_id, event)
             
@@ -104,7 +104,7 @@ class TestEventStoreIntegration:
         )
 
         # Set up async context for event bus
-        async def test_with_event_loop():
+        async def test_with_event_loop() -> None:
             # This should not raise errors despite projection failure
             event_store.append_event(stream_id, event)
             
@@ -148,7 +148,7 @@ class TestEventStoreIntegration:
         )
 
         # Set up async context for event bus
-        async def test_with_event_loop():
+        async def test_with_event_loop() -> None:
             # This should not raise errors despite event bus failure
             event_store.append_event(stream_id, event)
             
