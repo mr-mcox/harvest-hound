@@ -16,6 +16,8 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
+from api import app
+from app.dependencies import get_inventory_parser
 from app.models.parsed_inventory import ParsedInventoryItem
 from tests.implementations.parser import (
     ConfigurableMockInventoryParser,
@@ -176,8 +178,6 @@ class TestErrorHandlingScenarios:
     @pytest.fixture
     def client_with_failing_parser(self) -> Generator[TestClient, None, None]:
         """Client with parser that simulates various failures."""
-        from api import app
-        from app.dependencies import get_inventory_parser
         
         failing_parser = FailingMockInventoryParser(error_type="timeout")
         
@@ -208,8 +208,6 @@ class TestErrorHandlingScenarios:
     @pytest.fixture
     def client_with_parsing_failure(self) -> Generator[TestClient, None, None]:
         """Client with parser that fails with parsing errors."""
-        from api import app
-        from app.dependencies import get_inventory_parser
         
         failing_parser = FailingMockInventoryParser(error_type="parsing")
         
@@ -359,8 +357,6 @@ class TestConfigurableScenarios:
     @pytest.fixture
     def client_with_custom_parser(self) -> Generator[TestClient, None, None]:
         """Client with custom parser configuration."""
-        from api import app
-        from app.dependencies import get_inventory_parser
         
         custom_parser = ConfigurableMockInventoryParser()
         custom_parser.set_response(

@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import datetime
 from typing import Generator
@@ -194,7 +195,6 @@ class TestEventStoreConcurrentWrites:
             event_type, event_data = row
             assert event_type == "StoreCreated"
             # Should be valid JSON
-            import json
             parsed_data = json.loads(event_data)
             assert "store_id" in parsed_data
             assert "name" in parsed_data

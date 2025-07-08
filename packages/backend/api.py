@@ -7,11 +7,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.dependencies import (
+    SessionLocal,
     create_projection_registry,
+    engine,
     get_store_service,
     setup_event_bus_subscribers,
 )
+from app.infrastructure.database import metadata
 from app.infrastructure.event_bus import EventBusManager, InMemoryEventBus
+from app.infrastructure.event_publisher import EventPublisher
+from app.infrastructure.event_store import EventStore
+from app.infrastructure.repositories import (
+    IngredientRepository,
+    StoreRepository,
+)
+from app.infrastructure.view_stores import (
+    InventoryItemViewStore,
+    StoreViewStore,
+)
 from app.interfaces.service import StoreServiceProtocol
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
@@ -80,21 +93,7 @@ async def startup_event() -> None:
         # Initialize event bus manager
         app.state.event_bus_manager = EventBusManager(InMemoryEventBus())
         
-        # Manually create database session for startup
-        from app.dependencies import SessionLocal, engine
-
         # Create tables if they don't exist
-        from app.infrastructure.database import metadata
-        from app.infrastructure.event_publisher import EventPublisher
-        from app.infrastructure.event_store import EventStore
-        from app.infrastructure.repositories import (
-            IngredientRepository,
-            StoreRepository,
-        )
-        from app.infrastructure.view_stores import (
-            InventoryItemViewStore,
-            StoreViewStore,
-        )
         metadata.create_all(bind=engine)
         
         # Create session and dependencies

@@ -20,6 +20,11 @@ from .interfaces.view_store import (
     InventoryItemViewStoreProtocol,
     StoreViewStoreProtocol,
 )
+from .events.domain_events import (
+    IngredientCreated,
+    InventoryItemAdded,
+    StoreCreated,
+)
 from .projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from .projections.registry import ProjectionRegistry
 from .services.store_service import StoreService
@@ -125,12 +130,6 @@ def create_projection_registry(
         inventory_item_view_store
     )
     
-    # Import event types for registration
-    from .events.domain_events import (
-        IngredientCreated,
-        InventoryItemAdded,
-        StoreCreated,
-    )
     
     # Register specific event handlers
     registry.register(StoreCreated, store_projection_handler.handle_store_created)
@@ -161,12 +160,6 @@ async def setup_event_bus_subscribers(
         inventory_item_view_store
     )
     
-    # Import event types for subscription
-    from .events.domain_events import (
-        IngredientCreated,
-        InventoryItemAdded,
-        StoreCreated,
-    )
     
     # Subscribe handlers to event bus
     await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)

@@ -1,5 +1,5 @@
 import asyncio
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -289,8 +289,6 @@ class TestInventoryRetrieval:
     def test_upload_inventory_to_non_existent_store_returns_404(self, client: TestClient) -> None:
         """Test that POST inventory to non-existent store returns 404."""
         # Given - A non-existent store ID
-        from uuid import uuid4
-
         non_existent_store_id = uuid4()
 
         # When - Try to upload inventory to non-existent store
