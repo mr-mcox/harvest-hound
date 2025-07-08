@@ -65,6 +65,9 @@ module = "app.infrastructure.baml_client.*"
 ignore_missing_imports = true
 ignore_errors = true
 
+# TEMPORARY: Legacy unit tests still need typing annotations
+# New integration tests (test_integration_comprehensive.py, test_dependency_injection.py) 
+# are fully typed and use zero @patch decorators
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
