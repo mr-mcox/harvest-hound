@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
@@ -52,6 +53,21 @@ class EventStore:
             except Exception as e:
                 # In production, this would use proper logging
                 # For now, we don't want projection failures to break event storage
+                pass
+        
+        # Publish to event bus if available (async operation)
+        if self.event_bus is not None:
+            try:
+                # Schedule async publish - create task if event loop is running
+                loop = asyncio.get_running_loop()
+                loop.create_task(self.event_bus.publish(event))
+            except RuntimeError:
+                # No event loop running, skip async publish for now
+                # In production, this would use proper async context
+                pass
+            except Exception as e:
+                # In production, this would use proper logging
+                # For now, we don't want event bus failures to break event storage
                 pass
 
     def load_events(self, stream_id: str) -> List[Dict[str, Any]]:
