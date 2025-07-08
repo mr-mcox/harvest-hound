@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from sqlalchemy import select, insert
 from sqlalchemy.orm import Session
@@ -14,13 +14,17 @@ from ..events.domain_events import (
 from ..projections.registry import ProjectionRegistry
 from .database import events, create_tables
 
+if TYPE_CHECKING:
+    from .event_bus import EventBus
+
 
 class EventStore:
     """SQLAlchemy-based event store for domain events."""
 
-    def __init__(self, session: Session, projection_registry: Optional[ProjectionRegistry] = None):
+    def __init__(self, session: Session, projection_registry: Optional[ProjectionRegistry] = None, event_bus: Optional["EventBus"] = None):
         self.session = session
         self.projection_registry = projection_registry
+        self.event_bus = event_bus
         # Ensure tables exist (for testing with in-memory databases)
         if session.bind is not None:
             create_tables(session.bind)

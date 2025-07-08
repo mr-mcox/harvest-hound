@@ -8,6 +8,7 @@ from fastapi import Depends
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from .infrastructure.event_bus import EventBusManager, InMemoryEventBus
 from .infrastructure.event_store import EventStore
 from .infrastructure.repositories import IngredientRepository, StoreRepository
 from .infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
@@ -33,6 +34,9 @@ SessionLocal = sessionmaker(bind=engine)
 
 # Global projection registry - shared across all event store instances
 _global_projection_registry: Optional[ProjectionRegistry] = None
+
+# Global event bus manager - shared across all event store instances
+_global_event_bus_manager: Optional[EventBusManager] = None
 
 
 def get_db_session() -> Generator[Session, None, None]:
@@ -64,6 +68,14 @@ def get_inventory_item_view_store(
 ) -> InventoryItemViewStoreProtocol:
     """Provide inventory item view store implementation."""
     return InventoryItemViewStore(session)
+
+
+def get_event_bus_manager() -> EventBusManager:
+    """Provide event bus manager implementation."""
+    global _global_event_bus_manager
+    if _global_event_bus_manager is None:
+        _global_event_bus_manager = EventBusManager(InMemoryEventBus())
+    return _global_event_bus_manager
 
 
 def get_event_store(
