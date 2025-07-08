@@ -1,5 +1,2 @@
-## Recently Completed
-The project is roughly scaffolded with some starting dependencies, but those may shift as things shape up.
-
-# Up next
-I'm currently working on UC #1, which enables inventory store creation and sets up basic functionality.
+Implement the foundation of websockets on backend and frontend by adding functionality where if a user adds an ingredient to an inventory on one session/tab, the inventory live updates on the
+other session/tab.

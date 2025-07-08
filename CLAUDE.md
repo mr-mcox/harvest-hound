@@ -89,6 +89,12 @@ Each package has its own CLAUDE.md file with specific development guidelines:
 - **Meaningful Testing**: Test at a level low enough to isolate behavior but high enough to avoid implementation details
 - **Concrete Task Planning**: Tasks should be specific and actionable, not abstract concepts
 
+### Development Philosophy: Single-User MVP with Migration Paths
+- **Current Context**: Single-user hobby application prioritizing rapid time-to-value
+- **Future Consideration**: Multi-user/multi-account expansion without complete re-architecture
+- **Decision Framework**: Choose simple approaches that don't create technical debt for future expansion
+- **Example**: Default room pattern for WebSocket (simple now, clean migration to user-based rooms later)
+
 ### Domain Model Principles
 - Keep schemas lean, rely on LLM for validation/transformation
 - Immutable events over complex state

@@ -20,7 +20,9 @@
       "Bash(mv:*)",
       "Bash(ls:*)",
       "Bash(npm run check:*)",
-      "Bash(npm run generate-types:*)"
+      "Bash(npm run generate-types:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": []
   }

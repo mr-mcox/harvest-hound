@@ -1,6 +1,5 @@
 # Future Work
 ## Features
-- We'll need websockets for UC2 and beyond
 - Strategy of determining whether to create a new ingredient or re-use something that's close
 - When submitting ingredients, we should direct to the inventory page
 
@@ -13,14 +12,6 @@
 
 ## Concerns
 - There's a lot of extra configuration in the docker setup
-- Imports not at the top of the file
-- Patching within tests
-
-## Testing improvements
-- Revisit mypy overrides and determine whether they are warranted.
-- Look for ways to reduce the number of tests while keeping coverage about the same
-- Reduce patching within tests
-- Reduce imports not at the top of the file
 
 ## Scratch
 ### 9.8 Future Work Notes (*No tests needed - planning*)
