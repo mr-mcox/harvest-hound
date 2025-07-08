@@ -7,12 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.dependencies import (
+    create_projection_registry,
     get_event_store,
     get_ingredient_repository,
     get_inventory_item_view_store,
     get_store_service,
     get_store_view_store,
-    setup_projection_registry,
+    update_global_app_state,
 )
 from app.infrastructure.event_bus import EventBusManager, InMemoryEventBus
 from app.interfaces.service import StoreServiceProtocol
@@ -82,6 +83,7 @@ async def startup_event() -> None:
     if not _startup_completed:
         # Initialize event bus manager
         app.state.event_bus_manager = EventBusManager(InMemoryEventBus())
+        
         # Manually create database session for startup
         from app.dependencies import SessionLocal, engine
         from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
@@ -95,20 +97,26 @@ async def startup_event() -> None:
         # Create session and dependencies
         session = SessionLocal()
         try:
-            # Create dependencies manually
-            event_store = EventStore(session=session, projection_registry=None)
+            # Create dependencies manually for startup
             store_view_store = StoreViewStore(session)
             inventory_item_view_store = InventoryItemViewStore(session)
-            store_repository = StoreRepository(event_store)
-            ingredient_repository = IngredientRepository(event_store)
             
-            setup_projection_registry(
-                event_store,
+            # Create temporary event store for repositories (without dependencies)
+            temp_event_store = EventStore(session=session, projection_registry=None)
+            store_repository = StoreRepository(temp_event_store)
+            ingredient_repository = IngredientRepository(temp_event_store)
+            
+            # Create and store projection registry in app state
+            app.state.projection_registry = create_projection_registry(
                 store_view_store,
                 inventory_item_view_store,
                 store_repository,
                 ingredient_repository
             )
+            
+            # Update global references for service layer access
+            update_global_app_state(app.state.projection_registry, app.state.event_bus_manager)
+            
             session.commit()
         finally:
             session.close()

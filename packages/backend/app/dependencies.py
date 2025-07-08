@@ -32,10 +32,10 @@ else:
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine)
 
-# Global projection registry - shared across all event store instances
-_global_projection_registry: Optional[ProjectionRegistry] = None
-
-# Event bus manager will be stored in app state during startup
+# Projection registry and event bus manager will be stored in app state during startup
+# Also keep global references for service layer access (temporary solution)
+_app_state_projection_registry: Optional[ProjectionRegistry] = None
+_app_state_event_bus_manager: Optional[EventBusManager] = None
 
 
 def get_db_session() -> Generator[Session, None, None]:
@@ -74,12 +74,24 @@ def get_event_bus_manager(request: Request) -> EventBusManager:
     return request.app.state.event_bus_manager  # type: ignore[no-any-return]
 
 
+def get_projection_registry(request: Request) -> ProjectionRegistry:
+    """Provide projection registry implementation from app state."""
+    return request.app.state.projection_registry  # type: ignore[no-any-return]
+
+
 def get_event_store(
     session: Annotated[Session, Depends(get_db_session)]
 ) -> EventStore:
-    """Provide event store implementation with shared projection registry."""
-    global _global_projection_registry
-    return EventStore(session=session, projection_registry=_global_projection_registry)
+    """Provide event store implementation with app state dependencies."""
+    # For now, we'll use global access to app state through the running app instance
+    # This is a compromise until we can properly pass app state through dependency chain
+    global _app_state_projection_registry, _app_state_event_bus_manager
+    
+    return EventStore(
+        session=session, 
+        projection_registry=_app_state_projection_registry,
+        event_bus=_app_state_event_bus_manager.event_bus if _app_state_event_bus_manager else None
+    )
 
 
 def get_store_repository(
@@ -96,16 +108,13 @@ def get_ingredient_repository(
     return IngredientRepository(event_store)
 
 
-def setup_projection_registry(
-    event_store: EventStore,
+def create_projection_registry(
     store_view_store: StoreViewStoreProtocol,
     inventory_item_view_store: InventoryItemViewStoreProtocol,
     store_repository: StoreRepositoryProtocol,
     ingredient_repository: IngredientRepositoryProtocol,
-) -> None:
-    """Set up projection registry for event store (called during startup)."""
-    global _global_projection_registry
-    
+) -> ProjectionRegistry:
+    """Create and configure projection registry with handlers."""
     registry = ProjectionRegistry()
     
     # Create handlers
@@ -125,11 +134,14 @@ def setup_projection_registry(
     registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
     registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
     
-    # Set the global registry so all event stores will use it
-    _global_projection_registry = registry
-    
-    # Also set it directly on the passed event store for immediate use
-    event_store.projection_registry = registry
+    return registry
+
+
+def update_global_app_state(projection_registry: ProjectionRegistry, event_bus_manager: EventBusManager) -> None:
+    """Update global app state references for service layer access."""
+    global _app_state_projection_registry, _app_state_event_bus_manager
+    _app_state_projection_registry = projection_registry
+    _app_state_event_bus_manager = event_bus_manager
 
 
 def get_store_service(

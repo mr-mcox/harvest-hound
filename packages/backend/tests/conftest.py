@@ -44,38 +44,15 @@ def test_client_with_mocks(
     
     app.dependency_overrides[get_inventory_parser] = override_inventory_parser
     
-    # Manually trigger startup to initialize projection registry
-    from app.dependencies import SessionLocal, engine
-    from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
-    from app.infrastructure.event_store import EventStore
-    from app.infrastructure.repositories import IngredientRepository, StoreRepository
-    from app.dependencies import setup_projection_registry
-    from app.infrastructure.database import metadata
-    
-    # Create tables if they don't exist
-    metadata.create_all(bind=engine)
-    
-    # Set up projection registry
-    session = SessionLocal()
-    try:
-        event_store = EventStore(session=session, projection_registry=None)
-        store_view_store = StoreViewStore(session)
-        inventory_item_view_store = InventoryItemViewStore(session)
-        store_repository = StoreRepository(event_store)
-        ingredient_repository = IngredientRepository(event_store)
-        
-        setup_projection_registry(
-            event_store,
-            store_view_store,
-            inventory_item_view_store,
-            store_repository,
-            ingredient_repository
-        )
-        session.commit()
-    finally:
-        session.close()
-    
+    # TestClient with app will automatically trigger startup event
+    # which initializes projection registry and event bus in app state
     client = TestClient(app)
+    
+    # Manually trigger startup event if needed (TestClient sometimes doesn't)
+    import asyncio
+    from api import startup_event, _startup_completed
+    if not _startup_completed:
+        asyncio.run(startup_event())
     yield client
     
     # Clean up overrides
