@@ -48,14 +48,19 @@ class EventStore:
         # Publish to event bus if available (async operation)
         if self.event_bus is not None:
             try:
-                # Schedule async publish - create task if event loop is running
+                # Try to use existing event loop if available
                 loop = asyncio.get_running_loop()
                 loop.create_task(self.event_bus.publish(event))
             except RuntimeError:
-                # No event loop running, skip async publish for now
-                # In production, this would use proper async context
-                pass
-            except Exception as e:
+                # No event loop running, create one for this publish
+                # This ensures projection handlers work in sync test contexts
+                try:
+                    asyncio.run(self.event_bus.publish(event))
+                except Exception:
+                    # In production, this would use proper logging
+                    # For now, we don't want event bus failures to break event storage
+                    pass
+            except Exception:
                 # In production, this would use proper logging
                 # For now, we don't want event bus failures to break event storage
                 pass

@@ -315,12 +315,12 @@ class TestEventStoreEventBusIntegration:
         )
 
         # Call without async context (no event loop running)
-        # This should not raise any errors and should skip event bus publish
+        # This should not raise any errors and should still publish to event bus
         event_store.append_event(stream_id, event)
 
         # Verify event was still persisted
         store_events = get_typed_events(event_store, stream_id, StoreCreated)
         assert len(store_events) == 1
         
-        # Event bus publish should not have been called (no event loop)
-        mock_event_bus.publish.assert_not_called()
+        # Event bus publish should have been called (creates temporary event loop)
+        mock_event_bus.publish.assert_called_once_with(event)
