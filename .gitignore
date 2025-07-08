@@ -1,5 +1,6 @@
 **/*.pyc
 **/*.local.json
+settings.local.json
 **/*.local.md
 .env
 *.db
