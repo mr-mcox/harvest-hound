@@ -12,7 +12,6 @@ from ..events.domain_events import (
     InventoryItemAdded,
     StoreCreated,
 )
-from ..projections.registry import ProjectionRegistry
 from .database import events, create_tables
 
 if TYPE_CHECKING:
@@ -22,9 +21,8 @@ if TYPE_CHECKING:
 class EventStore:
     """SQLAlchemy-based event store for domain events."""
 
-    def __init__(self, session: Session, projection_registry: Optional[ProjectionRegistry] = None, event_bus: Optional["EventBus"] = None):
+    def __init__(self, session: Session, event_bus: Optional["EventBus"] = None):
         self.session = session
-        self.projection_registry = projection_registry
         self.event_bus = event_bus
         # Ensure tables exist (for testing with in-memory databases)
         if session.bind is not None:
@@ -46,14 +44,6 @@ class EventStore:
         self.session.execute(stmt)
         self.session.commit()
 
-        # Trigger projection registry (external to transaction for safety)
-        if self.projection_registry is not None:
-            try:
-                self.projection_registry.handle(event)
-            except Exception as e:
-                # In production, this would use proper logging
-                # For now, we don't want projection failures to break event storage
-                pass
         
         # Publish to event bus if available (async operation)
         if self.event_bus is not None:

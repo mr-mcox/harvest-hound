@@ -83,12 +83,10 @@ def get_event_store(
     session: Annotated[Session, Depends(get_db_session)]
 ) -> EventStore:
     """Provide event store implementation with app state dependencies."""
-    # Use only event bus now - projection registry is handled via event bus subscribers
     global _app_state_event_bus_manager
     
     return EventStore(
         session=session, 
-        projection_registry=None,  # No longer using projection registry
         event_bus=_app_state_event_bus_manager.event_bus if _app_state_event_bus_manager else None
     )
 
@@ -165,10 +163,10 @@ async def setup_event_bus_subscribers(
     from .events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
     
     # Subscribe handlers to event bus
-    await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)  # type: ignore[arg-type]
-    await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)  # type: ignore[arg-type]
-    await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)  # type: ignore[arg-type]
-    await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)  # type: ignore[arg-type]
+    await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
+    await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
+    await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
+    await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
 
 
 def get_store_service(

@@ -103,7 +103,7 @@ async def startup_event() -> None:
             inventory_item_view_store = InventoryItemViewStore(session)
             
             # Create temporary event store for repositories (without dependencies)
-            temp_event_store = EventStore(session=session, projection_registry=None)
+            temp_event_store = EventStore(session=session)
             store_repository = StoreRepository(temp_event_store)
             ingredient_repository = IngredientRepository(temp_event_store)
             

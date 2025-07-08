@@ -7,11 +7,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
 from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+from app.infrastructure.event_bus import InMemoryEventBus
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
 from app.infrastructure.database import metadata
 from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.models.parsed_inventory import ParsedInventoryItem
+from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from app.services.inventory_parser import MockInventoryParserClient
 from app.services.store_service import InventoryUploadResult, StoreService
 from tests.test_utils import assert_event_matches, get_typed_events
@@ -30,20 +32,17 @@ def db_session() -> Generator[Session, None, None]:
     session.close()
 
 
-@pytest.fixture
+@pytest.fixture  
 def event_store(db_session: Session, store_view_store: StoreViewStore, inventory_item_view_store: InventoryItemViewStore) -> EventStore:
-    """Create an EventStore instance for testing with projection registry."""
-    from app.projections.registry import ProjectionRegistry
-    from app.projections.handlers import StoreProjectionHandler, InventoryProjectionHandler
-    from app.events.domain_events import StoreCreated, InventoryItemAdded, IngredientCreated
+    """Create an EventStore instance for testing with event bus."""
+    import asyncio
     
-    # Set up projection registry and handlers
-    projection_registry = ProjectionRegistry()
+    # Set up event bus and handlers
+    event_bus = InMemoryEventBus()
     store_projection_handler = StoreProjectionHandler(store_view_store)
     
     # Create ingredient and store repositories for the inventory projection handler
     temp_event_store = EventStore(session=db_session)
-    from app.infrastructure.repositories import IngredientRepository, StoreRepository
     ingredient_repository = IngredientRepository(temp_event_store)
     store_repository = StoreRepository(temp_event_store) 
     
@@ -53,14 +52,18 @@ def event_store(db_session: Session, store_view_store: StoreViewStore, inventory
         inventory_item_view_store
     )
     
-    # Register event handlers
-    projection_registry.register(StoreCreated, store_projection_handler.handle_store_created)
-    projection_registry.register(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
-    projection_registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
-    projection_registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
+    # Subscribe handlers to event bus synchronously
+    async def setup_subscribers() -> None:
+        await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
+        await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
+        await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
+        await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
     
-    # Create EventStore with projection registry
-    event_store = EventStore(session=db_session, projection_registry=projection_registry)
+    # Run the async setup
+    asyncio.run(setup_subscribers())
+    
+    # Create EventStore with event bus
+    event_store = EventStore(session=db_session, event_bus=event_bus)
     
     # Update the temporary repositories to use the new event store
     ingredient_repository.event_store = event_store
