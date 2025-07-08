@@ -10,7 +10,6 @@ from app.dependencies import (
     SessionLocal,
     create_projection_registry,
     engine,
-    get_connection_manager,
     get_store_service,
     setup_event_bus_subscribers,
 )

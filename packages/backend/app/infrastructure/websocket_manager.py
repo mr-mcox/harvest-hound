@@ -6,6 +6,7 @@ organization following the default room pattern for single-user MVP scenarios.
 """
 
 from typing import Any, Dict, List, Set
+
 from fastapi import WebSocket
 from pydantic import BaseModel
 

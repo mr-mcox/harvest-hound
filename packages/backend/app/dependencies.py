@@ -8,6 +8,11 @@ from fastapi import Depends, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from .events.domain_events import (
+    IngredientCreated,
+    InventoryItemAdded,
+    StoreCreated,
+)
 from .infrastructure.event_bus import EventBusManager
 from .infrastructure.event_publisher import EventPublisher
 from .infrastructure.event_store import EventStore
@@ -20,11 +25,6 @@ from .interfaces.service import StoreServiceProtocol
 from .interfaces.view_store import (
     InventoryItemViewStoreProtocol,
     StoreViewStoreProtocol,
-)
-from .events.domain_events import (
-    IngredientCreated,
-    InventoryItemAdded,
-    StoreCreated,
 )
 from .projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from .projections.registry import ProjectionRegistry
