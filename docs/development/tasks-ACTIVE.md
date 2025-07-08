@@ -111,8 +111,8 @@ disallow_incomplete_defs = false
 ```
 
 #### 4.2 Validate Success Criteria
-- [x] **Zero @patch decorators** in entire test suite
-- [x] **All imports at file tops** (PEP8 compliant)
+- [ ] **Zero @patch decorators** in entire test suite
+- [ ] **All imports at file tops** (PEP8 compliant)
 - [x] **30-40% reduction in test count** while maintaining coverage
 - [ ] **Full mypy compliance** for all test files
 - [ ] **Clear separation of concerns** in test architecture
