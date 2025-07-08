@@ -13,6 +13,7 @@ from app.dependencies import (
     get_inventory_item_view_store,
     get_store_service,
     get_store_view_store,
+    setup_event_bus_subscribers,
     update_global_app_state,
 )
 from app.infrastructure.event_bus import EventBusManager, InMemoryEventBus
@@ -116,6 +117,15 @@ async def startup_event() -> None:
             
             # Update global references for service layer access
             update_global_app_state(app.state.projection_registry, app.state.event_bus_manager)
+            
+            # Subscribe projection handlers to event bus
+            await setup_event_bus_subscribers(
+                app.state.event_bus_manager,
+                store_view_store,
+                inventory_item_view_store,
+                store_repository,
+                ingredient_repository
+            )
             
             session.commit()
         finally:

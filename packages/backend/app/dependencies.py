@@ -83,13 +83,12 @@ def get_event_store(
     session: Annotated[Session, Depends(get_db_session)]
 ) -> EventStore:
     """Provide event store implementation with app state dependencies."""
-    # For now, we'll use global access to app state through the running app instance
-    # This is a compromise until we can properly pass app state through dependency chain
-    global _app_state_projection_registry, _app_state_event_bus_manager
+    # Use only event bus now - projection registry is handled via event bus subscribers
+    global _app_state_event_bus_manager
     
     return EventStore(
         session=session, 
-        projection_registry=_app_state_projection_registry,
+        projection_registry=None,  # No longer using projection registry
         event_bus=_app_state_event_bus_manager.event_bus if _app_state_event_bus_manager else None
     )
 
@@ -142,6 +141,34 @@ def update_global_app_state(projection_registry: ProjectionRegistry, event_bus_m
     global _app_state_projection_registry, _app_state_event_bus_manager
     _app_state_projection_registry = projection_registry
     _app_state_event_bus_manager = event_bus_manager
+
+
+async def setup_event_bus_subscribers(
+    event_bus_manager: EventBusManager,
+    store_view_store: StoreViewStoreProtocol,
+    inventory_item_view_store: InventoryItemViewStoreProtocol,
+    store_repository: StoreRepositoryProtocol,
+    ingredient_repository: IngredientRepositoryProtocol,
+) -> None:
+    """Subscribe projection handlers to event bus."""
+    event_bus = event_bus_manager.event_bus
+    
+    # Create handlers
+    store_projection_handler = StoreProjectionHandler(store_view_store)
+    inventory_projection_handler = InventoryProjectionHandler(
+        ingredient_repository,
+        store_repository,
+        inventory_item_view_store
+    )
+    
+    # Import event types for subscription
+    from .events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+    
+    # Subscribe handlers to event bus
+    await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
+    await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
+    await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
+    await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
 
 
 def get_store_service(

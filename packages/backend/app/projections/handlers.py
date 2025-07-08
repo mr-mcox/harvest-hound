@@ -69,7 +69,7 @@ class InventoryProjectionHandler:
         self.store_repo = store_repo
         self.view_store = view_store
     
-    def handle_inventory_item_added(self, event: InventoryItemAdded) -> None:
+    async def handle_inventory_item_added(self, event: InventoryItemAdded) -> None:
         """Create InventoryItemView when inventory item is added."""
         try:
             # Fetch related data for denormalization
@@ -93,7 +93,7 @@ class InventoryProjectionHandler:
         
         self.view_store.save_inventory_item_view(view)
     
-    def handle_ingredient_created(self, event: IngredientCreated) -> None:
+    async def handle_ingredient_created(self, event: IngredientCreated) -> None:
         """Update all inventory views when ingredient name is updated."""
         # Update all inventory views for this ingredient
         views = self.view_store.get_by_ingredient_id(event.ingredient_id)
@@ -112,7 +112,7 @@ class StoreProjectionHandler:
     def __init__(self, view_store: StoreViewStore):
         self.view_store = view_store
     
-    def handle_store_created(self, event: StoreCreated) -> None:
+    async def handle_store_created(self, event: StoreCreated) -> None:
         """Create StoreView when store is created."""
         view = StoreView(
             store_id=event.store_id,
@@ -125,7 +125,7 @@ class StoreProjectionHandler:
         
         self.view_store.save_store_view(view)
     
-    def handle_inventory_item_added(self, event: InventoryItemAdded) -> None:
+    async def handle_inventory_item_added(self, event: InventoryItemAdded) -> None:
         """Increment item count when inventory item is added to store."""
         existing_view = self.view_store.get_by_store_id(event.store_id)
         if existing_view:
