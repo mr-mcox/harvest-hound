@@ -6,7 +6,7 @@ from app.dependencies import get_event_bus_manager
 from app.infrastructure.event_bus import EventBusManager
 
 
-def test_event_bus_manager_dependency_injection():
+def test_event_bus_manager_dependency_injection() -> None:
     """Test that event bus manager can be accessed via dependency injection."""
     from api import app
     
@@ -20,17 +20,17 @@ def test_event_bus_manager_dependency_injection():
         
         # Create a mock request with the app state
         class MockRequest:
-            def __init__(self, app_instance):
+            def __init__(self, app_instance) -> None:  # type: ignore[no-untyped-def]
                 self.app = app_instance
         
         mock_request = MockRequest(app)
-        event_bus_manager = get_event_bus_manager(mock_request)
+        event_bus_manager = get_event_bus_manager(mock_request)  # type: ignore[arg-type]
         
         assert isinstance(event_bus_manager, EventBusManager)
         assert event_bus_manager.event_bus is not None
 
 
-def test_event_bus_manager_app_state_isolation():
+def test_event_bus_manager_app_state_isolation() -> None:
     """Test that each app instance gets its own event bus manager."""
     from api import app
     

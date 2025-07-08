@@ -71,7 +71,7 @@ def get_inventory_item_view_store(
 
 def get_event_bus_manager(request: Request) -> EventBusManager:
     """Provide event bus manager implementation from app state."""
-    return request.app.state.event_bus_manager
+    return request.app.state.event_bus_manager  # type: ignore[no-any-return]
 
 
 def get_event_store(
