@@ -5,17 +5,17 @@ Testing integration between projection handlers and view stores
 using SQLAlchemy Core per ADR-005.
 """
 from datetime import datetime
-from typing import Dict, Generator
-from uuid import uuid4, UUID
+from typing import Dict
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.events.domain_events import InventoryItemAdded, StoreCreated, IngredientCreated
+from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.models import Ingredient, InventoryStore
 from app.models.read_models import InventoryItemView, StoreView
-from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 
 
@@ -89,7 +89,8 @@ class TestInventoryProjectionHandler:
             view_store=view_store,
         )
 
-    def test_handle_inventory_item_added_creates_view(self, handler: InventoryProjectionHandler, ingredient_repo: MockIngredientRepository, store_repo: MockStoreRepository, view_store: InventoryItemViewStore) -> None:
+    @pytest.mark.asyncio
+    async def test_handle_inventory_item_added_creates_view(self, handler: InventoryProjectionHandler, ingredient_repo: MockIngredientRepository, store_repo: MockStoreRepository, view_store: InventoryItemViewStore) -> None:
         """Handler should create InventoryItemView when processing InventoryItemAdded event."""
         # Arrange
         store_id = uuid4()
@@ -124,7 +125,7 @@ class TestInventoryProjectionHandler:
         )
         
         # Act
-        handler.handle_inventory_item_added(event)
+        await handler.handle_inventory_item_added(event)
         
         # Assert
         views = view_store.get_by_ingredient_id(ingredient_id)
@@ -139,7 +140,8 @@ class TestInventoryProjectionHandler:
         assert view.unit == "lbs"
         assert view.notes == "Fresh from farm"
 
-    def test_handle_ingredient_created_updates_existing_views(self, handler: InventoryProjectionHandler, ingredient_repo: MockIngredientRepository, store_repo: MockStoreRepository, view_store: InventoryItemViewStore) -> None:
+    @pytest.mark.asyncio
+    async def test_handle_ingredient_created_updates_existing_views(self, handler: InventoryProjectionHandler, ingredient_repo: MockIngredientRepository, store_repo: MockStoreRepository, view_store: InventoryItemViewStore) -> None:
         """Handler should update existing inventory views when ingredient is created/updated."""
         # Arrange
         ingredient_id = uuid4()
@@ -166,7 +168,7 @@ class TestInventoryProjectionHandler:
         )
         
         # Act
-        handler.handle_ingredient_created(event)
+        await handler.handle_ingredient_created(event)
         
         # Assert
         views = view_store.get_by_ingredient_id(ingredient_id)
@@ -199,7 +201,8 @@ class TestStoreProjectionHandler:
         """Create projection handler with dependencies."""
         return StoreProjectionHandler(view_store=view_store)
 
-    def test_handle_store_created_creates_view(self, handler: StoreProjectionHandler, view_store: StoreViewStore) -> None:
+    @pytest.mark.asyncio
+    async def test_handle_store_created_creates_view(self, handler: StoreProjectionHandler, view_store: StoreViewStore) -> None:
         """Handler should create StoreView when processing StoreCreated event."""
         # Arrange
         store_id = uuid4()
@@ -214,7 +217,7 @@ class TestStoreProjectionHandler:
         )
         
         # Act
-        handler.handle_store_created(event)
+        await handler.handle_store_created(event)
         
         # Assert
         view = view_store.get_by_store_id(store_id)
@@ -225,7 +228,8 @@ class TestStoreProjectionHandler:
         assert view.infinite_supply is False
         assert view.item_count == 0  # New store starts with 0 items
 
-    def test_handle_inventory_item_added_updates_count(self, handler: StoreProjectionHandler, view_store: StoreViewStore) -> None:
+    @pytest.mark.asyncio
+    async def test_handle_inventory_item_added_updates_count(self, handler: StoreProjectionHandler, view_store: StoreViewStore) -> None:
         """Handler should increment item_count when processing InventoryItemAdded event."""
         # Arrange
         store_id = uuid4()
@@ -251,7 +255,7 @@ class TestStoreProjectionHandler:
         )
         
         # Act
-        handler.handle_inventory_item_added(event)
+        await handler.handle_inventory_item_added(event)
         
         # Assert
         updated_view = view_store.get_by_store_id(store_id)

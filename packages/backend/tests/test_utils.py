@@ -1,5 +1,6 @@
 """Shared test utilities for event-based testing."""
 
+from dataclasses import asdict
 from typing import Any, Dict, List, Optional, Type
 
 from app.infrastructure.event_store import EventStore
@@ -51,8 +52,6 @@ def assert_event_matches(
         if hasattr(event, "model_dump"):
             actual_data = event.model_dump()
         else:
-            from dataclasses import asdict
-
             actual_data = asdict(event)
 
         # Filter out excluded fields

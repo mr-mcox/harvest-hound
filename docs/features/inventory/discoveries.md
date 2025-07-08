@@ -5,6 +5,7 @@
 
 ## Tech Debt
 - We're using CORS on backend - nginx within docker-compose is more secure
+- harvest-hound/packages/backend/api.py:80: DeprecationWarning
 
 ## Questions
 - We're building up a bunch of pyright errors - worth addressing and if so, when?

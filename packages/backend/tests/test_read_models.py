@@ -5,9 +5,7 @@ Testing read models to ensure they provide flat, denormalized data
 structures optimized for UI consumption as per ADR-005.
 """
 from datetime import datetime
-from uuid import UUID, uuid4
-
-import pytest
+from uuid import uuid4
 
 from app.models.read_models import InventoryItemView, StoreView
 

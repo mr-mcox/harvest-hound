@@ -1,4 +1,4 @@
-import threading
+import json
 import time
 from datetime import datetime
 from typing import Generator
@@ -6,11 +6,11 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.events.domain_events import InventoryItemAdded, StoreCreated
-from app.infrastructure.event_store import EventStore
 from app.infrastructure.database import events, metadata
+from app.infrastructure.event_store import EventStore
 from tests.test_utils import assert_event_matches, get_typed_events
 
 
@@ -195,7 +195,10 @@ class TestEventStoreConcurrentWrites:
             event_type, event_data = row
             assert event_type == "StoreCreated"
             # Should be valid JSON
-            import json
             parsed_data = json.loads(event_data)
             assert "store_id" in parsed_data
             assert "name" in parsed_data
+
+
+# EventStore event bus integration tests removed - EventStore no longer depends on EventBus
+# Event publishing is now handled by EventPublisher in the repository layer

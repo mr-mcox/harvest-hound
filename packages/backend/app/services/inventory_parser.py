@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from ..infrastructure.baml_client import b
+from ..infrastructure.translation import InventoryTranslator
 from ..models.parsed_inventory import ParsedInventoryItem
 
 
@@ -32,8 +33,6 @@ class BamlInventoryParserClient(InventoryParserClient):
             return []
 
         # Use BAML client to parse the text
-        from ..infrastructure.translation import InventoryTranslator
-
         translator = InventoryTranslator()
         baml_ingredients = b.ExtractIngredients(inventory_text)
 

@@ -1,7 +1,6 @@
 """Unit tests demonstrating typed dependency injection (no @patch decorators)."""
 
 from typing import Generator
-from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -164,8 +163,6 @@ class TestTypingCompliance:
 
     def test_dependency_injection_types_are_correct(self) -> None:
         """Verify dependency injection maintains type safety."""
-        from app.dependencies import get_inventory_parser
-        
         # This would fail mypy if types were wrong
         parser = get_inventory_parser()
         # Use a recognized fixture input

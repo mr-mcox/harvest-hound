@@ -2,22 +2,31 @@
 
 import os
 import tempfile
-from typing import Annotated, Generator, Optional
+from typing import Annotated, Generator
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from .infrastructure.event_bus import EventBusManager
+from .infrastructure.event_publisher import EventPublisher
 from .infrastructure.event_store import EventStore
 from .infrastructure.repositories import IngredientRepository, StoreRepository
 from .infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from .interfaces.parser import InventoryParserProtocol
 from .interfaces.repository import IngredientRepositoryProtocol, StoreRepositoryProtocol
 from .interfaces.service import StoreServiceProtocol
-from .interfaces.view_store import InventoryItemViewStoreProtocol, StoreViewStoreProtocol
+from .interfaces.view_store import (
+    InventoryItemViewStoreProtocol,
+    StoreViewStoreProtocol,
+)
+from .events.domain_events import (
+    IngredientCreated,
+    InventoryItemAdded,
+    StoreCreated,
+)
 from .projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from .projections.registry import ProjectionRegistry
-from .services.inventory_parser import create_inventory_parser_client
 from .services.store_service import StoreService
 
 # Database setup for view stores
@@ -31,8 +40,7 @@ else:
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine)
 
-# Global projection registry - shared across all event store instances
-_global_projection_registry: Optional[ProjectionRegistry] = None
+# All dependencies now managed through FastAPI app state - no global variables
 
 
 def get_db_session() -> Generator[Session, None, None]:
@@ -66,38 +74,52 @@ def get_inventory_item_view_store(
     return InventoryItemViewStore(session)
 
 
+def get_event_bus_manager(request: Request) -> EventBusManager:
+    """Provide event bus manager implementation from app state."""
+    return request.app.state.event_bus_manager  # type: ignore[no-any-return]
+
+
+def get_projection_registry(request: Request) -> ProjectionRegistry:
+    """Provide projection registry implementation from app state."""
+    return request.app.state.projection_registry  # type: ignore[no-any-return]
+
+
 def get_event_store(
     session: Annotated[Session, Depends(get_db_session)]
 ) -> EventStore:
-    """Provide event store implementation with shared projection registry."""
-    global _global_projection_registry
-    return EventStore(session=session, projection_registry=_global_projection_registry)
+    """Provide event store implementation."""
+    return EventStore(session=session)
+
+
+def get_event_publisher(request: Request) -> EventPublisher:
+    """Provide event publisher implementation from app state."""
+    event_bus_manager = request.app.state.event_bus_manager
+    return EventPublisher(event_bus_manager.event_bus if event_bus_manager else None)
 
 
 def get_store_repository(
-    event_store: Annotated[EventStore, Depends(get_event_store)]
+    event_store: Annotated[EventStore, Depends(get_event_store)],
+    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)]
 ) -> StoreRepositoryProtocol:
     """Provide store repository implementation."""
-    return StoreRepository(event_store)
+    return StoreRepository(event_store, event_publisher)
 
 
 def get_ingredient_repository(
-    event_store: Annotated[EventStore, Depends(get_event_store)]
+    event_store: Annotated[EventStore, Depends(get_event_store)],
+    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)]
 ) -> IngredientRepositoryProtocol:
     """Provide ingredient repository implementation."""
-    return IngredientRepository(event_store)
+    return IngredientRepository(event_store, event_publisher)
 
 
-def setup_projection_registry(
-    event_store: EventStore,
+def create_projection_registry(
     store_view_store: StoreViewStoreProtocol,
     inventory_item_view_store: InventoryItemViewStoreProtocol,
     store_repository: StoreRepositoryProtocol,
     ingredient_repository: IngredientRepositoryProtocol,
-) -> None:
-    """Set up projection registry for event store (called during startup)."""
-    global _global_projection_registry
-    
+) -> ProjectionRegistry:
+    """Create and configure projection registry with handlers."""
     registry = ProjectionRegistry()
     
     # Create handlers
@@ -108,8 +130,6 @@ def setup_projection_registry(
         inventory_item_view_store
     )
     
-    # Import event types for registration
-    from .events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
     
     # Register specific event handlers
     registry.register(StoreCreated, store_projection_handler.handle_store_created)
@@ -117,11 +137,35 @@ def setup_projection_registry(
     registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
     registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
     
-    # Set the global registry so all event stores will use it
-    _global_projection_registry = registry
+    return registry
+
+
+
+
+async def setup_event_bus_subscribers(
+    event_bus_manager: EventBusManager,
+    store_view_store: StoreViewStoreProtocol,
+    inventory_item_view_store: InventoryItemViewStoreProtocol,
+    store_repository: StoreRepositoryProtocol,
+    ingredient_repository: IngredientRepositoryProtocol,
+) -> None:
+    """Subscribe projection handlers to event bus."""
+    event_bus = event_bus_manager.event_bus
     
-    # Also set it directly on the passed event store for immediate use
-    event_store.projection_registry = registry
+    # Create handlers
+    store_projection_handler = StoreProjectionHandler(store_view_store)
+    inventory_projection_handler = InventoryProjectionHandler(
+        ingredient_repository,
+        store_repository,
+        inventory_item_view_store
+    )
+    
+    
+    # Subscribe handlers to event bus
+    await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
+    await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
+    await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
+    await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
 
 
 def get_store_service(

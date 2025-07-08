@@ -1,26 +1,21 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from sqlalchemy import select, insert
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from ..events.domain_events import (
     DomainEvent,
-    IngredientCreated,
-    InventoryItemAdded,
-    StoreCreated,
 )
-from ..projections.registry import ProjectionRegistry
-from .database import events, create_tables
+from .database import create_tables, events
 
 
 class EventStore:
     """SQLAlchemy-based event store for domain events."""
 
-    def __init__(self, session: Session, projection_registry: Optional[ProjectionRegistry] = None):
+    def __init__(self, session: Session):
         self.session = session
-        self.projection_registry = projection_registry
         # Ensure tables exist (for testing with in-memory databases)
         if session.bind is not None:
             create_tables(session.bind)
@@ -40,15 +35,6 @@ class EventStore:
         )
         self.session.execute(stmt)
         self.session.commit()
-
-        # Trigger projection registry (external to transaction for safety)
-        if self.projection_registry is not None:
-            try:
-                self.projection_registry.handle(event)
-            except Exception as e:
-                # In production, this would use proper logging
-                # For now, we don't want projection failures to break event storage
-                pass
 
     def load_events(self, stream_id: str) -> List[Dict[str, Any]]:
         """Load all events for a stream in chronological order."""

@@ -10,17 +10,18 @@ Replaces the following files:
 This file provides complete coverage using typed dependency injection with zero @patch decorators.
 """
 
-from typing import Any, Dict, Generator
+from typing import Generator
 from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 
+from api import app
+from app.dependencies import get_inventory_parser
 from app.models.parsed_inventory import ParsedInventoryItem
 from tests.implementations.parser import (
     ConfigurableMockInventoryParser,
     FailingMockInventoryParser,
-    MockInventoryParser,
 )
 from tests.utils.api_helpers import (
     create_store,
@@ -177,8 +178,6 @@ class TestErrorHandlingScenarios:
     @pytest.fixture
     def client_with_failing_parser(self) -> Generator[TestClient, None, None]:
         """Client with parser that simulates various failures."""
-        from app.dependencies import get_inventory_parser
-        from api import app
         
         failing_parser = FailingMockInventoryParser(error_type="timeout")
         
@@ -209,8 +208,6 @@ class TestErrorHandlingScenarios:
     @pytest.fixture
     def client_with_parsing_failure(self) -> Generator[TestClient, None, None]:
         """Client with parser that fails with parsing errors."""
-        from app.dependencies import get_inventory_parser
-        from api import app
         
         failing_parser = FailingMockInventoryParser(error_type="parsing")
         
@@ -360,8 +357,6 @@ class TestConfigurableScenarios:
     @pytest.fixture
     def client_with_custom_parser(self) -> Generator[TestClient, None, None]:
         """Client with custom parser configuration."""
-        from app.dependencies import get_inventory_parser
-        from api import app
         
         custom_parser = ConfigurableMockInventoryParser()
         custom_parser.set_response(

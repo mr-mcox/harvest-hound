@@ -5,15 +5,14 @@ Testing view stores using SQLAlchemy Core as specified in ADR-005 for better
 schema management, type safety, and database independence.
 """
 from datetime import datetime
-from typing import Generator
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, MetaData, Engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.models.read_models import InventoryItemView, StoreView
 from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+from app.models.read_models import InventoryItemView, StoreView
 
 
 class TestInventoryItemViewStore:

@@ -1,6 +1,6 @@
 """Repository interface protocols."""
 
-from typing import List, Protocol, Sequence
+from typing import Protocol, Sequence
 from uuid import UUID
 
 from ..events.domain_events import DomainEvent

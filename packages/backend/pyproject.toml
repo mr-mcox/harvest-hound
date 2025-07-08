@@ -16,16 +16,25 @@ dependencies = [
 [dependency-groups]
 dev = ["pyright>=1.1.402"]
 lint = ["mypy>=1.16.1", "ruff>=0.12.2"]
-test = ["pytest>=8.4.1", "httpx>=0.27.0", "pytest-cov>=6.2.1"]
+test = [
+    "pytest>=8.4.1",
+    "httpx>=0.27.0",
+    "pytest-cov>=6.2.1",
+    "pytest-asyncio>=0.24.0",
+]
 
 [tool.ruff]
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "C90"]
+select = ["E", "F", "I", "C90", "PLC0415"]
 
 [tool.ruff.lint.per-file-ignores]
 "app/infrastructure/baml_client/**/*" = ["ALL"]
+# Allow local imports for conditional dependencies (test mocks, etc.)
+"app/dependencies.py" = ["PLC0415"]
+# Allow local imports in test fixtures for async setup
+"tests/test_store_service.py" = ["PLC0415"]
 
 [tool.black]
 exclude = "app/infrastructure/baml_client/"
@@ -63,3 +72,6 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = ["pydantic.*", "fastapi.*", "uvicorn.*", "pytest.*"]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+omit = ["app/infrastructure/baml_client/*"]

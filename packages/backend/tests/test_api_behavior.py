@@ -1,46 +1,24 @@
-from uuid import UUID
+import asyncio
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
-from api import app
+from api import _startup_completed, app, startup_event
 
 
 @pytest.fixture(scope="module")
 def client() -> TestClient:
     """Create test client with proper startup initialization."""
-    # Manually trigger startup to initialize projection registry
-    from app.dependencies import SessionLocal, engine
-    from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
-    from app.infrastructure.event_store import EventStore
-    from app.infrastructure.repositories import IngredientRepository, StoreRepository
-    from app.dependencies import setup_projection_registry
-    from app.infrastructure.database import metadata
+    # TestClient with app will automatically trigger startup event
+    # which initializes projection registry and event bus in app state
+    client = TestClient(app)
     
-    # Create tables if they don't exist
-    metadata.create_all(bind=engine)
-    
-    # Set up projection registry
-    session = SessionLocal()
-    try:
-        event_store = EventStore(session=session, projection_registry=None)
-        store_view_store = StoreViewStore(session)
-        inventory_item_view_store = InventoryItemViewStore(session)
-        store_repository = StoreRepository(event_store)
-        ingredient_repository = IngredientRepository(event_store)
+    # Manually trigger startup event if needed (TestClient sometimes doesn't)
+    if not _startup_completed:
+        asyncio.run(startup_event())
         
-        setup_projection_registry(
-            event_store,
-            store_view_store,
-            inventory_item_view_store,
-            store_repository,
-            ingredient_repository
-        )
-        session.commit()
-    finally:
-        session.close()
-    
-    return TestClient(app)
+    return client
 
 
 class TestStoreCreation:
@@ -311,8 +289,6 @@ class TestInventoryRetrieval:
     def test_upload_inventory_to_non_existent_store_returns_404(self, client: TestClient) -> None:
         """Test that POST inventory to non-existent store returns 404."""
         # Given - A non-existent store ID
-        from uuid import uuid4
-
         non_existent_store_id = uuid4()
 
         # When - Try to upload inventory to non-existent store

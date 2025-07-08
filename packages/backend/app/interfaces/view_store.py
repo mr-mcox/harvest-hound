@@ -1,6 +1,6 @@
 """View store interface protocols."""
 
-from typing import Any, Dict, List, Optional, Protocol
+from typing import List, Optional, Protocol
 from uuid import UUID
 
 from ..models.read_models import InventoryItemView, StoreView

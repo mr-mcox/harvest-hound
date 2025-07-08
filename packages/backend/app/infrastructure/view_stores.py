@@ -7,13 +7,12 @@ type safety, and database independence using SQLAlchemy Core.
 from typing import List
 from uuid import UUID
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from ..models.read_models import InventoryItemView, StoreView
-from .database import inventory_item_views, store_views, create_tables
+from .database import create_tables, inventory_item_views, store_views
 
 
 class InventoryItemViewStore:

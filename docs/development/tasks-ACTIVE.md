@@ -8,22 +8,23 @@
 **Goal**: Implement async event bus pattern to decouple event store from consumers
 
 ### 1.1 Event Bus Infrastructure - **SETUP ONLY**
-- [ ] **Create EventBus interface** - Define async publish/subscribe contract
-- [ ] **Create InMemoryEventBus implementation** - Simple pub/sub for development
-- [ ] **Add EventBusManager dependency** - Injectable service for FastAPI
-- [ ] **Update event store constructor** - Accept event_bus parameter with default None
+- [x] **Create EventBus interface** - Define async publish/subscribe contract
+- [x] **Create InMemoryEventBus implementation** - Simple pub/sub for development
+- [x] **Add EventBusManager dependency** - Injectable service for FastAPI
+- [x] **Update event store constructor** - Accept event_bus parameter with default None
 
 ### 1.2 Event Store Publishing - **REFACTOR**
-- [ ] **Add async publish method to event store** - Call event_bus.publish(event) after storage
-- [ ] **Maintain backward compatibility** - Keep existing projection_registry calls for now
-- [ ] **Add integration test** - Verify events published to both old and new systems
-- [ ] **Update event store tests** - Mock event bus to verify publish calls
+- [x] **Add async publish method to event store** - Call event_bus.publish(event) after storage
+- [x] **Maintain backward compatibility** - Keep existing projection_registry calls for now
+- [x] **Add integration test** - Verify events published to both old and new systems
+- [x] **Update event store tests** - Mock event bus to verify publish calls
 
 ### 1.3 Projection Handler Migration - **REFACTOR**
-- [ ] **Convert projection handlers to subscribers** - Subscribe to event bus on startup
-- [ ] **Add async event handling** - Update handler methods to be async
-- [ ] **Test projection handlers independently** - Verify they work via event bus subscription
-- [ ] **Remove projection_registry from event store** - Clean up old coupling after verification
+- [x] **Refactor projection registry to use app state** - Move from global variable to app.state.projection_registry
+- [x] **Convert projection handlers to subscribers** - Subscribe to event bus on startup
+- [x] **Add async event handling** - Update handler methods to be async
+- [x] **Test projection handlers independently** - Verify they work via event bus subscription
+- [x] **Remove projection_registry from event store** - Clean up old coupling after verification
 
 ## Task 2: WebSocket Infrastructure (TIP Work Stream 2)
 **Goal**: Build WebSocket connection manager with default room pattern and event broadcasting
