@@ -8,22 +8,24 @@ from fastapi import Depends, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from .events.domain_events import (
+    IngredientCreated,
+    InventoryItemAdded,
+    StoreCreated,
+)
 from .infrastructure.event_bus import EventBusManager
 from .infrastructure.event_publisher import EventPublisher
 from .infrastructure.event_store import EventStore
 from .infrastructure.repositories import IngredientRepository, StoreRepository
 from .infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+from .infrastructure.websocket_manager import ConnectionManager
+from .infrastructure.websocket_event_subscriber import WebSocketEventSubscriber
 from .interfaces.parser import InventoryParserProtocol
 from .interfaces.repository import IngredientRepositoryProtocol, StoreRepositoryProtocol
 from .interfaces.service import StoreServiceProtocol
 from .interfaces.view_store import (
     InventoryItemViewStoreProtocol,
     StoreViewStoreProtocol,
-)
-from .events.domain_events import (
-    IngredientCreated,
-    InventoryItemAdded,
-    StoreCreated,
 )
 from .projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from .projections.registry import ProjectionRegistry
@@ -82,6 +84,11 @@ def get_event_bus_manager(request: Request) -> EventBusManager:
 def get_projection_registry(request: Request) -> ProjectionRegistry:
     """Provide projection registry implementation from app state."""
     return request.app.state.projection_registry  # type: ignore[no-any-return]
+
+
+def get_connection_manager(request: Request) -> ConnectionManager:
+    """Provide connection manager implementation from app state."""
+    return request.app.state.connection_manager  # type: ignore[no-any-return]
 
 
 def get_event_store(
@@ -148,8 +155,9 @@ async def setup_event_bus_subscribers(
     inventory_item_view_store: InventoryItemViewStoreProtocol,
     store_repository: StoreRepositoryProtocol,
     ingredient_repository: IngredientRepositoryProtocol,
+    connection_manager: ConnectionManager,
 ) -> None:
-    """Subscribe projection handlers to event bus."""
+    """Subscribe projection handlers and WebSocket event subscriber to event bus."""
     event_bus = event_bus_manager.event_bus
     
     # Create handlers
@@ -160,12 +168,18 @@ async def setup_event_bus_subscribers(
         inventory_item_view_store
     )
     
+    # Create WebSocket event subscriber
+    websocket_event_subscriber = WebSocketEventSubscriber(connection_manager)
     
     # Subscribe handlers to event bus
     await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
     await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
     await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
     await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
+    
+    # Subscribe WebSocket event subscriber to domain events
+    await event_bus.subscribe(StoreCreated, websocket_event_subscriber.handle_store_created)
+    await event_bus.subscribe(InventoryItemAdded, websocket_event_subscriber.handle_inventory_item_added)
 
 
 def get_store_service(

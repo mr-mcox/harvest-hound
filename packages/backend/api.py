@@ -2,7 +2,7 @@ from typing import Annotated, List, Optional
 from uuid import UUID
 
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -25,6 +25,7 @@ from app.infrastructure.view_stores import (
     InventoryItemViewStore,
     StoreViewStore,
 )
+from app.infrastructure.websocket_manager import ConnectionManager
 from app.interfaces.service import StoreServiceProtocol
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
@@ -93,6 +94,9 @@ async def startup_event() -> None:
         # Initialize event bus manager
         app.state.event_bus_manager = EventBusManager(InMemoryEventBus())
         
+        # Initialize connection manager
+        app.state.connection_manager = ConnectionManager()
+        
         # Create tables if they don't exist
         metadata.create_all(bind=engine)
         
@@ -123,7 +127,8 @@ async def startup_event() -> None:
                 store_view_store,
                 inventory_item_view_store,
                 store_repository,
-                ingredient_repository
+                ingredient_repository,
+                app.state.connection_manager
             )
             
             session.commit()
@@ -238,6 +243,31 @@ async def get_store_inventory(
         ]
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket) -> None:
+    """Handle WebSocket connections with default room pattern."""
+    # Get connection manager from app state
+    connection_manager = app.state.connection_manager
+    
+    await connection_manager.connect(websocket)
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_json()
+            
+            # Simple echo response for now
+            response = {
+                "type": "echo",
+                "data": data.get("data", {}),
+                "room": "default"
+            }
+            await websocket.send_json(response)
+            
+    except WebSocketDisconnect:
+        # Handle disconnection gracefully
+        await connection_manager.disconnect(websocket)
 
 
 def main() -> None:

@@ -30,22 +30,22 @@
 **Goal**: Build WebSocket connection manager with default room pattern and event broadcasting
 
 ### 2.1 WebSocket Connection Manager - **SETUP ONLY**
-- [ ] **Create ConnectionManager class** - Track active connections by room
-- [ ] **Add room management methods** - join_room, leave_room, broadcast_to_room
-- [ ] **Create WebSocket message schemas** - Pydantic models for event envelopes
-- [ ] **Add connection lifecycle methods** - connect, disconnect, cleanup
+- [x] **Create ConnectionManager class** - Track active connections by room
+- [x] **Add room management methods** - join_room, leave_room, broadcast_to_room
+- [x] **Create WebSocket message schemas** - Pydantic models for event envelopes
+- [x] **Add connection lifecycle methods** - connect, disconnect, cleanup
 
 ### 2.2 WebSocket Endpoint - **NEW BEHAVIOR**
-- [ ] **Implement /ws endpoint** - Accept WebSocket connections with default room
-- [ ] **Handle connection handshake** - Accept connection and join default room
-- [ ] **Add connection error handling** - Gracefully handle disconnections
-- [ ] **Test WebSocket endpoint** - Connect, send message, verify receipt
+- [x] **Implement /ws endpoint** - Accept WebSocket connections with default room
+- [x] **Handle connection handshake** - Accept connection and join default room
+- [x] **Add connection error handling** - Gracefully handle disconnections
+- [x] **Test WebSocket endpoint** - Connect, send message, verify receipt
 
 ### 2.3 Event Broadcasting Integration - **NEW BEHAVIOR**
-- [ ] **Create WebSocket event subscriber** - Subscribe to event bus for domain events
-- [ ] **Implement event filtering** - Transform domain events to WebSocket messages
-- [ ] **Add broadcast logic** - Send filtered events to appropriate room connections
-- [ ] **Test end-to-end flow** - Domain command → event store → event bus → WebSocket → client
+- [x] **Create WebSocket event subscriber** - Subscribe to event bus for domain events
+- [x] **Implement event filtering** - Transform domain events to WebSocket messages
+- [x] **Add broadcast logic** - Send filtered events to appropriate room connections
+- [x] **Test end-to-end flow** - Domain command → event store → event bus → WebSocket → client
 
 ## Task 3: Frontend Integration (TIP Work Stream 3)
 **Goal**: WebSocket client with simple reconnection and real-time UI updates
