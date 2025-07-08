@@ -1,4 +1,4 @@
-from typing import List, Sequence, Union
+from typing import List, Optional, Sequence, Union
 from uuid import UUID
 
 from ..events.domain_events import (
@@ -9,6 +9,7 @@ from ..events.domain_events import (
 )
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
+from .event_publisher import EventPublisher
 from .event_store import EventStore
 
 
@@ -27,14 +28,18 @@ class AggregateNotFoundError(RepositoryError):
 class IngredientRepository:
     """Repository for Ingredient aggregates using event sourcing."""
 
-    def __init__(self, event_store: EventStore):
+    def __init__(self, event_store: EventStore, event_publisher: Optional[EventPublisher] = None):
         self.event_store = event_store
+        self.event_publisher = event_publisher
 
     def save(self, ingredient: Ingredient, events: Sequence[DomainEvent]) -> None:
         """Save ingredient by persisting its events."""
         stream_id = f"ingredient-{ingredient.ingredient_id}"
         for event in events:
             self.event_store.append_event(stream_id, event)
+            # Publish event if publisher is available
+            if self.event_publisher:
+                self.event_publisher.publish_sync(event)
 
     def load(self, ingredient_id: UUID) -> Ingredient:
         """Load ingredient from its event stream."""
@@ -61,14 +66,18 @@ class IngredientRepository:
 class StoreRepository:
     """Repository for InventoryStore aggregates using event sourcing."""
 
-    def __init__(self, event_store: EventStore):
+    def __init__(self, event_store: EventStore, event_publisher: Optional[EventPublisher] = None):
         self.event_store = event_store
+        self.event_publisher = event_publisher
 
     def save(self, store: InventoryStore, events: Sequence[DomainEvent]) -> None:
         """Save store by persisting its events."""
         stream_id = f"store-{store.store_id}"
         for event in events:
             self.event_store.append_event(stream_id, event)
+            # Publish event if publisher is available
+            if self.event_publisher:
+                self.event_publisher.publish_sync(event)
 
     def load(self, store_id: UUID) -> InventoryStore:
         """Load store from its event stream."""

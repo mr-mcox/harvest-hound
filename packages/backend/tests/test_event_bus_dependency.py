@@ -16,7 +16,6 @@ def test_event_bus_manager_dependency_injection() -> None:
         assert response.status_code == 200
         
         # Now test that we can access the event bus manager through dependency injection
-        from fastapi import Request
         
         # Create a mock request with the app state
         class MockRequest:

@@ -2,7 +2,6 @@
 
 from typing import Dict, List, Optional
 
-from app.interfaces.parser import InventoryParserProtocol
 from app.models.parsed_inventory import ParsedInventoryItem
 
 

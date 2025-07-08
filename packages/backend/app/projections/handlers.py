@@ -7,7 +7,7 @@ maintaining read models optimized for UI consumption.
 from typing import List, Protocol
 from uuid import UUID
 
-from ..events.domain_events import InventoryItemAdded, StoreCreated, IngredientCreated
+from ..events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
 from ..models import Ingredient, InventoryStore
 from ..models.read_models import InventoryItemView, StoreView
 

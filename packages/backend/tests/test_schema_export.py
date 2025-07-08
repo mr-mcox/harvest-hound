@@ -4,7 +4,6 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Optional
-from app.services.schema_export import SchemaExportService as SchemaExportServiceType
 
 import pytest
 from pydantic import BaseModel

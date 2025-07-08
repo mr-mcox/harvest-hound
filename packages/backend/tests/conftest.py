@@ -1,13 +1,13 @@
 """Shared test configuration and fixtures."""
 
+import asyncio
 from typing import Any, Dict, Generator
 from uuid import UUID
 
 import pytest
-from fastapi import Depends
 from fastapi.testclient import TestClient
 
-from api import app
+from api import _startup_completed, app, startup_event
 from app.dependencies import get_inventory_parser
 from app.interfaces.parser import InventoryParserProtocol
 from app.models.parsed_inventory import ParsedInventoryItem
@@ -49,8 +49,6 @@ def test_client_with_mocks(
     client = TestClient(app)
     
     # Manually trigger startup event if needed (TestClient sometimes doesn't)
-    import asyncio
-    from api import startup_event, _startup_completed
     if not _startup_completed:
         asyncio.run(startup_event())
     yield client

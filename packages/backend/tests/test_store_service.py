@@ -1,16 +1,16 @@
 from typing import Generator, List
 from uuid import uuid4
-from unittest.mock import Mock
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+from app.infrastructure.database import metadata
 from app.infrastructure.event_bus import InMemoryEventBus
+from app.infrastructure.event_publisher import EventPublisher
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
-from app.infrastructure.database import metadata
 from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.models.parsed_inventory import ParsedInventoryItem
 from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
@@ -32,19 +32,27 @@ def db_session() -> Generator[Session, None, None]:
     session.close()
 
 
+@pytest.fixture
+def shared_event_bus() -> InMemoryEventBus:
+    """Create a shared event bus for all test components."""
+    return InMemoryEventBus()
+
+
 @pytest.fixture  
-def event_store(db_session: Session, store_view_store: StoreViewStore, inventory_item_view_store: InventoryItemViewStore) -> EventStore:
+def event_store(db_session: Session, shared_event_bus: InMemoryEventBus, store_view_store: StoreViewStore, inventory_item_view_store: InventoryItemViewStore) -> EventStore:
     """Create an EventStore instance for testing with event bus."""
     import asyncio
     
-    # Set up event bus and handlers
-    event_bus = InMemoryEventBus()
+    # Create event store and event publisher with shared event bus
+    event_store = EventStore(session=db_session)
+    event_publisher = EventPublisher(shared_event_bus)
+    
+    # Create projection handlers
     store_projection_handler = StoreProjectionHandler(store_view_store)
     
-    # Create ingredient and store repositories for the inventory projection handler
-    temp_event_store = EventStore(session=db_session)
-    ingredient_repository = IngredientRepository(temp_event_store)
-    store_repository = StoreRepository(temp_event_store) 
+    # Create ingredient and store repositories with event publisher
+    ingredient_repository = IngredientRepository(event_store, event_publisher)
+    store_repository = StoreRepository(event_store, event_publisher)
     
     inventory_projection_handler = InventoryProjectionHandler(
         ingredient_repository,
@@ -54,34 +62,29 @@ def event_store(db_session: Session, store_view_store: StoreViewStore, inventory
     
     # Subscribe handlers to event bus synchronously
     async def setup_subscribers() -> None:
-        await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
-        await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
-        await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
-        await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
+        await shared_event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
+        await shared_event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
+        await shared_event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
+        await shared_event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
     
     # Run the async setup
     asyncio.run(setup_subscribers())
-    
-    # Create EventStore with event bus
-    event_store = EventStore(session=db_session, event_bus=event_bus)
-    
-    # Update the temporary repositories to use the new event store
-    ingredient_repository.event_store = event_store
-    store_repository.event_store = event_store
     
     return event_store
 
 
 @pytest.fixture
-def store_repository(event_store: EventStore) -> StoreRepository:
+def store_repository(event_store: EventStore, shared_event_bus: InMemoryEventBus) -> StoreRepository:
     """Create a StoreRepository for testing."""
-    return StoreRepository(event_store)
+    event_publisher = EventPublisher(shared_event_bus)
+    return StoreRepository(event_store, event_publisher)
 
 
 @pytest.fixture
-def ingredient_repository(event_store: EventStore) -> IngredientRepository:
+def ingredient_repository(event_store: EventStore, shared_event_bus: InMemoryEventBus) -> IngredientRepository:
     """Create an IngredientRepository for testing."""
-    return IngredientRepository(event_store)
+    event_publisher = EventPublisher(shared_event_bus)
+    return IngredientRepository(event_store, event_publisher)
 
 
 @pytest.fixture

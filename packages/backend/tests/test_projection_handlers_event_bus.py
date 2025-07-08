@@ -1,18 +1,17 @@
 """Test projection handlers working via event bus subscription."""
 
-import asyncio
 from datetime import datetime
 from typing import Generator
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.events.domain_events import StoreCreated
+from app.infrastructure.database import metadata
 from app.infrastructure.event_bus import InMemoryEventBus
 from app.infrastructure.view_stores import StoreViewStore
-from app.infrastructure.database import metadata
 from app.projections.handlers import StoreProjectionHandler
 
 

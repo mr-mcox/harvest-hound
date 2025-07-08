@@ -4,8 +4,14 @@ from uuid import UUID, uuid4
 
 from ..infrastructure.repositories import AggregateNotFoundError
 from ..interfaces.parser import InventoryParserProtocol
-from ..interfaces.repository import IngredientRepositoryProtocol, StoreRepositoryProtocol
-from ..interfaces.view_store import InventoryItemViewStoreProtocol, StoreViewStoreProtocol
+from ..interfaces.repository import (
+    IngredientRepositoryProtocol,
+    StoreRepositoryProtocol,
+)
+from ..interfaces.view_store import (
+    InventoryItemViewStoreProtocol,
+    StoreViewStoreProtocol,
+)
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem

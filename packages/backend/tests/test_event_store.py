@@ -1,18 +1,15 @@
-import asyncio
-import threading
 import time
 from datetime import datetime
 from typing import Generator
-from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.events.domain_events import InventoryItemAdded, StoreCreated
-from app.infrastructure.event_store import EventStore
 from app.infrastructure.database import events, metadata
+from app.infrastructure.event_store import EventStore
 from tests.test_utils import assert_event_matches, get_typed_events
 
 
@@ -203,124 +200,5 @@ class TestEventStoreConcurrentWrites:
             assert "name" in parsed_data
 
 
-class TestEventStoreEventBusIntegration:
-    """Test EventStore publishes events to event bus when available."""
-
-    def test_append_event_publishes_to_event_bus_when_available(self, db_session: Session) -> None:
-        """EventStore should publish events to event bus after storage."""
-        # Create mock event bus
-        mock_event_bus = Mock()
-        mock_event_bus.publish = AsyncMock()
-        
-        # Create event store with event bus
-        event_store = EventStore(session=db_session, event_bus=mock_event_bus)
-        store_id = uuid4()
-        stream_id = f"store-{store_id}"
-
-        event = StoreCreated(
-            store_id=store_id,
-            name="Test Store",
-            description="A test store",
-            infinite_supply=False,
-            created_at=datetime.now(),
-        )
-
-        # Set up async context
-        async def test_with_event_loop() -> None:
-            # Append event (this should trigger event bus publish)
-            event_store.append_event(stream_id, event)
-            
-            # Allow async task to complete
-            await asyncio.sleep(0.001)
-            
-            # Verify event was published to event bus
-            mock_event_bus.publish.assert_called_once_with(event)
-
-        # Run test in async context
-        asyncio.run(test_with_event_loop())
-
-    def test_append_event_works_without_event_bus(self, db_session: Session) -> None:
-        """EventStore should work normally when no event bus is provided."""
-        # Create event store without event bus
-        event_store = EventStore(session=db_session, event_bus=None)
-        store_id = uuid4()
-        stream_id = f"store-{store_id}"
-
-        event = StoreCreated(
-            store_id=store_id,
-            name="Test Store",
-            description="A test store",
-            infinite_supply=False,
-            created_at=datetime.now(),
-        )
-
-        # This should not raise any errors
-        event_store.append_event(stream_id, event)
-
-        # Verify event was still persisted
-        store_events = get_typed_events(event_store, stream_id, StoreCreated)
-        assert len(store_events) == 1
-
-    def test_append_event_handles_event_bus_errors_gracefully(self, db_session: Session) -> None:
-        """EventStore should handle event bus errors without affecting storage."""
-        # Create mock event bus that raises an error
-        mock_event_bus = Mock()
-        mock_event_bus.publish = AsyncMock(side_effect=Exception("Event bus error"))
-        
-        # Create event store with faulty event bus
-        event_store = EventStore(session=db_session, event_bus=mock_event_bus)
-        store_id = uuid4()
-        stream_id = f"store-{store_id}"
-
-        event = StoreCreated(
-            store_id=store_id,
-            name="Test Store",
-            description="A test store",
-            infinite_supply=False,
-            created_at=datetime.now(),
-        )
-
-        # Set up async context
-        async def test_with_event_loop() -> None:
-            # This should not raise any errors despite event bus failure
-            event_store.append_event(stream_id, event)
-            
-            # Allow async task to complete (and potentially fail)
-            await asyncio.sleep(0.001)
-
-        # Run test in async context
-        asyncio.run(test_with_event_loop())
-
-        # Verify event was still persisted despite event bus error
-        store_events = get_typed_events(event_store, stream_id, StoreCreated)
-        assert len(store_events) == 1
-
-    def test_append_event_works_without_async_context(self, db_session: Session) -> None:
-        """EventStore should work when no async event loop is running."""
-        # Create mock event bus
-        mock_event_bus = Mock()
-        mock_event_bus.publish = AsyncMock()
-        
-        # Create event store with event bus
-        event_store = EventStore(session=db_session, event_bus=mock_event_bus)
-        store_id = uuid4()
-        stream_id = f"store-{store_id}"
-
-        event = StoreCreated(
-            store_id=store_id,
-            name="Test Store",
-            description="A test store",
-            infinite_supply=False,
-            created_at=datetime.now(),
-        )
-
-        # Call without async context (no event loop running)
-        # This should not raise any errors and should still publish to event bus
-        event_store.append_event(stream_id, event)
-
-        # Verify event was still persisted
-        store_events = get_typed_events(event_store, stream_id, StoreCreated)
-        assert len(store_events) == 1
-        
-        # Event bus publish should have been called (creates temporary event loop)
-        mock_event_bus.publish.assert_called_once_with(event)
+# EventStore event bus integration tests removed - EventStore no longer depends on EventBus
+# Event publishing is now handled by EventPublisher in the repository layer

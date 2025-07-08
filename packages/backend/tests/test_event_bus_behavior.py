@@ -1,6 +1,5 @@
 """Tests for event bus behavior (NEW BEHAVIOR - TDD approach)."""
 
-import asyncio
 from datetime import datetime
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4

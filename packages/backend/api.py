@@ -8,13 +8,8 @@ from pydantic import BaseModel
 
 from app.dependencies import (
     create_projection_registry,
-    get_event_store,
-    get_ingredient_repository,
-    get_inventory_item_view_store,
     get_store_service,
-    get_store_view_store,
     setup_event_bus_subscribers,
-    update_global_app_state,
 )
 from app.infrastructure.event_bus import EventBusManager, InMemoryEventBus
 from app.interfaces.service import StoreServiceProtocol
@@ -87,12 +82,19 @@ async def startup_event() -> None:
         
         # Manually create database session for startup
         from app.dependencies import SessionLocal, engine
-        from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
-        from app.infrastructure.event_store import EventStore
-        from app.infrastructure.repositories import IngredientRepository, StoreRepository
-        
+
         # Create tables if they don't exist
         from app.infrastructure.database import metadata
+        from app.infrastructure.event_publisher import EventPublisher
+        from app.infrastructure.event_store import EventStore
+        from app.infrastructure.repositories import (
+            IngredientRepository,
+            StoreRepository,
+        )
+        from app.infrastructure.view_stores import (
+            InventoryItemViewStore,
+            StoreViewStore,
+        )
         metadata.create_all(bind=engine)
         
         # Create session and dependencies
@@ -102,10 +104,11 @@ async def startup_event() -> None:
             store_view_store = StoreViewStore(session)
             inventory_item_view_store = InventoryItemViewStore(session)
             
-            # Create temporary event store for repositories (without dependencies)
-            temp_event_store = EventStore(session=session)
-            store_repository = StoreRepository(temp_event_store)
-            ingredient_repository = IngredientRepository(temp_event_store)
+            # Create event store and publisher for repositories
+            event_store = EventStore(session=session)
+            event_publisher = EventPublisher(app.state.event_bus_manager.event_bus)
+            store_repository = StoreRepository(event_store, event_publisher)
+            ingredient_repository = IngredientRepository(event_store, event_publisher)
             
             # Create and store projection registry in app state
             app.state.projection_registry = create_projection_registry(
@@ -114,9 +117,6 @@ async def startup_event() -> None:
                 store_repository,
                 ingredient_repository
             )
-            
-            # Update global references for service layer access
-            update_global_app_state(app.state.projection_registry, app.state.event_bus_manager)
             
             # Subscribe projection handlers to event bus
             await setup_event_bus_subscribers(
@@ -135,7 +135,6 @@ async def startup_event() -> None:
 
 
 # Import the get_db_session for startup
-from app.dependencies import get_db_session
 
 # All tests now use proper dependency injection
 

@@ -5,17 +5,17 @@ Testing integration between projection handlers and view stores
 using SQLAlchemy Core per ADR-005.
 """
 from datetime import datetime
-from typing import Dict, Generator
-from uuid import uuid4, UUID
+from typing import Dict
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.events.domain_events import InventoryItemAdded, StoreCreated, IngredientCreated
+from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.models import Ingredient, InventoryStore
 from app.models.read_models import InventoryItemView, StoreView
-from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 
 

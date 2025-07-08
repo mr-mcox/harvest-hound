@@ -1,7 +1,6 @@
 """Unit tests demonstrating typed dependency injection (no @patch decorators)."""
 
 from typing import Generator
-from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient

@@ -1,29 +1,21 @@
-import asyncio
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List
 
-from sqlalchemy import select, insert
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from ..events.domain_events import (
     DomainEvent,
-    IngredientCreated,
-    InventoryItemAdded,
-    StoreCreated,
 )
-from .database import events, create_tables
-
-if TYPE_CHECKING:
-    from .event_bus import EventBus
+from .database import create_tables, events
 
 
 class EventStore:
     """SQLAlchemy-based event store for domain events."""
 
-    def __init__(self, session: Session, event_bus: Optional["EventBus"] = None):
+    def __init__(self, session: Session):
         self.session = session
-        self.event_bus = event_bus
         # Ensure tables exist (for testing with in-memory databases)
         if session.bind is not None:
             create_tables(session.bind)
@@ -43,27 +35,6 @@ class EventStore:
         )
         self.session.execute(stmt)
         self.session.commit()
-
-        
-        # Publish to event bus if available (async operation)
-        if self.event_bus is not None:
-            try:
-                # Try to use existing event loop if available
-                loop = asyncio.get_running_loop()
-                loop.create_task(self.event_bus.publish(event))
-            except RuntimeError:
-                # No event loop running, create one for this publish
-                # This ensures projection handlers work in sync test contexts
-                try:
-                    asyncio.run(self.event_bus.publish(event))
-                except Exception:
-                    # In production, this would use proper logging
-                    # For now, we don't want event bus failures to break event storage
-                    pass
-            except Exception:
-                # In production, this would use proper logging
-                # For now, we don't want event bus failures to break event storage
-                pass
 
     def load_events(self, stream_id: str) -> List[Dict[str, Any]]:
         """Load all events for a stream in chronological order."""

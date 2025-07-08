@@ -7,17 +7,16 @@ Uses SQLAlchemy Core for persistence ignorance and database independence.
 from typing import Union
 
 from sqlalchemy import (
-    MetaData,
-    Table,
-    Column,
-    String,
-    Float,
-    Integer,
     Boolean,
+    Column,
+    Float,
     Index,
-    create_engine,
+    Integer,
+    MetaData,
+    String,
+    Table,
 )
-from sqlalchemy.engine import Engine, Connection
+from sqlalchemy.engine import Connection, Engine
 
 # Global metadata instance for all tables
 metadata = MetaData()

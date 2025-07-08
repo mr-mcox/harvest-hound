@@ -3,15 +3,15 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
+from app.infrastructure.database import metadata
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import (
     AggregateNotFoundError,
     IngredientRepository,
     StoreRepository,
 )
-from app.infrastructure.database import metadata
 from app.models.ingredient import Ingredient
 from app.models.inventory_store import InventoryStore
 

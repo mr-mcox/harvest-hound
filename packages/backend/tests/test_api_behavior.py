@@ -1,9 +1,10 @@
+import asyncio
 from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 
-from api import app
+from api import _startup_completed, app, startup_event
 
 
 @pytest.fixture(scope="module")
@@ -14,8 +15,6 @@ def client() -> TestClient:
     client = TestClient(app)
     
     # Manually trigger startup event if needed (TestClient sometimes doesn't)
-    import asyncio
-    from api import startup_event, _startup_completed
     if not _startup_completed:
         asyncio.run(startup_event())
         

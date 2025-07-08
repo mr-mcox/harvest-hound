@@ -6,12 +6,10 @@ to appropriate projection handlers as per ADR-005.
 """
 from datetime import datetime
 from typing import Any
-from uuid import uuid4
 from unittest.mock import Mock
+from uuid import uuid4
 
-import pytest
-
-from app.events.domain_events import InventoryItemAdded, StoreCreated, IngredientCreated
+from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
 from app.projections.registry import ProjectionRegistry
 
 

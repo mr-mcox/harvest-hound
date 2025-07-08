@@ -1,11 +1,14 @@
 """Event bus infrastructure for decoupling event producers from consumers."""
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, Awaitable, Callable, Dict, List, Type, Union
 
 from ..events.domain_events import DomainEvent
+
+logger = logging.getLogger(__name__)
 
 
 class EventBus(ABC):
@@ -45,10 +48,13 @@ class InMemoryEventBus(EventBus):
                     await handler(event)
                 else:
                     handler(event)
-            except Exception:
-                # In production, this would use proper logging
-                # For now, we don't want handler failures to break event publishing
-                pass
+            except Exception as e:
+                logger.warning(
+                    "Event handler failed for event %s: %s", 
+                    event_type.__name__, 
+                    str(e),
+                    exc_info=True
+                )
 
     async def subscribe(self, event_type: Type[DomainEvent], handler: Union[Callable[[Any], None], Callable[[Any], Awaitable[None]]]) -> None:
         """Subscribe a handler to events of a specific type."""
@@ -60,8 +66,10 @@ class InMemoryEventBus(EventBus):
         try:
             self._subscribers[event_type].remove(handler)
         except ValueError:
-            # Handler not in list, ignore silently
-            pass
+            logger.warning(
+                "Attempted to unsubscribe handler that was not registered for event type %s", 
+                event_type.__name__
+            )
 
 
 class EventBusManager:
