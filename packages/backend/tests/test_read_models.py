@@ -15,7 +15,7 @@ from app.models.read_models import InventoryItemView, StoreView
 class TestInventoryItemView:
     """Test InventoryItemView read model."""
 
-    def test_inventory_item_view_has_denormalized_fields(self):
+    def test_inventory_item_view_has_denormalized_fields(self) -> None:
         """InventoryItemView should include denormalized ingredient_name and store_name."""
         # Arrange
         store_id = uuid4()
@@ -44,7 +44,7 @@ class TestInventoryItemView:
         assert view.notes == "Fresh from farm"
         assert view.added_at == added_at
 
-    def test_inventory_item_view_display_name_property(self):
+    def test_inventory_item_view_display_name_property(self) -> None:
         """InventoryItemView should provide computed display_name property."""
         # Arrange
         view = InventoryItemView(
@@ -61,7 +61,7 @@ class TestInventoryItemView:
         # Act & Assert
         assert view.display_name == "3.0 pieces Tomatoes"
 
-    def test_inventory_item_view_optional_notes(self):
+    def test_inventory_item_view_optional_notes(self) -> None:
         """InventoryItemView should support optional notes field."""
         # Arrange & Act
         view = InventoryItemView(
@@ -82,7 +82,7 @@ class TestInventoryItemView:
 class TestStoreView:
     """Test StoreView read model."""
 
-    def test_store_view_has_computed_fields(self):
+    def test_store_view_has_computed_fields(self) -> None:
         """StoreView should include computed item_count field."""
         # Arrange
         store_id = uuid4()
@@ -106,7 +106,7 @@ class TestStoreView:
         assert view.item_count == 5
         assert view.created_at == created_at
 
-    def test_store_view_empty_description_default(self):
+    def test_store_view_empty_description_default(self) -> None:
         """StoreView should support empty description with default."""
         # Arrange & Act
         view = StoreView(

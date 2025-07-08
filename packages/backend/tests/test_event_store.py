@@ -1,11 +1,12 @@
 import threading
 import time
 from datetime import datetime
+from typing import Generator
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from app.events.domain_events import InventoryItemAdded, StoreCreated
 from app.infrastructure.event_store import EventStore
@@ -14,7 +15,7 @@ from tests.test_utils import assert_event_matches, get_typed_events
 
 
 @pytest.fixture
-def db_session():
+def db_session() -> Generator[Session, None, None]:
     """Create isolated test database session."""
     engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
@@ -29,7 +30,7 @@ def db_session():
 class TestEventStoreAppendEvent:
     """Test EventStore.append_event() persists events to SQLAlchemy database."""
 
-    def test_append_event_persists_store_created_event(self, db_session) -> None:
+    def test_append_event_persists_store_created_event(self, db_session: Session) -> None:
         """EventStore.append_event() should persist StoreCreated event to database."""
         # Create event store and event
         event_store = EventStore(session=db_session)
@@ -65,7 +66,7 @@ class TestEventStoreAppendEvent:
 class TestEventStoreLoadEvents:
     """Test EventStore.load_events() returns events in chronological order."""
 
-    def test_load_events_returns_events_in_chronological_order(self, db_session) -> None:
+    def test_load_events_returns_events_in_chronological_order(self, db_session: Session) -> None:
         """EventStore should return events by stream_id in chronological order."""
         event_store = EventStore(session=db_session)
         store_id = uuid4()
@@ -151,7 +152,7 @@ class TestEventStoreLoadEvents:
 class TestEventStoreConcurrentWrites:
     """Test EventStore handles concurrent writes without corruption."""
 
-    def test_concurrent_writes_no_corruption(self, db_session) -> None:
+    def test_concurrent_writes_no_corruption(self, db_session: Session) -> None:
         """EventStore should handle concurrent writes without corruption."""
         # Note: This test may need adjustment for true concurrency testing
         # since SQLAlchemy sessions aren't thread-safe by default

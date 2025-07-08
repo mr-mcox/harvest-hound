@@ -5,6 +5,7 @@ Testing projection registry to ensure it correctly routes domain events
 to appropriate projection handlers as per ADR-005.
 """
 from datetime import datetime
+from typing import Any
 from uuid import uuid4
 from unittest.mock import Mock
 
@@ -17,7 +18,7 @@ from app.projections.registry import ProjectionRegistry
 class TestProjectionRegistry:
     """Test ProjectionRegistry for event routing and handler management."""
 
-    def test_register_handler(self):
+    def test_register_handler(self) -> None:
         """ProjectionRegistry should register handlers for specific event types."""
         # Arrange
         registry = ProjectionRegistry()
@@ -29,7 +30,7 @@ class TestProjectionRegistry:
         # Assert - should not raise exception
         assert True  # Basic test that registration works
 
-    def test_handle_routes_to_correct_handler(self):
+    def test_handle_routes_to_correct_handler(self) -> None:
         """ProjectionRegistry should route events to correct registered handlers."""
         # Arrange
         registry = ProjectionRegistry()
@@ -54,7 +55,7 @@ class TestProjectionRegistry:
         mock_store_handler.handle_store_created.assert_called_once_with(event)
         mock_inventory_handler.handle_inventory_item_added.assert_not_called()
 
-    def test_handle_multiple_handlers_for_same_event(self):
+    def test_handle_multiple_handlers_for_same_event(self) -> None:
         """ProjectionRegistry should support multiple handlers for the same event type."""
         # Arrange
         registry = ProjectionRegistry()
@@ -80,7 +81,7 @@ class TestProjectionRegistry:
         mock_handler_1.handle_inventory_item_added.assert_called_once_with(event)
         mock_handler_2.handle_inventory_item_added.assert_called_once_with(event)
 
-    def test_handle_unknown_event_type(self):
+    def test_handle_unknown_event_type(self) -> None:
         """ProjectionRegistry should handle unknown event types gracefully."""
         # Arrange
         registry = ProjectionRegistry()
@@ -98,13 +99,13 @@ class TestProjectionRegistry:
         # Assert - no error should occur
         assert True
 
-    def test_register_with_dependency_injection(self):
+    def test_register_with_dependency_injection(self) -> None:
         """ProjectionRegistry should support handler dependency injection patterns."""
         # Arrange
         registry = ProjectionRegistry()
         mock_dependency = Mock()
         
-        def handler_with_deps(event):
+        def handler_with_deps(event: Any) -> None:
             """Handler that uses injected dependencies."""
             mock_dependency.process(event)
         
