@@ -116,24 +116,7 @@ async def startup_event() -> None:
 # Import the get_db_session for startup
 from app.dependencies import get_db_session
 
-# Temporary compatibility layer for existing tests
-# TODO: Remove these when all tests are updated to use dependency injection
-_global_session = None
-store_view_store = None
-inventory_item_view_store = None
-
-
-def _initialize_global_dependencies() -> None:
-    """Initialize global dependencies for backward compatibility."""
-    global _global_session, store_view_store, inventory_item_view_store
-    if _global_session is None:
-        _global_session = next(get_db_session())
-        store_view_store = get_store_view_store(_global_session)
-        inventory_item_view_store = get_inventory_item_view_store(_global_session)
-
-
-# Initialize on module load for existing tests
-_initialize_global_dependencies()
+# All tests now use proper dependency injection
 
 
 @app.get("/health")

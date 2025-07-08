@@ -8,12 +8,10 @@ from fastapi import Depends
 from fastapi.testclient import TestClient
 
 from api import app
-from app.dependencies import get_inventory_parser, get_store_service
+from app.dependencies import get_inventory_parser
 from app.interfaces.parser import InventoryParserProtocol
-from app.interfaces.service import StoreServiceProtocol
 from app.models.parsed_inventory import ParsedInventoryItem
 from tests.implementations.parser import MockInventoryParser
-from tests.implementations.service import MockStoreService
 
 
 @pytest.fixture
@@ -33,12 +31,6 @@ def mock_inventory_parser() -> MockInventoryParser:
             ParsedInventoryItem(name="apple", quantity=1.0, unit="piece"),
         ],
     })
-
-
-@pytest.fixture
-def mock_store_service() -> MockStoreService:
-    """Provide a mock store service."""
-    return MockStoreService()
 
 
 @pytest.fixture
