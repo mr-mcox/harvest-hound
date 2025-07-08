@@ -14,6 +14,7 @@ from app.dependencies import (
     get_store_view_store,
     setup_projection_registry,
 )
+from app.infrastructure.event_bus import EventBusManager, InMemoryEventBus
 from app.interfaces.service import StoreServiceProtocol
 
 app = FastAPI(title="Harvest Hound API", version="0.1.0")
@@ -76,9 +77,11 @@ _startup_completed = False
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Set up projection registry during app startup."""
+    """Set up event bus and projection registry during app startup."""
     global _startup_completed
     if not _startup_completed:
+        # Initialize event bus manager
+        app.state.event_bus_manager = EventBusManager(InMemoryEventBus())
         # Manually create database session for startup
         from app.dependencies import SessionLocal, engine
         from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore

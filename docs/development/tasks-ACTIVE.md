@@ -20,6 +20,7 @@
 - [ ] **Update event store tests** - Mock event bus to verify publish calls
 
 ### 1.3 Projection Handler Migration - **REFACTOR**
+- [ ] **Refactor projection registry to use app state** - Move from global variable to app.state.projection_registry
 - [ ] **Convert projection handlers to subscribers** - Subscribe to event bus on startup
 - [ ] **Add async event handling** - Update handler methods to be async
 - [ ] **Test projection handlers independently** - Verify they work via event bus subscription

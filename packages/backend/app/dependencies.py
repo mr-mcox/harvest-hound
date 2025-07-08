@@ -4,7 +4,7 @@ import os
 import tempfile
 from typing import Annotated, Generator, Optional
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -35,8 +35,7 @@ SessionLocal = sessionmaker(bind=engine)
 # Global projection registry - shared across all event store instances
 _global_projection_registry: Optional[ProjectionRegistry] = None
 
-# Global event bus manager - shared across all event store instances
-_global_event_bus_manager: Optional[EventBusManager] = None
+# Event bus manager will be stored in app state during startup
 
 
 def get_db_session() -> Generator[Session, None, None]:
@@ -70,12 +69,9 @@ def get_inventory_item_view_store(
     return InventoryItemViewStore(session)
 
 
-def get_event_bus_manager() -> EventBusManager:
-    """Provide event bus manager implementation."""
-    global _global_event_bus_manager
-    if _global_event_bus_manager is None:
-        _global_event_bus_manager = EventBusManager(InMemoryEventBus())
-    return _global_event_bus_manager
+def get_event_bus_manager(request: Request) -> EventBusManager:
+    """Provide event bus manager implementation from app state."""
+    return request.app.state.event_bus_manager
 
 
 def get_event_store(

@@ -30,7 +30,7 @@ class EventBus(ABC):
 class InMemoryEventBus(EventBus):
     """In-memory event bus implementation for development."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._subscribers: Dict[Type[DomainEvent], List[Callable[[DomainEvent], None]]] = defaultdict(list)
 
     async def publish(self, event: DomainEvent) -> None:
@@ -49,7 +49,7 @@ class InMemoryEventBus(EventBus):
 class EventBusManager:
     """Injectable service for managing event bus lifecycle."""
 
-    def __init__(self, event_bus: EventBus):
+    def __init__(self, event_bus: EventBus) -> None:
         self.event_bus = event_bus
 
     async def get_event_bus(self) -> EventBus:
