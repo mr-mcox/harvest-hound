@@ -42,10 +42,10 @@
 - [x] **Test WebSocket endpoint** - Connect, send message, verify receipt
 
 ### 2.3 Event Broadcasting Integration - **NEW BEHAVIOR**
-- [ ] **Create WebSocket event subscriber** - Subscribe to event bus for domain events
-- [ ] **Implement event filtering** - Transform domain events to WebSocket messages
-- [ ] **Add broadcast logic** - Send filtered events to appropriate room connections
-- [ ] **Test end-to-end flow** - Domain command → event store → event bus → WebSocket → client
+- [x] **Create WebSocket event subscriber** - Subscribe to event bus for domain events
+- [x] **Implement event filtering** - Transform domain events to WebSocket messages
+- [x] **Add broadcast logic** - Send filtered events to appropriate room connections
+- [x] **Test end-to-end flow** - Domain command → event store → event bus → WebSocket → client
 
 ## Task 3: Frontend Integration (TIP Work Stream 3)
 **Goal**: WebSocket client with simple reconnection and real-time UI updates
