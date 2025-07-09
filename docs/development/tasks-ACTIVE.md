@@ -51,10 +51,10 @@
 **Goal**: WebSocket client with simple reconnection and real-time UI updates
 
 ### 3.1 WebSocket Client Service - **SETUP ONLY**
-- [ ] **Create WebSocketService class** - Handle connection lifecycle
-- [ ] **Add connection state management** - Track connected/disconnected/reconnecting states
-- [ ] **Define event handling interface** - Type-safe event callback system
-- [ ] **Create WebSocket store** - Svelte store for connection state and events
+- [x] **Create WebSocketService class** - Handle connection lifecycle
+- [x] **Add connection state management** - Track connected/disconnected/reconnecting states
+- [x] **Define event handling interface** - Type-safe event callback system
+- [x] **Create WebSocket store** - Svelte store for connection state and events
 
 ### 3.2 WebSocket Connection Logic - **NEW BEHAVIOR**
 - [ ] **Implement connection establishment** - Connect to /ws with default room
