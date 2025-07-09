@@ -325,6 +325,28 @@
       ],
       "title": "InventoryItemAdded",
       "type": "object"
+    },
+    "WebSocketMessage": {
+      "description": "Pydantic model for WebSocket message envelopes.\n\nThis provides the structure for messages sent over WebSocket connections.",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "room": {
+          "default": "default",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "data"
+      ],
+      "title": "WebSocketMessage",
+      "type": "object"
     }
   }
 }

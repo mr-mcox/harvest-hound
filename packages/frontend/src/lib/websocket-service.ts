@@ -5,6 +5,8 @@
  * disconnection, and reconnection logic for real-time updates.
  */
 
+import type { WebSocketMessage as GeneratedWebSocketMessage } from './generated/api-types';
+
 /**
  * WebSocket connection states
  */
@@ -16,13 +18,9 @@ export enum ConnectionState {
 }
 
 /**
- * WebSocket message interface matching backend WebSocketMessage schema
+ * WebSocket message interface - imported from generated backend types
  */
-export interface WebSocketMessage {
-	type: string;
-	data: Record<string, unknown>;
-	room: string;
-}
+export type WebSocketMessage = GeneratedWebSocketMessage;
 
 /**
  * Event handler callback type

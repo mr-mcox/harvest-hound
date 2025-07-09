@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Type, Union
 from pydantic import BaseModel
 
 from ..events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+from ..infrastructure.websocket_manager import WebSocketMessage
 from ..models.ingredient import Ingredient
 from ..models.inventory_item import InventoryItem
 from ..models.inventory_store import InventoryStore
@@ -35,6 +36,8 @@ class SchemaExportService:
             ("IngredientCreated", IngredientCreated),
             ("StoreCreated", StoreCreated),
             ("InventoryItemAdded", InventoryItemAdded),
+            # WebSocket messaging
+            ("WebSocketMessage", WebSocketMessage),
         ]
     
     def export_model_schema(self, model_class: Union[Type[BaseModel], Any], title: str | None = None) -> Dict[str, Any]:

@@ -8,7 +8,7 @@
 import { writable, derived, get } from 'svelte/store';
 import { apiGet } from '$lib/api';
 import { websocketStore } from '$lib/websocket-store';
-import type { InventoryItemView, StoreView } from '$lib/types';
+import type { InventoryItemView, StoreView, InventoryItemAdded, StoreCreated } from '$lib/types';
 
 /**
  * Inventory store state interface
@@ -40,14 +40,7 @@ const inventoryState = writable<InventoryStoreState>(initialState);
 /**
  * Real-time event handlers for WebSocket updates
  */
-function handleInventoryItemAdded(data: {
-	store_id: string;
-	ingredient_id: string;
-	quantity: number;
-	unit: string;
-	notes?: string;
-	added_at: string;
-}) {
+function handleInventoryItemAdded(data: InventoryItemAdded) {
 	inventoryState.update((state) => {
 		// If we don't have inventory for this store loaded, don't update
 		if (!state.inventoryByStoreId[data.store_id]) {
@@ -71,13 +64,7 @@ function handleInventoryItemAdded(data: {
 	}
 }
 
-function handleStoreCreated(data: {
-	store_id: string;
-	name: string;
-	description: string;
-	infinite_supply: boolean;
-	created_at: string;
-}) {
+function handleStoreCreated(data: StoreCreated) {
 	inventoryState.update((state) => ({
 		...state,
 		stores: [
@@ -105,27 +92,10 @@ function subscribeToWebSocketEvents(): () => void {
 
 		switch (message.type) {
 			case 'InventoryItemAdded':
-				handleInventoryItemAdded(
-					message.data as {
-						store_id: string;
-						ingredient_id: string;
-						quantity: number;
-						unit: string;
-						notes?: string;
-						added_at: string;
-					}
-				);
+				handleInventoryItemAdded(message.data as InventoryItemAdded);
 				break;
 			case 'StoreCreated':
-				handleStoreCreated(
-					message.data as {
-						store_id: string;
-						name: string;
-						description: string;
-						infinite_supply: boolean;
-						created_at: string;
-					}
-				);
+				handleStoreCreated(message.data as StoreCreated);
 				break;
 		}
 	});

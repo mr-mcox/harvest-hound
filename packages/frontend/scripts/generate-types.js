@@ -72,10 +72,18 @@ async function generateTypes() {
 					});
 
 					// Extract the interface (remove any export default)
-					const cleanTypescript = typescript
+					let cleanTypescript = typescript
 						.replace(/export default[^;]*;?\s*$/gm, '')
 						.replace(/export\s+interface\s+(\w+)/g, 'export interface $1')
 						.trim();
+
+					// Add ESLint disable for WebSocketMessage data field's any type
+					if (name === 'WebSocketMessage' && cleanTypescript.includes('[k: string]: any')) {
+						cleanTypescript = cleanTypescript.replace(
+							/(\[k: string\]: any)/g,
+							'// eslint-disable-next-line @typescript-eslint/no-explicit-any\n\t$1'
+						);
+					}
 
 					if (cleanTypescript) {
 						typeDefinitions.push(cleanTypescript);
@@ -88,7 +96,9 @@ async function generateTypes() {
 				try {
 					const { unlinkSync } = await import('fs');
 					unlinkSync(tempPath);
-				} catch {}
+				} catch {
+					// Ignore cleanup errors - temp file may not exist
+				}
 			}
 		}
 
