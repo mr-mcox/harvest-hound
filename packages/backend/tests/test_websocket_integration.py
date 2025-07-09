@@ -63,3 +63,33 @@ class TestWebSocketIntegration:
             
             # Demonstrate that the WebSocket connection remains active
             # and can handle both domain events and direct messages
+    
+    def test_multiple_websocket_clients_receive_same_domain_events(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test that multiple WebSocket clients receive the same domain events."""
+        # Connect two WebSocket clients
+        with test_client_with_mocks.websocket_connect("/ws") as websocket1:
+            with test_client_with_mocks.websocket_connect("/ws") as websocket2:
+                # Trigger a domain event via REST API
+                store_data = {
+                    "name": "Multi-client Test Store",
+                    "description": "Testing multi-client event broadcasting",
+                    "infinite_supply": False
+                }
+                response = test_client_with_mocks.post("/stores", json=store_data)
+                assert response.status_code == 201
+                store_id = response.json()["store_id"]
+                
+                # Both clients should receive the same StoreCreated event
+                store_event1 = websocket1.receive_json()
+                store_event2 = websocket2.receive_json()
+                
+                # Verify both events are identical
+                assert store_event1["type"] == "StoreCreated"
+                assert store_event2["type"] == "StoreCreated"
+                assert store_event1["data"] == store_event2["data"]
+                assert store_event1["data"]["store_id"] == store_id
+                assert store_event2["data"]["store_id"] == store_id
+                assert store_event1["room"] == "default"
+                assert store_event2["room"] == "default"
