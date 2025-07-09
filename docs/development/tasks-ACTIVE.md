@@ -51,28 +51,32 @@
 **Goal**: WebSocket client with simple reconnection and real-time UI updates
 
 ### 3.1 WebSocket Client Service - **SETUP ONLY**
-- [ ] **Create WebSocketService class** - Handle connection lifecycle
-- [ ] **Add connection state management** - Track connected/disconnected/reconnecting states
-- [ ] **Define event handling interface** - Type-safe event callback system
-- [ ] **Create WebSocket store** - Svelte store for connection state and events
+- [x] **Create WebSocketService class** - Handle connection lifecycle
+- [x] **Add connection state management** - Track connected/disconnected/reconnecting states
+- [x] **Define event handling interface** - Type-safe event callback system
+- [x] **Create WebSocket store** - Svelte store for connection state and events
 
-### 3.2 WebSocket Connection Logic - **NEW BEHAVIOR**
-- [ ] **Implement connection establishment** - Connect to /ws with default room
-- [ ] **Add simple reconnection logic** - Retry connection after disconnect with backoff
-- [ ] **Handle incoming events** - Parse WebSocket messages and emit to subscribers
-- [ ] **Test connection scenarios** - Connect, disconnect, reconnect, message handling
+### 3.2 WebSocket Connection Logic - **NEW BEHAVIOR** ✅ COMPLETED
+- [x] **Implement connection establishment** - Connect to /ws with default room
+- [x] **Add simple reconnection logic** - Retry connection after disconnect with backoff
+- [x] **Handle incoming events** - Parse WebSocket messages and emit to subscribers
+- [x] **Test connection scenarios** - Connect, disconnect, reconnect, message handling
+- [x] **WebSocket store refactoring** - Removed overengineered methods, implemented essential Svelte store integration
 
-### 3.3 Real-time UI Updates - **NEW BEHAVIOR**
-- [ ] **Subscribe to inventory events** - Listen for InventoryItemAdded events
-- [ ] **Update inventory store state** - Merge WebSocket updates with local state
-- [ ] **Add visual feedback** - Show real-time update indicators in UI
-- [ ] **Test multi-session updates** - Verify changes in one tab appear in another
+### 3.3 Real-time UI Updates - **NEW BEHAVIOR** ✅ COMPLETED
+- [x] **Subscribe to inventory events** - Listen for InventoryItemAdded events
+- [x] **Update inventory store state** - Merge WebSocket updates with local state
+- [x] **Add visual feedback** - Show real-time update indicators in UI
+- [x] **Test multi-session updates** - Verify changes in one tab appear in another
+- [x] **Centralized inventory store** - Created reactive store for inventory data with WebSocket integration
+- [x] **Real-time indicator component** - Shows connection status and last update timestamp
+- [x] **Updated store pages** - Integrated real-time functionality into stores list and inventory views
 
-### 3.4 Integration with Existing Components - **REFACTOR**
-- [ ] **Update InventoryTable component** - React to real-time inventory changes
-- [ ] **Enhance StoreList component** - Show real-time item count updates
-- [ ] **Add connection status indicator** - Display WebSocket connection state
-- [ ] **Test existing functionality** - Ensure REST API workflows remain unaffected
+### 3.4 Integration with Existing Components - **REFACTOR** ✅ COMPLETED
+- [x] **Update InventoryTable component** - React to real-time inventory changes
+- [x] **Enhance StoreList component** - Show real-time item count updates
+- [x] **Add connection status indicator** - Display WebSocket connection state
+- [x] **Test existing functionality** - Ensure REST API workflows remain unaffected
 
 ## Task 4: End-to-End Integration & Testing
 **Goal**: Verify complete real-time inventory update flow across multiple sessions

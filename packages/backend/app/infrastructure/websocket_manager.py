@@ -18,7 +18,7 @@ class WebSocketMessage(BaseModel):
     This provides the structure for messages sent over WebSocket connections.
     """
     type: str
-    data: Dict[str, Any]
+    data: Dict[str, Any]  # Domain event data - specific structure depends on event type
     room: str = "default"
 
 

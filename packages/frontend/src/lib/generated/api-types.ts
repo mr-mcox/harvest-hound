@@ -104,3 +104,17 @@ export interface InventoryItemAdded {
 	notes?: string | null;
 	added_at: string;
 }
+
+/**
+ * Pydantic model for WebSocket message envelopes.
+ *
+ * This provides the structure for messages sent over WebSocket connections.
+ */
+export interface WebSocketMessage {
+	type: string;
+	data: {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		[k: string]: any;
+	};
+	room?: string;
+}

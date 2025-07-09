@@ -1,6 +1,6 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
-	import InventoryTable from '../routes/stores/[id]/+page.svelte';
+	import InventoryTable from '../lib/components/InventoryTable.svelte';
 	import { mockData } from './templates/index.js';
 
 	const { Story } = defineMeta({
@@ -8,10 +8,12 @@
 		component: InventoryTable,
 		tags: ['autodocs'],
 		argTypes: {
-			inventory: { control: 'object' }
+			inventory: { control: 'object' },
+			storeId: { control: 'text' }
 		},
 		args: {
-			inventory: []
+			inventory: [],
+			storeId: 'demo-store'
 		}
 	});
 </script>
@@ -20,7 +22,8 @@
 <Story
 	name="Empty"
 	args={{
-		inventory: []
+		inventory: [],
+		storeId: 'demo-store'
 	}}
 />
 
@@ -28,7 +31,8 @@
 <Story
 	name="With Data"
 	args={{
-		inventory: mockData.inventoryItems
+		inventory: mockData.inventoryItems,
+		storeId: 'demo-store'
 	}}
 />
 
@@ -36,7 +40,8 @@
 <Story
 	name="Single Item"
 	args={{
-		inventory: [mockData.inventoryItems[0]]
+		inventory: [mockData.inventoryItems[0]],
+		storeId: 'demo-store'
 	}}
 />
 
@@ -102,7 +107,8 @@
 				store_name: 'CSA Box',
 				notes: 'Mixed herbs'
 			}
-		]
+		],
+		storeId: 'demo-store'
 	}}
 />
 
@@ -135,7 +141,8 @@
 				store_name: 'Premium CSA Box',
 				notes: 'Sweet and juicy, various colors'
 			}
-		]
+		],
+		storeId: 'demo-store'
 	}}
 />
 
@@ -143,7 +150,8 @@
 <Story
 	name="Mobile View"
 	args={{
-		inventory: mockData.inventoryItems
+		inventory: mockData.inventoryItems,
+		storeId: 'demo-store'
 	}}
 	parameters={{
 		viewport: {
