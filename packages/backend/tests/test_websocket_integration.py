@@ -140,3 +140,62 @@ class TestWebSocketIntegration:
                 assert "ingredient_id" in event["data"]
                 assert "quantity" in event["data"]
                 assert "added_at" in event["data"]
+    
+    def test_websocket_connection_lifecycle_scenarios(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test WebSocket connection lifecycle: connect, disconnect, reconnect."""
+        # Test 1: Basic connection lifecycle
+        with test_client_with_mocks.websocket_connect("/ws") as websocket:
+            # Verify connection is established
+            store_data = {
+                "name": "Connection Test Store",
+                "description": "Testing connection lifecycle",
+                "infinite_supply": False
+            }
+            response = test_client_with_mocks.post("/stores", json=store_data)
+            assert response.status_code == 201
+            
+            # Should receive the event
+            event = websocket.receive_json()
+            assert event["type"] == "StoreCreated"
+            assert event["data"]["name"] == "Connection Test Store"
+            assert event["room"] == "default"
+        
+        # Connection is now closed (exited context manager)
+        
+        # Test 2: Reconnection works
+        with test_client_with_mocks.websocket_connect("/ws") as websocket:
+            # Verify reconnection works by sending a message
+            ping_message = {"type": "ping", "data": {"reconnect": "test"}}
+            websocket.send_json(ping_message)
+            
+            echo_response = websocket.receive_json()
+            assert echo_response["type"] == "echo"
+            assert echo_response["data"]["reconnect"] == "test"
+            
+            # Verify reconnected client can still receive domain events
+            store_data = {
+                "name": "Reconnected Store",
+                "description": "Testing reconnection functionality",
+                "infinite_supply": False
+            }
+            response = test_client_with_mocks.post("/stores", json=store_data)
+            assert response.status_code == 201
+            
+            # Should receive the event on reconnected client
+            event = websocket.receive_json()
+            assert event["type"] == "StoreCreated"
+            assert event["data"]["name"] == "Reconnected Store"
+            assert event["room"] == "default"
+        
+        # Test 3: Multiple connect/disconnect cycles
+        for cycle in range(3):
+            with test_client_with_mocks.websocket_connect("/ws") as websocket:
+                # Test basic functionality in each cycle
+                ping_message = {"type": "ping", "data": {"cycle": cycle}}
+                websocket.send_json(ping_message)
+                
+                echo_response = websocket.receive_json()
+                assert echo_response["type"] == "echo"
+                assert echo_response["data"]["cycle"] == cycle
