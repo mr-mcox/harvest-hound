@@ -5,8 +5,6 @@
  * for Svelte components to subscribe to real-time updates.
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { writable, derived } from 'svelte/store';
 import { WebSocketService, ConnectionState, type WebSocketMessage } from './websocket-service';
 
@@ -32,6 +30,19 @@ export class WebSocketStore {
 
 	constructor(url: string) {
 		this.service = new WebSocketService(url);
+
+		// Subscribe to service state changes
+		this.service.on('connectionStateChange', (state: ConnectionState) => {
+			this.updateState({ connectionState: state });
+		});
+
+		this.service.on('message', (message: WebSocketMessage) => {
+			this.updateState({ lastMessage: message });
+		});
+
+		this.service.on('error', (error: string) => {
+			this.updateState({ error });
+		});
 	}
 
 	/**
@@ -59,42 +70,21 @@ export class WebSocketStore {
 	 * Connect to WebSocket server
 	 */
 	connect(): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		this.service.connect();
 	}
 
 	/**
 	 * Disconnect from WebSocket server
 	 */
 	disconnect(): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
-	}
-
-	/**
-	 * Send message to WebSocket server
-	 */
-	send(_: WebSocketMessage): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
-	}
-
-	/**
-	 * Subscribe to specific event types
-	 */
-	on<T = unknown>(_: string, __: (data: T) => void): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
-	}
-
-	/**
-	 * Unsubscribe from specific event types
-	 */
-	off(_: string, __: (data: unknown) => void): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		this.service.disconnect();
 	}
 
 	/**
 	 * Update store state
 	 */
-	private updateState(_: Partial<WebSocketStoreState>): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+	private updateState(update: Partial<WebSocketStoreState>): void {
+		this.state.update((currentState) => ({ ...currentState, ...update }));
 	}
 }
 

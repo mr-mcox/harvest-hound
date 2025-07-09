@@ -56,11 +56,12 @@
 - [x] **Define event handling interface** - Type-safe event callback system
 - [x] **Create WebSocket store** - Svelte store for connection state and events
 
-### 3.2 WebSocket Connection Logic - **NEW BEHAVIOR**
+### 3.2 WebSocket Connection Logic - **NEW BEHAVIOR** ✅ COMPLETED
 - [x] **Implement connection establishment** - Connect to /ws with default room
 - [x] **Add simple reconnection logic** - Retry connection after disconnect with backoff
 - [x] **Handle incoming events** - Parse WebSocket messages and emit to subscribers
 - [x] **Test connection scenarios** - Connect, disconnect, reconnect, message handling
+- [x] **WebSocket store refactoring** - Removed overengineered methods, implemented essential Svelte store integration
 
 ### 3.3 Real-time UI Updates - **NEW BEHAVIOR**
 - [ ] **Subscribe to inventory events** - Listen for InventoryItemAdded events

@@ -56,6 +56,11 @@ export class WebSocketService {
 		// Only set to CONNECTING if we're not already in RECONNECTING state
 		if (this.connectionState !== ConnectionState.RECONNECTING) {
 			this.connectionState = ConnectionState.CONNECTING;
+			// Emit connection state change
+			const handlers = this.eventHandlers.get('connectionStateChange');
+			if (handlers) {
+				handlers.forEach((handler) => handler(this.connectionState));
+			}
 		}
 		this.ws = new WebSocket(this.url);
 
@@ -71,6 +76,12 @@ export class WebSocketService {
 	disconnect(): void {
 		this.isExplicitlyDisconnected = true;
 		this.connectionState = ConnectionState.DISCONNECTED;
+
+		// Emit connection state change
+		const handlers = this.eventHandlers.get('connectionStateChange');
+		if (handlers) {
+			handlers.forEach((handler) => handler(this.connectionState));
+		}
 
 		// Clear any pending reconnection
 		if (this.reconnectTimeoutId !== null) {
@@ -129,12 +140,26 @@ export class WebSocketService {
 	private handleMessage(event: MessageEvent): void {
 		try {
 			const message: WebSocketMessage = JSON.parse(event.data);
-			const handlers = this.eventHandlers.get(message.type);
-			if (handlers) {
-				handlers.forEach((handler) => handler(message.data));
+
+			// Emit generic message event for store
+			const messageHandlers = this.eventHandlers.get('message');
+			if (messageHandlers) {
+				messageHandlers.forEach((handler) => handler(message));
+			}
+
+			// Emit specific event type handlers
+			const typeHandlers = this.eventHandlers.get(message.type);
+			if (typeHandlers) {
+				typeHandlers.forEach((handler) => handler(message.data));
 			}
 		} catch (error) {
 			console.error('Error parsing WebSocket message:', error);
+
+			// Emit error event
+			const errorHandlers = this.eventHandlers.get('error');
+			if (errorHandlers) {
+				errorHandlers.forEach((handler) => handler(`Error parsing message: ${error}`));
+			}
 		}
 	}
 
@@ -144,6 +169,12 @@ export class WebSocketService {
 	private handleOpen(): void {
 		this.connectionState = ConnectionState.CONNECTED;
 		this.reconnectAttempts = 0;
+
+		// Emit connection state change
+		const handlers = this.eventHandlers.get('connectionStateChange');
+		if (handlers) {
+			handlers.forEach((handler) => handler(this.connectionState));
+		}
 	}
 
 	/**
@@ -152,6 +183,12 @@ export class WebSocketService {
 	private handleClose(): void {
 		this.connectionState = ConnectionState.DISCONNECTED;
 		this.ws = null;
+
+		// Emit connection state change
+		const handlers = this.eventHandlers.get('connectionStateChange');
+		if (handlers) {
+			handlers.forEach((handler) => handler(this.connectionState));
+		}
 
 		// Only attempt to reconnect if not explicitly disconnected and no reconnection in progress
 		if (
@@ -168,6 +205,12 @@ export class WebSocketService {
 	 */
 	private handleError(error: Event): void {
 		console.error('WebSocket error:', error);
+
+		// Emit error event
+		const handlers = this.eventHandlers.get('error');
+		if (handlers) {
+			handlers.forEach((handler) => handler(`WebSocket error: ${error}`));
+		}
 	}
 
 	/**
@@ -185,6 +228,11 @@ export class WebSocketService {
 			this.reconnectTimeoutId = null;
 			if (!this.isExplicitlyDisconnected) {
 				this.connectionState = ConnectionState.RECONNECTING;
+				// Emit connection state change
+				const handlers = this.eventHandlers.get('connectionStateChange');
+				if (handlers) {
+					handlers.forEach((handler) => handler(this.connectionState));
+				}
 				this.connect();
 			}
 		}, delay) as unknown as number;
