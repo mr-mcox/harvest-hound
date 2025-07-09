@@ -199,3 +199,51 @@ class TestWebSocketIntegration:
                 echo_response = websocket.receive_json()
                 assert echo_response["type"] == "echo"
                 assert echo_response["data"]["cycle"] == cycle
+    
+    def test_rapid_events_maintain_correct_sequence_across_clients(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test that rapid domain events maintain correct sequence across multiple clients."""
+        # Connect two WebSocket clients
+        with test_client_with_mocks.websocket_connect("/ws") as websocket1:
+            with test_client_with_mocks.websocket_connect("/ws") as websocket2:
+                # Create stores rapidly and verify order
+                store_names = ["Store A", "Store B", "Store C"]
+                created_store_ids = []
+                
+                # Create stores in rapid succession
+                for name in store_names:
+                    store_data = {
+                        "name": name,
+                        "description": f"Rapid creation test - {name}",
+                        "infinite_supply": False
+                    }
+                    response = test_client_with_mocks.post("/stores", json=store_data)
+                    assert response.status_code == 201
+                    created_store_ids.append(response.json()["store_id"])
+                
+                # Collect events from both clients
+                events_client1 = []
+                events_client2 = []
+                
+                for _ in range(len(store_names)):
+                    event1 = websocket1.receive_json()
+                    event2 = websocket2.receive_json()
+                    events_client1.append(event1)
+                    events_client2.append(event2)
+                
+                # Verify events are identical across clients
+                assert len(events_client1) == len(events_client2)
+                for event1, event2 in zip(events_client1, events_client2):
+                    assert event1["type"] == "StoreCreated"
+                    assert event2["type"] == "StoreCreated"
+                    assert event1["data"] == event2["data"]
+                    assert event1["room"] == "default"
+                    assert event2["room"] == "default"
+                
+                # Verify events maintain creation order
+                for i, (event1, event2) in enumerate(zip(events_client1, events_client2)):
+                    assert event1["data"]["name"] == store_names[i]
+                    assert event2["data"]["name"] == store_names[i]
+                    assert event1["data"]["store_id"] == created_store_ids[i]
+                    assert event2["data"]["store_id"] == created_store_ids[i]
