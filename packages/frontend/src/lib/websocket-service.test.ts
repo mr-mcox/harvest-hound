@@ -23,13 +23,16 @@ describe('WebSocketService - Connection Logic', () => {
 	const testUrl = 'ws://localhost:8000/ws';
 
 	beforeEach(() => {
+		vi.useFakeTimers();
 		vi.clearAllMocks();
 		mockWebSocket.mockReturnValue(mockWebSocketInstance);
 		service = new WebSocketService(testUrl);
 	});
 
 	afterEach(() => {
+		service.disconnect();
 		vi.clearAllMocks();
+		vi.useRealTimers();
 	});
 
 	describe('Connection Establishment', () => {
@@ -186,7 +189,7 @@ describe('WebSocketService - Connection Logic', () => {
 	});
 
 	describe('Reconnection Logic', () => {
-		it('should attempt to reconnect when connection is lost unexpectedly', async () => {
+		it('should attempt to reconnect when connection is lost unexpectedly', () => {
 			// Arrange
 			service.connect();
 			const closeHandler = mockWebSocketInstance.addEventListener.mock.calls.find(
@@ -197,8 +200,8 @@ describe('WebSocketService - Connection Logic', () => {
 			mockWebSocketInstance.readyState = WebSocket.CLOSED as number;
 			closeHandler?.();
 
-			// Wait for reconnection attempt
-			await new Promise((resolve) => setTimeout(resolve, 1100));
+			// Fast-forward time past the first reconnection delay (1000ms)
+			vi.advanceTimersByTime(1100);
 
 			// Assert
 			expect(service.getConnectionState()).toBe(ConnectionState.RECONNECTING);
@@ -218,21 +221,21 @@ describe('WebSocketService - Connection Logic', () => {
 			expect(mockWebSocket).toHaveBeenCalledTimes(1);
 		});
 
-		it('should implement exponential backoff for reconnection attempts', async () => {
+		it('should implement exponential backoff for reconnection attempts', () => {
 			// Arrange
 			service.connect();
 			const closeHandler = mockWebSocketInstance.addEventListener.mock.calls.find(
 				(call) => call[0] === 'close'
 			)?.[1];
 
-			// Simulate multiple connection failures
-			for (let i = 0; i < 3; i++) {
-				mockWebSocketInstance.readyState = WebSocket.CLOSED as number;
-				closeHandler?.();
-				await new Promise((resolve) => setTimeout(resolve, 100));
-			}
+			// Act - First connection failure
+			mockWebSocketInstance.readyState = WebSocket.CLOSED as number;
+			closeHandler?.();
 
-			// Assert that reconnection attempts were made with increasing delays
+			// Fast-forward past first reconnection delay (1000ms)
+			vi.advanceTimersByTime(1100);
+
+			// Assert that we're in reconnecting state after the timeout
 			expect(service.getConnectionState()).toBe(ConnectionState.RECONNECTING);
 		});
 	});

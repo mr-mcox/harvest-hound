@@ -40,6 +40,7 @@ export class WebSocketService {
 	private maxReconnectAttempts = 5;
 	private reconnectDelay = 1000;
 	private isExplicitlyDisconnected = false;
+	private reconnectTimeoutId: number | null = null;
 
 	constructor(private url: string) {}
 
@@ -70,6 +71,13 @@ export class WebSocketService {
 	disconnect(): void {
 		this.isExplicitlyDisconnected = true;
 		this.connectionState = ConnectionState.DISCONNECTED;
+
+		// Clear any pending reconnection
+		if (this.reconnectTimeoutId !== null) {
+			clearTimeout(this.reconnectTimeoutId);
+			this.reconnectTimeoutId = null;
+		}
+
 		if (this.ws) {
 			this.ws.close();
 			this.ws = null;
@@ -145,8 +153,12 @@ export class WebSocketService {
 		this.connectionState = ConnectionState.DISCONNECTED;
 		this.ws = null;
 
-		// Only attempt to reconnect if not explicitly disconnected
-		if (!this.isExplicitlyDisconnected && this.reconnectAttempts < this.maxReconnectAttempts) {
+		// Only attempt to reconnect if not explicitly disconnected and no reconnection in progress
+		if (
+			!this.isExplicitlyDisconnected &&
+			this.reconnectAttempts < this.maxReconnectAttempts &&
+			this.reconnectTimeoutId === null
+		) {
 			this.attemptReconnect();
 		}
 	}
@@ -169,11 +181,12 @@ export class WebSocketService {
 		this.reconnectAttempts++;
 
 		const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-		setTimeout(() => {
+		this.reconnectTimeoutId = setTimeout(() => {
+			this.reconnectTimeoutId = null;
 			if (!this.isExplicitlyDisconnected) {
 				this.connectionState = ConnectionState.RECONNECTING;
 				this.connect();
 			}
-		}, delay);
+		}, delay) as unknown as number;
 	}
 }

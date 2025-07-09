@@ -57,10 +57,10 @@
 - [x] **Create WebSocket store** - Svelte store for connection state and events
 
 ### 3.2 WebSocket Connection Logic - **NEW BEHAVIOR**
-- [ ] **Implement connection establishment** - Connect to /ws with default room
-- [ ] **Add simple reconnection logic** - Retry connection after disconnect with backoff
-- [ ] **Handle incoming events** - Parse WebSocket messages and emit to subscribers
-- [ ] **Test connection scenarios** - Connect, disconnect, reconnect, message handling
+- [x] **Implement connection establishment** - Connect to /ws with default room
+- [x] **Add simple reconnection logic** - Retry connection after disconnect with backoff
+- [x] **Handle incoming events** - Parse WebSocket messages and emit to subscribers
+- [x] **Test connection scenarios** - Connect, disconnect, reconnect, message handling
 
 ### 3.3 Real-time UI Updates - **NEW BEHAVIOR**
 - [ ] **Subscribe to inventory events** - Listen for InventoryItemAdded events
