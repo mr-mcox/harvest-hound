@@ -63,11 +63,14 @@
 - [x] **Test connection scenarios** - Connect, disconnect, reconnect, message handling
 - [x] **WebSocket store refactoring** - Removed overengineered methods, implemented essential Svelte store integration
 
-### 3.3 Real-time UI Updates - **NEW BEHAVIOR**
-- [ ] **Subscribe to inventory events** - Listen for InventoryItemAdded events
-- [ ] **Update inventory store state** - Merge WebSocket updates with local state
-- [ ] **Add visual feedback** - Show real-time update indicators in UI
-- [ ] **Test multi-session updates** - Verify changes in one tab appear in another
+### 3.3 Real-time UI Updates - **NEW BEHAVIOR** ✅ COMPLETED
+- [x] **Subscribe to inventory events** - Listen for InventoryItemAdded events
+- [x] **Update inventory store state** - Merge WebSocket updates with local state
+- [x] **Add visual feedback** - Show real-time update indicators in UI
+- [x] **Test multi-session updates** - Verify changes in one tab appear in another
+- [x] **Centralized inventory store** - Created reactive store for inventory data with WebSocket integration
+- [x] **Real-time indicator component** - Shows connection status and last update timestamp
+- [x] **Updated store pages** - Integrated real-time functionality into stores list and inventory views
 
 ### 3.4 Integration with Existing Components - **REFACTOR**
 - [ ] **Update InventoryTable component** - React to real-time inventory changes

@@ -13,3 +13,6 @@ export {
 	websocketStore,
 	type WebSocketStoreState
 } from './websocket-store';
+
+// Store exports
+export { inventoryStore } from './stores/inventory-store';

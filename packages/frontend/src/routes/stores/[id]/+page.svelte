@@ -1,35 +1,42 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
-	import { apiGet } from '$lib/api';
-	import type { InventoryItemView } from '$lib/types.js';
+	import { inventoryStore, websocketStore } from '$lib';
 	import InventoryTable from '$lib/components/InventoryTable.svelte';
+	import RealTimeIndicator from '$lib/components/RealTimeIndicator.svelte';
 
-	let inventory: InventoryItemView[] = [];
-	let loading = true;
-	let error = '';
 	let storeId = '';
+	let unsubscribeWebSocket: (() => void) | null = null;
+
+	// Reactive subscriptions to centralized store
+	$: inventory = inventoryStore.getInventoryForStore(storeId);
+	$: loading = inventoryStore.loading;
+	$: error = inventoryStore.error;
+	$: lastUpdate = inventoryStore.lastUpdate;
 
 	onMount(async () => {
 		storeId = $page.params.id;
-		await loadInventory();
+		
+		// Connect to WebSocket for real-time updates
+		websocketStore.connect();
+		
+		// Subscribe to WebSocket events for inventory updates
+		unsubscribeWebSocket = inventoryStore.subscribeToWebSocketEvents();
+		
+		// Load initial inventory data
+		await inventoryStore.loadInventoryForStore(storeId);
 	});
 
-	async function loadInventory() {
-		loading = true;
-		error = '';
-		try {
-			const response = await apiGet(`/stores/${storeId}/inventory`);
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			inventory = await response.json();
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to load inventory';
-		} finally {
-			loading = false;
+	onDestroy(() => {
+		// Clean up WebSocket subscription
+		if (unsubscribeWebSocket) {
+			unsubscribeWebSocket();
 		}
-	}
+		
+		// Clear store data for this store when leaving page
+		// This prevents stale data when navigating between stores
+		inventoryStore.clearInventoryForStore(storeId);
+	});
 </script>
 
 <div class="container mx-auto p-4">
@@ -37,7 +44,13 @@
 		<a href="/stores" class="btn variant-ghost">← Back to Stores</a>
 	</div>
 
-	{#if loading}
+	<!-- Real-time connection status -->
+	<RealTimeIndicator 
+		connectionState={$websocketStore.connectionState} 
+		lastUpdate={$lastUpdate} 
+	/>
+	
+	{#if $loading}
 		<div class="card">
 			<div class="card-header">
 				<h2 class="text-lg font-semibold">Loading Inventory...</h2>
@@ -46,17 +59,17 @@
 				<div class="placeholder animate-pulse">Loading inventory items...</div>
 			</div>
 		</div>
-	{:else if error}
+	{:else if $error}
 		<div class="card">
 			<div class="card-body">
 				<div class="alert variant-filled-error">
 					<div class="alert-message">
-						<p>{error}</p>
+						<p>{$error}</p>
 					</div>
 				</div>
 			</div>
 		</div>
 	{:else}
-		<InventoryTable {inventory} {storeId} />
+		<InventoryTable inventory={$inventory} {storeId} />
 	{/if}
 </div>

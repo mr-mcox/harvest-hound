@@ -81,6 +81,13 @@ export class WebSocketStore {
 	}
 
 	/**
+	 * Subscribe to store state (makes this a valid Svelte store)
+	 */
+	subscribe(run: (value: WebSocketStoreState) => void) {
+		return this.state.subscribe(run);
+	}
+
+	/**
 	 * Update store state
 	 */
 	private updateState(update: Partial<WebSocketStoreState>): void {
