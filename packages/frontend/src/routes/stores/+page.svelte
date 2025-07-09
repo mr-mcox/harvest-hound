@@ -5,19 +5,19 @@
 
 	let unsubscribeWebSocket: (() => void) | null = null;
 
-	// Reactive subscriptions to centralized store
-	$: stores = inventoryStore.stores;
-	$: loading = inventoryStore.loading;
-	$: error = inventoryStore.error;
-	$: lastUpdate = inventoryStore.lastUpdate;
+	// Store subscriptions
+	const stores = inventoryStore.stores;
+	const loading = inventoryStore.loading;
+	const error = inventoryStore.error;
+	const lastUpdate = inventoryStore.lastUpdate;
 
 	onMount(async () => {
 		// Connect to WebSocket for real-time updates
 		websocketStore.connect();
-		
+
 		// Subscribe to WebSocket events for store updates
 		unsubscribeWebSocket = inventoryStore.subscribeToWebSocketEvents();
-		
+
 		// Load initial stores data
 		await inventoryStore.loadStores();
 	});
@@ -34,10 +34,7 @@
 	<h1 class="mb-6 text-2xl font-bold">Inventory Stores</h1>
 
 	<!-- Real-time connection status -->
-	<RealTimeIndicator 
-		connectionState={$websocketStore.connectionState} 
-		lastUpdate={$lastUpdate} 
-	/>
+	<RealTimeIndicator connectionState={$websocketStore.connectionState} lastUpdate={$lastUpdate} />
 
 	<div class="mb-6">
 		<a href="/stores/create" class="btn variant-filled-primary">Create New Store</a>
@@ -61,7 +58,7 @@
 		<div class="grid gap-4">
 			{#each $stores as store (store.store_id)}
 				<div class="card p-4">
-					<div class="flex justify-between items-start">
+					<div class="flex items-start justify-between">
 						<div>
 							<h3 class="text-lg font-semibold">{store.name}</h3>
 							{#if store.description}

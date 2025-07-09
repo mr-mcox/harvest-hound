@@ -7,14 +7,14 @@
 
 <script lang="ts">
 	import { ConnectionState } from '$lib/websocket-service';
-	
+
 	export let connectionState: ConnectionState = ConnectionState.DISCONNECTED;
 	export let lastUpdate: Date | null = null;
-	
+
 	$: statusClass = getStatusClass(connectionState);
 	$: statusText = getStatusText(connectionState);
 	$: formattedLastUpdate = lastUpdate ? formatLastUpdate(lastUpdate) : null;
-	
+
 	function getStatusClass(state: ConnectionState): string {
 		switch (state) {
 			case ConnectionState.CONNECTED:
@@ -27,7 +27,7 @@
 				return 'variant-filled-error';
 		}
 	}
-	
+
 	function getStatusText(state: ConnectionState): string {
 		switch (state) {
 			case ConnectionState.CONNECTED:
@@ -41,13 +41,13 @@
 				return 'Real-time updates unavailable';
 		}
 	}
-	
+
 	function formatLastUpdate(date: Date): string {
 		const now = new Date();
 		const diffMs = now.getTime() - date.getTime();
 		const diffSeconds = Math.floor(diffMs / 1000);
 		const diffMinutes = Math.floor(diffSeconds / 60);
-		
+
 		if (diffSeconds < 30) {
 			return 'Just now';
 		} else if (diffSeconds < 60) {
@@ -64,13 +64,13 @@
 	<div class="chip {statusClass}">
 		<!-- Connection status indicator -->
 		<div class="flex items-center gap-2">
-			<div class="w-2 h-2 rounded-full bg-current opacity-75"></div>
+			<div class="h-2 w-2 rounded-full bg-current opacity-75"></div>
 			<span class="text-sm font-medium">{statusText}</span>
 		</div>
 	</div>
-	
+
 	{#if formattedLastUpdate}
-		<div class="text-xs text-surface-500 mt-1">
+		<div class="text-surface-500 mt-1 text-xs">
 			Last updated: {formattedLastUpdate}
 		</div>
 	{/if}

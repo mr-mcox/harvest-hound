@@ -8,21 +8,21 @@
 	let storeId = '';
 	let unsubscribeWebSocket: (() => void) | null = null;
 
-	// Reactive subscriptions to centralized store
+	// Store subscriptions
 	$: inventory = inventoryStore.getInventoryForStore(storeId);
-	$: loading = inventoryStore.loading;
-	$: error = inventoryStore.error;
-	$: lastUpdate = inventoryStore.lastUpdate;
+	const loading = inventoryStore.loading;
+	const error = inventoryStore.error;
+	const lastUpdate = inventoryStore.lastUpdate;
 
 	onMount(async () => {
 		storeId = $page.params.id;
-		
+
 		// Connect to WebSocket for real-time updates
 		websocketStore.connect();
-		
+
 		// Subscribe to WebSocket events for inventory updates
 		unsubscribeWebSocket = inventoryStore.subscribeToWebSocketEvents();
-		
+
 		// Load initial inventory data
 		await inventoryStore.loadInventoryForStore(storeId);
 	});
@@ -32,7 +32,7 @@
 		if (unsubscribeWebSocket) {
 			unsubscribeWebSocket();
 		}
-		
+
 		// Clear store data for this store when leaving page
 		// This prevents stale data when navigating between stores
 		inventoryStore.clearInventoryForStore(storeId);
@@ -45,11 +45,8 @@
 	</div>
 
 	<!-- Real-time connection status -->
-	<RealTimeIndicator 
-		connectionState={$websocketStore.connectionState} 
-		lastUpdate={$lastUpdate} 
-	/>
-	
+	<RealTimeIndicator connectionState={$websocketStore.connectionState} lastUpdate={$lastUpdate} />
+
 	{#if $loading}
 		<div class="card">
 			<div class="card-header">

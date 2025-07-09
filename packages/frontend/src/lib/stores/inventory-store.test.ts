@@ -57,7 +57,7 @@ describe('InventoryStore', () => {
 			// Test that subscribeToWebSocketEvents returns a function
 			const unsubscribe = inventoryStore.subscribeToWebSocketEvents();
 			expect(typeof unsubscribe).toBe('function');
-			
+
 			// Clean up
 			unsubscribe();
 		});

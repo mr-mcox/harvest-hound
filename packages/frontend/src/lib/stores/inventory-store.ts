@@ -1,6 +1,6 @@
 /**
  * Centralized inventory store for managing inventory data with real-time WebSocket updates.
- * 
+ *
  * This store provides reactive state management for inventory data, automatically
  * updating when WebSocket events are received for inventory changes.
  */
@@ -48,7 +48,7 @@ function handleInventoryItemAdded(data: {
 	notes?: string;
 	added_at: string;
 }) {
-	inventoryState.update(state => {
+	inventoryState.update((state) => {
 		// If we don't have inventory for this store loaded, don't update
 		if (!state.inventoryByStoreId[data.store_id]) {
 			return state;
@@ -78,7 +78,7 @@ function handleStoreCreated(data: {
 	infinite_supply: boolean;
 	created_at: string;
 }) {
-	inventoryState.update(state => ({
+	inventoryState.update((state) => ({
 		...state,
 		stores: [
 			...state.stores,
@@ -105,10 +105,27 @@ function subscribeToWebSocketEvents(): () => void {
 
 		switch (message.type) {
 			case 'InventoryItemAdded':
-				handleInventoryItemAdded(message.data as any);
+				handleInventoryItemAdded(
+					message.data as {
+						store_id: string;
+						ingredient_id: string;
+						quantity: number;
+						unit: string;
+						notes?: string;
+						added_at: string;
+					}
+				);
 				break;
 			case 'StoreCreated':
-				handleStoreCreated(message.data as any);
+				handleStoreCreated(
+					message.data as {
+						store_id: string;
+						name: string;
+						description: string;
+						infinite_supply: boolean;
+						created_at: string;
+					}
+				);
 				break;
 		}
 	});
@@ -120,7 +137,7 @@ function subscribeToWebSocketEvents(): () => void {
  * Load all stores from API
  */
 async function loadStores() {
-	inventoryState.update(state => ({ ...state, loading: true, error: null }));
+	inventoryState.update((state) => ({ ...state, loading: true, error: null }));
 
 	try {
 		const response = await apiGet('/stores');
@@ -128,15 +145,15 @@ async function loadStores() {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
 		const stores: StoreView[] = await response.json();
-		
-		inventoryState.update(state => ({
+
+		inventoryState.update((state) => ({
 			...state,
 			stores,
 			loading: false,
 			lastUpdate: new Date()
 		}));
 	} catch (error) {
-		inventoryState.update(state => ({
+		inventoryState.update((state) => ({
 			...state,
 			loading: false,
 			error: error instanceof Error ? error.message : 'Failed to load stores'
@@ -148,7 +165,7 @@ async function loadStores() {
  * Load inventory for a specific store
  */
 async function loadInventoryForStore(storeId: string) {
-	inventoryState.update(state => ({ ...state, loading: true, error: null }));
+	inventoryState.update((state) => ({ ...state, loading: true, error: null }));
 
 	try {
 		const response = await apiGet(`/stores/${storeId}/inventory`);
@@ -156,8 +173,8 @@ async function loadInventoryForStore(storeId: string) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
 		const inventory: InventoryItemView[] = await response.json();
-		
-		inventoryState.update(state => ({
+
+		inventoryState.update((state) => ({
 			...state,
 			inventoryByStoreId: {
 				...state.inventoryByStoreId,
@@ -167,7 +184,7 @@ async function loadInventoryForStore(storeId: string) {
 			lastUpdate: new Date()
 		}));
 	} catch (error) {
-		inventoryState.update(state => ({
+		inventoryState.update((state) => ({
 			...state,
 			loading: false,
 			error: error instanceof Error ? error.message : 'Failed to load inventory'
@@ -179,8 +196,9 @@ async function loadInventoryForStore(storeId: string) {
  * Clear inventory data for a store (useful when navigating away)
  */
 function clearInventoryForStore(storeId: string) {
-	inventoryState.update(state => {
-		const { [storeId]: _, ...remainingInventory } = state.inventoryByStoreId;
+	inventoryState.update((state) => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { [storeId]: _removedInventory, ...remainingInventory } = state.inventoryByStoreId;
 		return {
 			...state,
 			inventoryByStoreId: remainingInventory
@@ -194,23 +212,23 @@ function clearInventoryForStore(storeId: string) {
 export const inventoryStore = {
 	// Core state
 	subscribe: inventoryState.subscribe,
-	
+
 	// Derived stores for specific data
-	stores: derived(inventoryState, $state => $state.stores),
-	loading: derived(inventoryState, $state => $state.loading),
-	error: derived(inventoryState, $state => $state.error),
-	lastUpdate: derived(inventoryState, $state => $state.lastUpdate),
-	
+	stores: derived(inventoryState, ($state) => $state.stores),
+	loading: derived(inventoryState, ($state) => $state.loading),
+	error: derived(inventoryState, ($state) => $state.error),
+	lastUpdate: derived(inventoryState, ($state) => $state.lastUpdate),
+
 	// Get inventory for specific store
-	getInventoryForStore: (storeId: string) => 
-		derived(inventoryState, $state => $state.inventoryByStoreId[storeId] || []),
-	
+	getInventoryForStore: (storeId: string) =>
+		derived(inventoryState, ($state) => $state.inventoryByStoreId[storeId] || []),
+
 	// Actions
 	loadStores,
 	loadInventoryForStore,
 	clearInventoryForStore,
 	subscribeToWebSocketEvents,
-	
+
 	// Reset store state
 	reset: () => inventoryState.set(initialState)
 };
