@@ -81,11 +81,11 @@
 ## Task 4: End-to-End Integration & Testing
 **Goal**: Verify complete real-time inventory update flow across multiple sessions
 
-### 4.1 Backend Integration Testing - **NEW BEHAVIOR**
-- [ ] **Multi-client WebSocket test** - Two connections, verify event broadcast to both
-- [ ] **REST to WebSocket flow test** - POST inventory via REST, verify WebSocket event received
-- [ ] **Connection lifecycle test** - Connect, disconnect, reconnect scenarios work correctly
-- [ ] **Event ordering test** - Rapid updates maintain correct sequence across clients
+### 4.1 Backend Integration Testing - **NEW BEHAVIOR** ✅ COMPLETED
+- [x] **Multi-client WebSocket test** - Two connections, verify event broadcast to both
+- [x] **REST to WebSocket flow test** - POST inventory via REST, verify WebSocket event received
+- [x] **Connection lifecycle test** - Connect, disconnect, reconnect scenarios work correctly
+- [x] **Event ordering test** - Rapid updates maintain correct sequence across clients
 
 ### 4.2 Frontend E2E Testing - **NEW BEHAVIOR**
 - [ ] **Multi-tab update test** - Playwright test with two browser tabs, verify real-time sync
