@@ -5,8 +5,6 @@
  * disconnection, and reconnection logic for real-time updates.
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 /**
  * WebSocket connection states
  */
@@ -41,6 +39,7 @@ export class WebSocketService {
 	private reconnectAttempts = 0;
 	private maxReconnectAttempts = 5;
 	private reconnectDelay = 1000;
+	private isExplicitlyDisconnected = false;
 
 	constructor(private url: string) {}
 
@@ -48,76 +47,133 @@ export class WebSocketService {
 	 * Establish WebSocket connection
 	 */
 	connect(): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			return; // Already connected
+		}
+
+		this.isExplicitlyDisconnected = false;
+		// Only set to CONNECTING if we're not already in RECONNECTING state
+		if (this.connectionState !== ConnectionState.RECONNECTING) {
+			this.connectionState = ConnectionState.CONNECTING;
+		}
+		this.ws = new WebSocket(this.url);
+
+		this.ws.addEventListener('open', this.handleOpen.bind(this));
+		this.ws.addEventListener('message', this.handleMessage.bind(this));
+		this.ws.addEventListener('close', this.handleClose.bind(this));
+		this.ws.addEventListener('error', this.handleError.bind(this));
 	}
 
 	/**
 	 * Close WebSocket connection
 	 */
 	disconnect(): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		this.isExplicitlyDisconnected = true;
+		this.connectionState = ConnectionState.DISCONNECTED;
+		if (this.ws) {
+			this.ws.close();
+			this.ws = null;
+		}
 	}
 
 	/**
 	 * Send message to WebSocket server
 	 */
-	send(_: WebSocketMessage): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+	send(message: WebSocketMessage): void {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.ws.send(JSON.stringify(message));
+		}
 	}
 
 	/**
 	 * Subscribe to WebSocket events
 	 */
-	on<T = unknown>(_: string, __: EventHandler<T>): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+	on<T = unknown>(eventType: string, handler: EventHandler<T>): void {
+		if (!this.eventHandlers.has(eventType)) {
+			this.eventHandlers.set(eventType, []);
+		}
+		this.eventHandlers.get(eventType)?.push(handler as EventHandler);
 	}
 
 	/**
 	 * Unsubscribe from WebSocket events
 	 */
-	off(_: string, __: EventHandler): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+	off(eventType: string, handler: EventHandler): void {
+		const handlers = this.eventHandlers.get(eventType);
+		if (handlers) {
+			const index = handlers.indexOf(handler);
+			if (index > -1) {
+				handlers.splice(index, 1);
+			}
+		}
 	}
 
 	/**
 	 * Get current connection state
 	 */
 	getConnectionState(): ConnectionState {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		return this.connectionState;
 	}
 
 	/**
 	 * Handle incoming WebSocket messages
 	 */
-	private handleMessage(_: MessageEvent): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+	private handleMessage(event: MessageEvent): void {
+		try {
+			const message: WebSocketMessage = JSON.parse(event.data);
+			const handlers = this.eventHandlers.get(message.type);
+			if (handlers) {
+				handlers.forEach((handler) => handler(message.data));
+			}
+		} catch (error) {
+			console.error('Error parsing WebSocket message:', error);
+		}
 	}
 
 	/**
 	 * Handle WebSocket connection open
 	 */
 	private handleOpen(): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		this.connectionState = ConnectionState.CONNECTED;
+		this.reconnectAttempts = 0;
 	}
 
 	/**
 	 * Handle WebSocket connection close
 	 */
 	private handleClose(): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		this.connectionState = ConnectionState.DISCONNECTED;
+		this.ws = null;
+
+		// Only attempt to reconnect if not explicitly disconnected
+		if (!this.isExplicitlyDisconnected && this.reconnectAttempts < this.maxReconnectAttempts) {
+			this.attemptReconnect();
+		}
 	}
 
 	/**
 	 * Handle WebSocket connection error
 	 */
-	private handleError(_: Event): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+	private handleError(error: Event): void {
+		console.error('WebSocket error:', error);
 	}
 
 	/**
 	 * Attempt to reconnect with exponential backoff
 	 */
 	private attemptReconnect(): void {
-		throw new Error('TODO: implement in NEW BEHAVIOR task');
+		if (this.isExplicitlyDisconnected || this.reconnectAttempts >= this.maxReconnectAttempts) {
+			return;
+		}
+
+		this.reconnectAttempts++;
+
+		const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+		setTimeout(() => {
+			if (!this.isExplicitlyDisconnected) {
+				this.connectionState = ConnectionState.RECONNECTING;
+				this.connect();
+			}
+		}, delay);
 	}
 }
