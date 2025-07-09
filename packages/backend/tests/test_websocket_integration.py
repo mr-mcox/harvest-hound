@@ -93,3 +93,50 @@ class TestWebSocketIntegration:
                 assert store_event2["data"]["store_id"] == store_id
                 assert store_event1["room"] == "default"
                 assert store_event2["room"] == "default"
+    
+    def test_rest_api_actions_trigger_websocket_events(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test that REST API actions trigger corresponding WebSocket events."""
+        # Connect WebSocket client to receive events
+        with test_client_with_mocks.websocket_connect("/ws") as websocket:
+            # Test 1: Store creation via REST API
+            store_data = {
+                "name": "REST API Test Store",
+                "description": "Testing REST to WebSocket flow",
+                "infinite_supply": False
+            }
+            response = test_client_with_mocks.post("/stores", json=store_data)
+            assert response.status_code == 201
+            store_id = response.json()["store_id"]
+            
+            # Verify WebSocket receives StoreCreated event
+            store_event = websocket.receive_json()
+            assert store_event["type"] == "StoreCreated"
+            assert store_event["data"]["store_id"] == store_id
+            assert store_event["data"]["name"] == "REST API Test Store"
+            assert store_event["room"] == "default"
+            
+            # Test 2: Inventory addition via REST API
+            inventory_data = {"inventory_text": "2 lbs carrots, 1 bunch kale"}
+            response = test_client_with_mocks.post(
+                f"/stores/{store_id}/inventory", 
+                json=inventory_data
+            )
+            assert response.status_code == 201
+            
+            # Verify WebSocket receives InventoryItemAdded events
+            inventory_events = []
+            for _ in range(2):  # carrots and kale
+                event = websocket.receive_json()
+                inventory_events.append(event)
+            
+            # Verify all inventory events are correct
+            for event in inventory_events:
+                assert event["type"] == "InventoryItemAdded"
+                assert event["data"]["store_id"] == store_id
+                assert event["room"] == "default"
+                # Verify the item has expected structure
+                assert "ingredient_id" in event["data"]
+                assert "quantity" in event["data"]
+                assert "added_at" in event["data"]
