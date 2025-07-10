@@ -1,7 +1,7 @@
 # Implementation Tasks: WebSocket Foundation for Real-time Inventory Updates
 
-**Source TIP**: `docs/development/tips/tip-websocket-foundation.md`  
-**Timeline**: 1-2 development iterations  
+**Source TIP**: `docs/development/tips/tip-websocket-foundation.md`
+**Timeline**: 1-2 development iterations
 **Total Scope**: S - Simplified implementation leveraging existing event infrastructure
 
 ## Task 1: Event Store Refactoring (TIP Work Stream 1)
@@ -88,10 +88,10 @@
 - [x] **Event ordering test** - Rapid updates maintain correct sequence across clients
 
 ### 4.2 Frontend E2E Testing - **NEW BEHAVIOR**
-- [ ] **Multi-tab update test** - Playwright test with two browser tabs, verify real-time sync
-- [ ] **Network interruption test** - Simulate offline/online, verify automatic recovery
-- [ ] **Visual feedback test** - Verify real-time indicators appear correctly in UI
-- [ ] **Mixed usage test** - Both REST and WebSocket operations work together seamlessly
+- [x] **Multi-tab update test** - Playwright test with two browser tabs, verify real-time sync
+- [x] **Network interruption test** - Simulate offline/online, verify automatic recovery
+- [x] **Visual feedback test** - Verify real-time indicators appear correctly in UI
+- [x] **Mixed usage test** - Both REST and WebSocket operations work together seamlessly
 
 ### 4.3 Manual Testing Documentation - **SETUP ONLY**
 - [ ] **Create manual test guide** - Step-by-step workflows for user experience validation
