@@ -94,10 +94,10 @@
 - [x] **Mixed usage test** - Both REST and WebSocket operations work together seamlessly
 
 ### 4.3 Manual Testing Documentation - **SETUP ONLY**
-- [ ] **Create manual test guide** - Step-by-step workflows for user experience validation
-- [ ] **Performance observation checklist** - What to monitor in browser dev tools during testing
-- [ ] **Edge case scenarios** - Documented test cases for exploratory testing
-- [ ] **Browser compatibility notes** - Which browsers to test manually and expected behavior
+- [x] **Create manual test guide** - Step-by-step workflows for user experience validation
+- [x] **Performance observation checklist** - What to monitor in browser dev tools during testing
+- [x] **Edge case scenarios** - Documented test cases for exploratory testing (SKIPPED - too edge-casey)
+- [x] **Browser compatibility notes** - Which browsers to test manually and expected behavior (SKIPPED - low value)
 
 ## Dependencies and Sequencing
 
