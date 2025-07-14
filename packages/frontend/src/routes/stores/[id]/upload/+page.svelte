@@ -17,7 +17,15 @@
 		});
 
 		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
+			// Parse the detailed error response from backend
+			try {
+				const errorResponse = await response.json();
+				const errors = errorResponse.detail?.errors || [`HTTP error! status: ${response.status}`];
+				throw new Error(errors.join(', '));
+			} catch {
+				// Fallback if we can't parse the error response
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
 		}
 
 		return await response.json();
