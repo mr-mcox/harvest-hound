@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List
 from uuid import UUID, uuid4
@@ -15,6 +16,8 @@ from ..interfaces.view_store import (
 from ..models.ingredient import Ingredient
 from ..models.inventory_store import InventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -86,28 +89,58 @@ class StoreService:
             store = self.store_repository.load(store_id)
 
             # Parse the inventory text using LLM
-            parsed_items = self._parse_inventory_text(inventory_text)
+            try:
+                parsed_items = self._parse_inventory_text(inventory_text)
+            except Exception as parsing_error:
+                # Log LLM parsing errors for debugging prompt improvements
+                truncated_input = (
+                    inventory_text[:100] + "..." 
+                    if len(inventory_text) > 100 
+                    else inventory_text
+                )
+                logger.warning(
+                    "LLM parsing failed for store %s. Input: %r. Error: %s",
+                    store_id,
+                    truncated_input,
+                    str(parsing_error)
+                )
+                return InventoryUploadResult.error_result([
+                    f"Failed to parse inventory text: {str(parsing_error)}"
+                ])
 
             items_added = 0
 
             # Process each parsed item
             for parsed_item in parsed_items:
-                # Create or get ingredient
-                ingredient_id = self._create_or_get_ingredient(
-                    parsed_item.name,
-                    parsed_item.unit,
-                )
+                try:
+                    # Create or get ingredient
+                    ingredient_id = self._create_or_get_ingredient(
+                        parsed_item.name,
+                        parsed_item.unit,
+                    )
 
-                # Add inventory item to store
-                store, events = store.add_inventory_item(
-                    ingredient_id=ingredient_id,
-                    quantity=parsed_item.quantity,
-                    unit=parsed_item.unit,
-                )
+                    # Add inventory item to store
+                    store, events = store.add_inventory_item(
+                        ingredient_id=ingredient_id,
+                        quantity=parsed_item.quantity,
+                        unit=parsed_item.unit,
+                    )
 
-                # Persist the events
-                self.store_repository.save(store, events)
-                items_added += 1
+                    # Persist the events
+                    self.store_repository.save(store, events)
+                    items_added += 1
+
+                except ValueError as validation_error:
+                    # Handle validation errors for individual items
+                    logger.info(
+                        "Validation error for item '%s' in store %s: %s",
+                        parsed_item.name,
+                        store_id,
+                        str(validation_error)
+                    )
+                    return InventoryUploadResult.error_result([
+                        f"Invalid item '{parsed_item.name}': {str(validation_error)}"
+                    ])
 
             return InventoryUploadResult.success_result(items_added)
 
@@ -115,7 +148,14 @@ class StoreService:
             # Re-raise store not found errors so API can return 404
             raise
         except Exception as e:
-            return InventoryUploadResult.error_result([str(e)])
+            # Log unexpected errors for debugging
+            logger.error(
+                "Unexpected error uploading inventory to store %s: %s",
+                store_id,
+                str(e),
+                exc_info=True
+            )
+            return InventoryUploadResult.error_result([f"System error: {str(e)}"])
 
     def get_all_stores(self) -> List[Dict[str, Any]]:
         """Get list of all stores with item counts."""
