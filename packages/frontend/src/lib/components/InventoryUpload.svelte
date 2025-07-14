@@ -34,7 +34,7 @@
 <div class="container mx-auto max-w-4xl p-4">
 	<h1 class="mb-6 text-2xl font-bold">Upload Inventory</h1>
 
-	<form on:submit={handleSubmit} class="space-y-4">
+	<form on:submit={handleSubmit} class="space-y-4" data-testid="inventory-upload-form">
 		<div class="form-control">
 			<label class="label" for="inventory">
 				<span class="label-text">Inventory Items</span>
@@ -44,6 +44,7 @@
 				bind:value={inventoryText}
 				placeholder="Enter inventory items&#10;2 lbs carrots&#10;1 bunch kale&#10;3 tomatoes"
 				class="textarea h-64"
+				data-testid="inventory-text-input"
 			></textarea>
 		</div>
 
@@ -64,7 +65,12 @@
 		{/if}
 
 		<div class="flex gap-4">
-			<button type="submit" disabled={loading} class="btn variant-filled-primary">
+			<button
+				type="submit"
+				disabled={loading}
+				class="btn variant-filled-primary"
+				data-testid="submit-inventory-button"
+			>
 				{loading ? 'Uploading...' : 'Upload Inventory'}
 			</button>
 			{#if storeId}

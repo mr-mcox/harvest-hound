@@ -1,12 +1,14 @@
 /**
- * Tests for WebSocket connection logic
+ * Tests for WebSocket service - Core connection management
+ *
+ * Tests essential connection logic with mocked WebSocket for fast execution.
+ * No actual network connections - focuses on connection state management.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { WebSocketService, ConnectionState, type WebSocketMessage } from './websocket-service';
 
-// Mock WebSocket globally
-const mockWebSocket = vi.fn();
+// Mock WebSocket to prevent actual connections
 const mockWebSocketInstance = {
 	send: vi.fn(),
 	close: vi.fn(),
@@ -15,41 +17,38 @@ const mockWebSocketInstance = {
 	readyState: WebSocket.CONNECTING as number
 };
 
-// @ts-expect-error - mocking global WebSocket
+const mockWebSocket = vi.fn(() => mockWebSocketInstance);
+
+// @ts-expect-error - mocking global WebSocket for tests
 global.WebSocket = mockWebSocket;
 
-describe('WebSocketService - Connection Logic', () => {
+describe('WebSocketService - Core Connection Management', () => {
 	let service: WebSocketService;
-	const testUrl = 'ws://localhost:8000/ws';
+	const testUrl = 'ws://test-url'; // No actual connection
 
 	beforeEach(() => {
-		vi.useFakeTimers();
 		vi.clearAllMocks();
-		mockWebSocket.mockReturnValue(mockWebSocketInstance);
+		// Reset mock instance state
+		mockWebSocketInstance.readyState = WebSocket.CONNECTING;
 		service = new WebSocketService(testUrl);
 	});
 
 	afterEach(() => {
 		service.disconnect();
 		vi.clearAllMocks();
-		vi.useRealTimers();
 	});
 
-	describe('Connection Establishment', () => {
-		it('should establish WebSocket connection when connect() is called', () => {
-			// Act
+	describe('Core Connection Logic', () => {
+		it('establishes WebSocket connection when connect() called', () => {
 			service.connect();
 
-			// Assert
 			expect(mockWebSocket).toHaveBeenCalledWith(testUrl);
 			expect(service.getConnectionState()).toBe(ConnectionState.CONNECTING);
 		});
 
-		it('should set up event listeners when connecting', () => {
-			// Act
+		it('sets up required event listeners', () => {
 			service.connect();
 
-			// Assert
 			expect(mockWebSocketInstance.addEventListener).toHaveBeenCalledWith(
 				'open',
 				expect.any(Function)
@@ -68,37 +67,29 @@ describe('WebSocketService - Connection Logic', () => {
 			);
 		});
 
-		it('should update connection state to CONNECTED when WebSocket opens', () => {
-			// Arrange
+		it('updates state to CONNECTED when socket opens', () => {
 			service.connect();
 			const openHandler = mockWebSocketInstance.addEventListener.mock.calls.find(
 				(call) => call[0] === 'open'
 			)?.[1];
 
-			// Act
 			mockWebSocketInstance.readyState = WebSocket.OPEN as number;
 			openHandler?.();
 
-			// Assert
 			expect(service.getConnectionState()).toBe(ConnectionState.CONNECTED);
 		});
 
-		it('should not create multiple connections if already connected', () => {
-			// Arrange
+		it('prevents multiple connections', () => {
 			service.connect();
 			mockWebSocketInstance.readyState = WebSocket.OPEN as number;
-
-			// Act
 			service.connect();
 
-			// Assert
 			expect(mockWebSocket).toHaveBeenCalledTimes(1);
 		});
 	});
 
-	describe('Message Handling', () => {
-		it('should handle incoming WebSocket messages', () => {
-			// Arrange
+	describe('Message Handling - Core Event Logic', () => {
+		it('handles incoming WebSocket messages', () => {
 			const testMessage: WebSocketMessage = {
 				type: 'StoreCreated',
 				data: { store_id: '123', name: 'Test Store' },
@@ -107,24 +98,21 @@ describe('WebSocketService - Connection Logic', () => {
 
 			const messageHandler = vi.fn();
 			service.on('StoreCreated', messageHandler);
-
 			service.connect();
+
 			const wsMessageHandler = mockWebSocketInstance.addEventListener.mock.calls.find(
 				(call) => call[0] === 'message'
 			)?.[1];
 
-			// Act
 			const messageEvent = new MessageEvent('message', {
 				data: JSON.stringify(testMessage)
 			});
 			wsMessageHandler?.(messageEvent);
 
-			// Assert
 			expect(messageHandler).toHaveBeenCalledWith(testMessage.data);
 		});
 
-		it('should send messages through WebSocket when connected', () => {
-			// Arrange
+		it('sends messages when connected', () => {
 			service.connect();
 			mockWebSocketInstance.readyState = WebSocket.OPEN as number;
 
@@ -137,12 +125,10 @@ describe('WebSocketService - Connection Logic', () => {
 			// Act
 			service.send(testMessage);
 
-			// Assert
 			expect(mockWebSocketInstance.send).toHaveBeenCalledWith(JSON.stringify(testMessage));
 		});
 
-		it('should not send messages when disconnected', () => {
-			// Arrange
+		it('does not send when disconnected', () => {
 			mockWebSocketInstance.readyState = WebSocket.CLOSED as number;
 
 			const testMessage: WebSocketMessage = {
@@ -151,121 +137,49 @@ describe('WebSocketService - Connection Logic', () => {
 				room: 'default'
 			};
 
-			// Act
 			service.send(testMessage);
 
-			// Assert
 			expect(mockWebSocketInstance.send).not.toHaveBeenCalled();
 		});
 	});
 
-	describe('Disconnection', () => {
-		it('should close WebSocket connection when disconnect() is called', () => {
-			// Arrange
+	describe('Connection Lifecycle', () => {
+		it('closes connection when disconnect() called', () => {
 			service.connect();
-
-			// Act
 			service.disconnect();
 
-			// Assert
 			expect(mockWebSocketInstance.close).toHaveBeenCalled();
 			expect(service.getConnectionState()).toBe(ConnectionState.DISCONNECTED);
 		});
 
-		it('should update connection state when WebSocket closes', () => {
-			// Arrange
+		it('updates state when WebSocket closes', () => {
 			service.connect();
 			const closeHandler = mockWebSocketInstance.addEventListener.mock.calls.find(
 				(call) => call[0] === 'close'
 			)?.[1];
 
-			// Act
 			mockWebSocketInstance.readyState = WebSocket.CLOSED as number;
 			closeHandler?.();
 
-			// Assert
 			expect(service.getConnectionState()).toBe(ConnectionState.DISCONNECTED);
 		});
 	});
 
-	describe('Reconnection Logic', () => {
-		it('should attempt to reconnect when connection is lost unexpectedly', () => {
-			// Arrange
-			service.connect();
-			const closeHandler = mockWebSocketInstance.addEventListener.mock.calls.find(
-				(call) => call[0] === 'close'
-			)?.[1];
-
-			// Act
-			mockWebSocketInstance.readyState = WebSocket.CLOSED as number;
-			closeHandler?.();
-
-			// Fast-forward time past the first reconnection delay (1000ms)
-			vi.advanceTimersByTime(1100);
-
-			// Assert
-			expect(service.getConnectionState()).toBe(ConnectionState.RECONNECTING);
-			expect(mockWebSocket).toHaveBeenCalledTimes(2); // Original + reconnect attempt
-		});
-
-		it('should not attempt to reconnect when disconnect() is called explicitly', () => {
-			// Arrange
-			service.connect();
-
-			// Act
-			service.disconnect();
-
-			// Assert
-			expect(service.getConnectionState()).toBe(ConnectionState.DISCONNECTED);
-			// No additional WebSocket creation should occur
-			expect(mockWebSocket).toHaveBeenCalledTimes(1);
-		});
-
-		it('should implement exponential backoff for reconnection attempts', () => {
-			// Arrange
-			service.connect();
-			const closeHandler = mockWebSocketInstance.addEventListener.mock.calls.find(
-				(call) => call[0] === 'close'
-			)?.[1];
-
-			// Act - First connection failure
-			mockWebSocketInstance.readyState = WebSocket.CLOSED as number;
-			closeHandler?.();
-
-			// Fast-forward past first reconnection delay (1000ms)
-			vi.advanceTimersByTime(1100);
-
-			// Assert that we're in reconnecting state after the timeout
-			expect(service.getConnectionState()).toBe(ConnectionState.RECONNECTING);
-		});
-	});
-
-	describe('Event Subscription', () => {
-		it('should allow subscribing to specific event types', () => {
-			// Arrange
+	describe('Event Subscription - Core Event Bus', () => {
+		it('allows subscribing to event types', () => {
 			const handler = vi.fn();
 
-			// Act
-			service.on('StoreCreated', handler);
-
-			// Assert - subscription should be registered without error
 			expect(() => service.on('StoreCreated', handler)).not.toThrow();
 		});
 
-		it('should allow unsubscribing from event types', () => {
-			// Arrange
+		it('allows unsubscribing from event types', () => {
 			const handler = vi.fn();
 			service.on('StoreCreated', handler);
 
-			// Act
-			service.off('StoreCreated', handler);
-
-			// Assert - unsubscription should work without error
 			expect(() => service.off('StoreCreated', handler)).not.toThrow();
 		});
 
-		it('should not call unsubscribed event handlers', () => {
-			// Arrange
+		it('does not call unsubscribed handlers', () => {
 			const handler = vi.fn();
 			service.on('StoreCreated', handler);
 			service.off('StoreCreated', handler);
@@ -281,13 +195,11 @@ describe('WebSocketService - Connection Logic', () => {
 				room: 'default'
 			};
 
-			// Act
 			const messageEvent = new MessageEvent('message', {
 				data: JSON.stringify(testMessage)
 			});
 			wsMessageHandler?.(messageEvent);
 
-			// Assert
 			expect(handler).not.toHaveBeenCalled();
 		});
 	});

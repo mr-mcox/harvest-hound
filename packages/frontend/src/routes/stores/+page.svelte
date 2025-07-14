@@ -38,7 +38,9 @@
 	<RealTimeIndicator connectionState={$websocketStore.connectionState} lastUpdate={$lastUpdate} />
 
 	<div class="mb-6">
-		<a href="/stores/create" class="btn variant-filled-primary">Create New Store</a>
+		<a href="/stores/create" class="btn variant-filled-primary" data-testid="create-store-button"
+			>Create New Store</a
+		>
 	</div>
 
 	<StoreList stores={$stores} loading={$loading} error={$error} />

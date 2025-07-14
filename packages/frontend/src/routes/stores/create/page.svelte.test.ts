@@ -1,82 +1,101 @@
-import { page } from '@vitest/browser/context';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render } from 'vitest-browser-svelte';
-import StoreCreateForm from '$lib/components/StoreCreateForm.svelte';
+import { describe, expect, it } from 'vitest';
+import { validateStoreForm } from '$lib/validation';
 
-describe('Store Creation Form UI Behavior', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
-	it('should call onSubmit handler with form data when valid form is submitted', async () => {
-		// Arrange
-		const submitHandler = vi.fn();
-		render(StoreCreateForm, {
-			onSubmit: submitHandler
-		});
-
-		// Act - Fill out valid form
-		const nameInput = page.getByLabelText('Store Name');
-		const descriptionInput = page.getByLabelText('Description');
-		const infiniteSupplyCheckbox = page.getByLabelText('Infinite Supply');
-		const submitButton = page.getByRole('button', { name: 'Create Store' });
-
-		await nameInput.fill('Test Store');
-		await descriptionInput.fill('Test Description');
-		await infiniteSupplyCheckbox.click();
-		await submitButton.click();
-
-		// Assert - UI calls handler with correct data
-		expect(submitHandler).toHaveBeenCalledWith({
+// Test form validation logic directly
+describe('Store Creation - Core Validation Logic', () => {
+	it('validates form data correctly for valid input', () => {
+		const validData = {
 			name: 'Test Store',
 			description: 'Test Description',
 			infinite_supply: true
-		});
+		};
+
+		const result = validateStoreForm(validData);
+		expect(result).toEqual({ valid: true });
 	});
 
-	it('should display validation error in UI when form submission fails validation', async () => {
-		// Arrange
-		const submitHandler = vi.fn();
-		render(StoreCreateForm, {
-			onSubmit: submitHandler
-		});
+	it('returns error when name is empty', () => {
+		const invalidData = {
+			name: '',
+			description: 'Test Description',
+			infinite_supply: false
+		};
 
-		// Act - Submit form with invalid data (empty name)
-		const submitButton = page.getByRole('button', { name: 'Create Store' });
-		await submitButton.click();
-
-		// Assert - UI displays error message and doesn't call handler
-		const errorMessage = page.getByText('Store name is required');
-		await expect.element(errorMessage).toBeInTheDocument();
-		expect(submitHandler).not.toHaveBeenCalled();
+		const result = validateStoreForm(invalidData);
+		expect(result).toEqual({ error: 'Store name is required' });
 	});
 
-	it('should clear error message when valid form is submitted after error', async () => {
-		// Arrange
-		const submitHandler = vi.fn();
-		render(StoreCreateForm, {
-			onSubmit: submitHandler
-		});
+	it('returns error when name is null', () => {
+		const invalidData = {
+			name: null,
+			description: 'Test Description',
+			infinite_supply: false
+		};
 
-		// Act - First submit invalid form to show error
-		const submitButton = page.getByRole('button', { name: 'Create Store' });
-		await submitButton.click();
+		const result = validateStoreForm(invalidData);
+		expect(result).toEqual({ error: 'Store name is required' });
+	});
 
-		// Verify error is shown
-		const errorMessage = page.getByText('Store name is required');
-		await expect.element(errorMessage).toBeInTheDocument();
+	it('returns error when name is only whitespace', () => {
+		const invalidData = {
+			name: '   ',
+			description: 'Test Description',
+			infinite_supply: false
+		};
 
-		// Then fix the form and submit again
-		const nameInput = page.getByLabelText('Store Name');
-		await nameInput.fill('Valid Store Name');
-		await submitButton.click();
+		const result = validateStoreForm(invalidData);
+		expect(result).toEqual({ error: 'Store name is required' });
+	});
 
-		// Assert - Error is cleared and handler is called
-		await expect.element(errorMessage).not.toBeInTheDocument();
-		expect(submitHandler).toHaveBeenCalledWith({
-			name: 'Valid Store Name',
+	it('returns error when name is too long', () => {
+		const longName = 'a'.repeat(101); // Over 100 characters
+		const invalidData = {
+			name: longName,
+			description: 'Test Description',
+			infinite_supply: false
+		};
+
+		const result = validateStoreForm(invalidData);
+		expect(result).toEqual({ error: 'Store name must be 100 characters or less' });
+	});
+
+	it('allows empty description', () => {
+		const validData = {
+			name: 'Valid Store',
 			description: '',
 			infinite_supply: false
+		};
+
+		const result = validateStoreForm(validData);
+		expect(result).toEqual({ valid: true });
+	});
+
+	it('allows undefined description', () => {
+		const validData = {
+			name: 'Valid Store',
+			infinite_supply: true
+		};
+
+		const result = validateStoreForm(validData);
+		expect(result).toEqual({ valid: true });
+	});
+
+	it('handles different infinite_supply values correctly', () => {
+		const testCases = [
+			{ infinite_supply: true },
+			{ infinite_supply: false },
+			{ infinite_supply: undefined }
+		];
+
+		testCases.forEach(({ infinite_supply }) => {
+			const data = {
+				name: 'Test Store',
+				description: 'Test',
+				infinite_supply
+			};
+
+			const result = validateStoreForm(data);
+			expect(result).toEqual({ valid: true });
 		});
 	});
 });

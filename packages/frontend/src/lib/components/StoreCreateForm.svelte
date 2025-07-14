@@ -30,7 +30,7 @@
 <div class="container mx-auto max-w-2xl p-4">
 	<h1 class="mb-6 text-2xl font-bold">Create New Store</h1>
 
-	<form on:submit={handleSubmit} class="space-y-4">
+	<form on:submit={handleSubmit} class="space-y-4" data-testid="store-form">
 		<div class="form-control">
 			<label class="label" for="name">
 				<span class="label-text">Store Name</span>
@@ -41,6 +41,7 @@
 				bind:value={name}
 				placeholder="e.g., CSA Box, Pantry, Freezer"
 				class="input"
+				data-testid="store-name-input"
 			/>
 		</div>
 
@@ -54,6 +55,7 @@
 				placeholder="Optional description of this store"
 				class="textarea"
 				rows="3"
+				data-testid="store-description-input"
 			></textarea>
 		</div>
 
@@ -78,7 +80,9 @@
 		{/if}
 
 		<div class="flex gap-4">
-			<button type="submit" class="btn variant-filled-primary">Create Store</button>
+			<button type="submit" class="btn variant-filled-primary" data-testid="submit-store-button"
+				>Create Store</button
+			>
 			<a href="/stores" class="btn variant-ghost">Cancel</a>
 		</div>
 	</form>
