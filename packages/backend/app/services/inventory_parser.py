@@ -67,6 +67,8 @@ def create_inventory_parser_client() -> InventoryParserClient:
     
     enable_baml = os.environ.get("ENABLE_BAML", "false")
     logger.error("🐤 CANARY: ENABLE_BAML env var = %r", enable_baml)
+    logger.error("🐤 CANARY: All env vars with BAML: %s", {k: v for k, v in os.environ.items() if 'BAML' in k})
+    logger.error("🐤 CANARY: All env vars with ENABLE: %s", {k: v for k, v in os.environ.items() if 'ENABLE' in k})
     
     if enable_baml.lower() == "true":
         logger.error("🐤 CANARY: Creating BamlInventoryParserClient")
