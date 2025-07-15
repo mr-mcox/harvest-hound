@@ -88,9 +88,12 @@ class StoreService:
         logger.error("🐤 CANARY: upload_inventory called with store_id=%s, text=%r", store_id, inventory_text[:50])
         try:
             # Load the store
+            logger.error("🐤 CANARY: About to load store")
             store = self.store_repository.load(store_id)
+            logger.error("🐤 CANARY: Store loaded successfully")
 
             # Parse the inventory text using LLM
+            logger.error("🐤 CANARY: About to parse inventory text")
             try:
                 parsed_items = self._parse_inventory_text(inventory_text)
                 logger.info(
@@ -166,9 +169,11 @@ class StoreService:
 
         except AggregateNotFoundError:
             # Re-raise store not found errors so API can return 404
+            logger.error("🐤 CANARY: Store not found error")
             raise
         except Exception as e:
             # Log unexpected errors for debugging
+            logger.error("🐤 CANARY: Unexpected exception caught: %s", str(e))
             logger.error(
                 "Unexpected error uploading inventory to store %s: %s",
                 store_id,
