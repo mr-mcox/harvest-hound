@@ -91,6 +91,12 @@ class StoreService:
             # Parse the inventory text using LLM
             try:
                 parsed_items = self._parse_inventory_text(inventory_text)
+                logger.info(
+                    "LLM parsing succeeded for store %s. Found %d items: %s",
+                    store_id,
+                    len(parsed_items),
+                    [f"{item.name} ({item.quantity} {item.unit})" for item in parsed_items]
+                )
             except Exception as parsing_error:
                 # Log LLM parsing errors for debugging prompt improvements
                 truncated_input = (
@@ -111,13 +117,23 @@ class StoreService:
             items_added = 0
 
             # Process each parsed item
-            for parsed_item in parsed_items:
+            for i, parsed_item in enumerate(parsed_items):
                 try:
+                    logger.info(
+                        "Processing item %d/%d: %s (%s %s)",
+                        i + 1,
+                        len(parsed_items),
+                        parsed_item.name,
+                        parsed_item.quantity,
+                        parsed_item.unit
+                    )
+                    
                     # Create or get ingredient
                     ingredient_id = self._create_or_get_ingredient(
                         parsed_item.name,
                         parsed_item.unit,
                     )
+                    logger.info("Created/found ingredient with ID: %s", ingredient_id)
 
                     # Add inventory item to store
                     store, events = store.add_inventory_item(
@@ -125,10 +141,12 @@ class StoreService:
                         quantity=parsed_item.quantity,
                         unit=parsed_item.unit,
                     )
+                    logger.info("Generated %d events for item", len(events))
 
                     # Persist the events
                     self.store_repository.save(store, events)
                     items_added += 1
+                    logger.info("Successfully added item %d: %s", items_added, parsed_item.name)
 
                 except ValueError as validation_error:
                     # Handle validation errors for individual items
