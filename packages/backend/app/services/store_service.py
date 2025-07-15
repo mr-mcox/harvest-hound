@@ -84,16 +84,11 @@ class StoreService:
         inventory_text: str,
     ) -> InventoryUploadResult:
         """Upload inventory items to a store by parsing text input."""
-        # CANARY: Verify new code is running
-        logger.error("🐤 CANARY: upload_inventory called with store_id=%s, text=%r", store_id, inventory_text[:50])
         try:
             # Load the store
-            logger.error("🐤 CANARY: About to load store")
             store = self.store_repository.load(store_id)
-            logger.error("🐤 CANARY: Store loaded successfully")
 
             # Parse the inventory text using LLM
-            logger.error("🐤 CANARY: About to parse inventory text")
             try:
                 parsed_items = self._parse_inventory_text(inventory_text)
                 logger.info(
@@ -169,11 +164,9 @@ class StoreService:
 
         except AggregateNotFoundError:
             # Re-raise store not found errors so API can return 404
-            logger.error("🐤 CANARY: Store not found error")
             raise
         except Exception as e:
             # Log unexpected errors for debugging
-            logger.error("🐤 CANARY: Unexpected exception caught: %s", str(e))
             logger.error(
                 "Unexpected error uploading inventory to store %s: %s",
                 store_id,
@@ -218,11 +211,7 @@ class StoreService:
 
     def _parse_inventory_text(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text using injected parser client."""
-        logger.error("🐤 CANARY: _parse_inventory_text called, parser type: %s", type(self.inventory_parser))
-        logger.error("🐤 CANARY: About to call parser.parse_inventory")
-        result = self.inventory_parser.parse_inventory(inventory_text)
-        logger.error("🐤 CANARY: Parser returned %d items", len(result) if result else 0)
-        return result
+        return self.inventory_parser.parse_inventory(inventory_text)
 
     def _create_or_get_ingredient(self, name: str, default_unit: str) -> UUID:
         """Create a new ingredient or get existing one by name."""

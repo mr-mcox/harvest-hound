@@ -62,21 +62,7 @@ def create_inventory_parser_client() -> InventoryParserClient:
     Defaults to MockInventoryParserClient for safety.
     Use ENABLE_BAML=true to enable real BAML client.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    enable_baml = os.environ.get("ENABLE_BAML", "false")
-    logger.error("🐤 CANARY: ENABLE_BAML env var = %r", enable_baml)
-    logger.error("🐤 CANARY: All env vars with BAML: %s", {k: v for k, v in os.environ.items() if 'BAML' in k})
-    logger.error("🐤 CANARY: All env vars with ENABLE: %s", {k: v for k, v in os.environ.items() if 'ENABLE' in k})
-    
-    if enable_baml.lower() == "true":
-        logger.error("🐤 CANARY: Creating BamlInventoryParserClient")
-        try:
-            return BamlInventoryParserClient()
-        except Exception as e:
-            logger.error("🐤 CANARY: Failed to create BAML client: %s", str(e))
-            raise
+    if os.environ.get("ENABLE_BAML", "false").lower() == "true":
+        return BamlInventoryParserClient()
     else:
-        logger.error("🐤 CANARY: Creating MockInventoryParserClient (ENABLE_BAML not true)")
         return MockInventoryParserClient()

@@ -9,7 +9,7 @@ class Ingredient {
 }
 
 function ExtractIngredients(text: string) -> Ingredient[] {
-    client "openai/gpt-4.1-nano"
+    client "openai/gpt-4.1-mini"
     prompt #"
         This text contains a list of ingredients.
         <text>
@@ -72,6 +72,21 @@ test multi_line_ingredients {
     @@assert({{this|length == 2}})
     @@assert({{this[0].name == "carrot"}})
     @@assert({{this[1].name == "kale"}})
+}
+
+test carrots_rice {
+    functions [ExtractIngredients]
+    args {
+        text #"
+        - 2 lbs carrots\n- 1/2 cup rice
+        "#
+    }
+    @@assert({{this[0].name == "carrot"}})
+    @@assert({{this[0].quantity == 2}})
+    @@assert({{this[0].unit == "pound"}})
+    @@assert({{this[1].name == "rice"}})
+    @@assert({{this[1].quantity == 0.5}})
+    @@assert({{this[1].unit == "cup"}})
 }
 
 test csv_format {

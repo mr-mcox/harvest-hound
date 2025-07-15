@@ -112,3 +112,29 @@ Each package has its own CLAUDE.md file with specific development guidelines:
 - Natural language MealPlanSpec inputs
 - Ingredient substitution and conflict resolution
 - Context management for planning sessions
+
+## Environment Configuration & Debugging
+
+### Docker Environment Variable Loading
+- **Issue**: Environment variables from `--env-file` may not override Docker Compose hardcoded values
+- **Solution**: Add environment variables to `docker-compose.dev.yml` using `${VAR_NAME:-default}` syntax
+- **Example**: `ENABLE_BAML=${ENABLE_BAML:-false}` allows env file override while providing default
+- **Why**: Docker Compose merges env files with hardcoded environment section, hardcoded takes precedence
+
+### LLM Integration Debugging
+- **Mock vs Real LLM**: Always verify which parser is being used in production
+- **Factory Pattern**: Use `create_inventory_parser_client()` factory, not hardcoded mock instances
+- **Environment Check**: `ENABLE_BAML=true` required for real LLM, defaults to mock for safety
+- **Dependency Injection**: Ensure dependency injection uses factory, not hardcoded implementations
+
+### Common Debugging Patterns
+1. **"0 items added" with 201 Created**: Usually mock parser returning empty results
+2. **Environment variables not loading**: Check Docker Compose env section vs --env-file precedence
+3. **Dependency injection issues**: Verify factory functions used, not hardcoded implementations
+4. **Silent failures**: Add temporary logging to track execution flow through complex pipelines
+
+### Testing Strategy
+- **Unit Tests**: Fast, isolated, use mocks by default
+- **Integration Tests**: Slow, real LLM, manual trigger only
+- **Manual Testing Scripts**: `./scripts/test-manual.sh` for real LLM, `./scripts/dev-start.sh` for mocked
+- **Environment Verification**: Always check which parser/client is actually being used
