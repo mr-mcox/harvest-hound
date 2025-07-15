@@ -218,7 +218,11 @@ class StoreService:
 
     def _parse_inventory_text(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text using injected parser client."""
-        return self.inventory_parser.parse_inventory(inventory_text)
+        logger.error("🐤 CANARY: _parse_inventory_text called, parser type: %s", type(self.inventory_parser))
+        logger.error("🐤 CANARY: About to call parser.parse_inventory")
+        result = self.inventory_parser.parse_inventory(inventory_text)
+        logger.error("🐤 CANARY: Parser returned %d items", len(result) if result else 0)
+        return result
 
     def _create_or_get_ingredient(self, name: str, default_unit: str) -> UUID:
         """Create a new ingredient or get existing one by name."""
