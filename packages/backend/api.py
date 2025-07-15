@@ -197,6 +197,10 @@ async def upload_inventory(
     store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
 ) -> InventoryUploadResponse:
     """Upload inventory to a store."""
+    # CANARY: Verify new code is running
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error("🐤 CANARY: API upload_inventory called with store_id=%s, text=%r", store_id, request.inventory_text[:50])
     try:
         result = store_service.upload_inventory(store_id, request.inventory_text)
 

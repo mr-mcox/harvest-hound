@@ -84,6 +84,8 @@ class StoreService:
         inventory_text: str,
     ) -> InventoryUploadResult:
         """Upload inventory items to a store by parsing text input."""
+        # CANARY: Verify new code is running
+        logger.error("🐤 CANARY: upload_inventory called with store_id=%s, text=%r", store_id, inventory_text[:50])
         try:
             # Load the store
             store = self.store_repository.load(store_id)
