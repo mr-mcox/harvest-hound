@@ -33,3 +33,9 @@ class InventoryItemAdded(DomainEvent):
     unit: str
     notes: Optional[str] = None
     added_at: datetime
+
+
+class StoreCreatedWithInventory(DomainEvent):
+    store_id: UUID
+    successful_items: int
+    error_message: Optional[str] = None

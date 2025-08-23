@@ -1,7 +1,7 @@
 # Task Plan: Dashboard Inline Store Creation
 
-**TIP Reference**: `docs/development/tips/tip-dashboard-inline-store-creation.md`  
-**Implementation Sequence**: Foundation → Core → Integration → Polish  
+**TIP Reference**: `docs/development/tips/tip-dashboard-inline-store-creation.md`
+**Implementation Sequence**: Foundation → Core → Integration → Polish
 **Timeline Estimate**: 2-3 development days (streamlined approach)
 
 ---
@@ -10,14 +10,14 @@
 **Goal**: Create event schema infrastructure that enables orchestration service implementation
 
 ### 1.1 Event Schema Definition - **SETUP ONLY**
-- [ ] **Add StoreCreatedWithInventory event class** - Create event in `app/events/domain_events.py` with fields: store_id, successful_items, error_message (simplified)
-- [ ] **Update event imports** - Add new event to `app/events/__init__.py` exports
-- [ ] **Add event type registration** - Include in projection registry event type mappings
+- [x] **Add StoreCreatedWithInventory event class** - Create event in `app/events/domain_events.py` with fields: store_id, successful_items, error_message (simplified)
+- [x] **Update event imports** - Add new event to `app/events/__init__.py` exports
+- [x] **Add event type registration** - Include in projection registry event type mappings
 
 ### 1.2 Response Model Schema - **SETUP ONLY**
-- [ ] **Extend CreateStoreRequest model** - Add optional `inventory_text: str | None = None` field to existing model in `api.py`
-- [ ] **Extend CreateStoreResponse model** - Add optional fields: `successful_items: int | None`, `error_message: str | None` (simplified)
-- [ ] **Update API endpoint signature** - Modify return type annotation to include new fields
+- [x] **Extend CreateStoreRequest model** - Add optional `inventory_text: str | None = None` field to existing model in `api.py`
+- [x] **Extend CreateStoreResponse model** - Add optional fields: `successful_items: int | None`, `error_message: str | None` (simplified)
+- [x] **Update API endpoint signature** - Modify return type annotation to include new fields
 
 ---
 
@@ -116,14 +116,14 @@
 
 Based on TIP Section 7 Definition of Done:
 - [ ] User can create store and upload inventory in single dashboard form
-- [ ] Store appears in list with final item count after processing completes  
+- [ ] Store appears in list with final item count after processing completes
 - [ ] Simple error messaging when inventory processing fails (enhancement opportunities identified for later)
 - [ ] Progressive enhancement provides immediate feedback during processing
 - [ ] All existing store creation functionality remains intact
 
 **Implementation Notes**:
 - Tasks 1-3 enable backend functionality (Phase 1)
-- Tasks 4-5 enable basic frontend functionality (Phase 2)  
+- Tasks 4-5 enable basic frontend functionality (Phase 2)
 - Tasks 6-7 complete integration and testing (Phase 3)
 - Follow TIP risk mitigation: coordinate backend deployment before frontend updates
 - **Deferred Complexity**: Race condition handling, complex partial success UX, detailed error breakdowns - add later if actually needed

@@ -45,6 +45,7 @@ class CreateStoreRequest(BaseModel):
     name: str
     description: Optional[str] = ""
     infinite_supply: Optional[bool] = False
+    inventory_text: Optional[str] = None
 
 
 class CreateStoreResponse(BaseModel):
@@ -52,6 +53,8 @@ class CreateStoreResponse(BaseModel):
     name: str
     description: str
     infinite_supply: bool
+    successful_items: Optional[int] = None
+    error_message: Optional[str] = None
 
 
 class StoreListItem(BaseModel):
@@ -155,6 +158,8 @@ async def create_store(
     store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
 ) -> CreateStoreResponse:
     """Create a new inventory store."""
+    # TODO: Add conditional orchestration logic in NEW BEHAVIOR task
+    # When inventory_text is provided, route to StoreCreationOrchestrator
     store_id = store_service.create_store(
         name=request.name,
         description=request.description or "",
@@ -166,6 +171,9 @@ async def create_store(
         name=request.name,
         description=request.description or "",
         infinite_supply=request.infinite_supply or False,
+        # TODO: Include orchestration results when applicable in NEW BEHAVIOR task
+        successful_items=None,
+        error_message=None,
     )
 
 

@@ -12,6 +12,7 @@ from .events.domain_events import (
     IngredientCreated,
     InventoryItemAdded,
     StoreCreated,
+    StoreCreatedWithInventory,
 )
 from .infrastructure.event_bus import EventBusManager
 from .infrastructure.event_publisher import EventPublisher
@@ -141,6 +142,7 @@ def create_projection_registry(
     registry.register(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
     registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
     registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
+    # TODO: Add StoreCreatedWithInventory event handler registration in NEW BEHAVIOR task
     
     return registry
 
@@ -178,6 +180,7 @@ async def setup_event_bus_subscribers(
     # Subscribe WebSocket event subscriber to domain events
     await event_bus.subscribe(StoreCreated, websocket_event_subscriber.handle_store_created)
     await event_bus.subscribe(InventoryItemAdded, websocket_event_subscriber.handle_inventory_item_added)
+    # TODO: Add StoreCreatedWithInventory event subscriber in NEW BEHAVIOR task
 
 
 def get_store_service(
