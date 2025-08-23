@@ -23,7 +23,7 @@ from .infrastructure.websocket_manager import ConnectionManager
 from .infrastructure.websocket_event_subscriber import WebSocketEventSubscriber
 from .interfaces.parser import InventoryParserProtocol
 from .interfaces.repository import IngredientRepositoryProtocol, StoreRepositoryProtocol
-from .interfaces.service import StoreServiceProtocol
+from .interfaces.service import StoreServiceProtocol, StoreCreationOrchestratorProtocol
 from .interfaces.view_store import (
     InventoryItemViewStoreProtocol,
     StoreViewStoreProtocol,
@@ -31,6 +31,7 @@ from .interfaces.view_store import (
 from .projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from .projections.registry import ProjectionRegistry
 from .services.store_service import StoreService
+from .services.store_creation_orchestrator import StoreCreationOrchestrator
 
 # Database setup for view stores
 if os.getenv("PYTEST_CURRENT_TEST"):
@@ -198,3 +199,10 @@ def get_store_service(
         store_view_store,
         inventory_item_view_store,
     )
+
+
+def get_store_creation_orchestrator(
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)],
+) -> StoreCreationOrchestratorProtocol:
+    """Provide store creation orchestrator implementation."""
+    return StoreCreationOrchestrator(store_service)

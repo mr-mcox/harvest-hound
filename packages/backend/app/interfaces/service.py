@@ -1,6 +1,6 @@
 """Service interface protocols."""
 
-from typing import Any, Dict, List, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 from uuid import UUID
 
 from ..services.store_service import InventoryUploadResult
@@ -59,5 +59,29 @@ class StoreServiceProtocol(Protocol):
             
         Returns:
             List of inventory item data dictionaries
+        """
+        ...
+
+
+class StoreCreationOrchestratorProtocol(Protocol):
+    """Protocol for store creation orchestrator operations."""
+    
+    def create_store_with_inventory(
+        self,
+        name: str,
+        description: str,
+        infinite_supply: bool,
+        inventory_text: Optional[str],
+    ) -> Any:  # TODO: Import OrchestrationResult in NEW BEHAVIOR task
+        """Create store and optionally process inventory in unified operation.
+        
+        Args:
+            name: Store name
+            description: Store description  
+            infinite_supply: Whether store has infinite supply
+            inventory_text: Optional inventory text to process
+            
+        Returns:
+            Orchestration result with store_id, successful_items, and error_message
         """
         ...
