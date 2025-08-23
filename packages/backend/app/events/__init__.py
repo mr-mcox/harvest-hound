@@ -3,6 +3,7 @@ from .domain_events import (
     IngredientCreated,
     InventoryItemAdded,
     StoreCreated,
+    StoreCreatedWithInventory,
 )
 
-__all__ = ["DomainEvent", "StoreCreated", "IngredientCreated", "InventoryItemAdded"]
+__all__ = ["DomainEvent", "StoreCreated", "IngredientCreated", "InventoryItemAdded", "StoreCreatedWithInventory"]
