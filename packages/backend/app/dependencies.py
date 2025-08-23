@@ -203,6 +203,8 @@ def get_store_service(
 
 def get_store_creation_orchestrator(
     store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)],
+    event_store: Annotated[EventStore, Depends(get_event_store)],
+    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)],
 ) -> StoreCreationOrchestratorProtocol:
     """Provide store creation orchestrator implementation."""
-    return StoreCreationOrchestrator(store_service)
+    return StoreCreationOrchestrator(store_service, event_store, event_publisher)

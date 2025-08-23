@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import Any, Dict, Generator, List
 from uuid import UUID, uuid4
 
 import pytest
@@ -12,9 +12,10 @@ from app.infrastructure.event_publisher import EventPublisher
 from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
 from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
+from app.models.parsed_inventory import ParsedInventoryItem
 from app.services.inventory_parser import MockInventoryParserClient
 from app.services.store_creation_orchestrator import StoreCreationOrchestrator, OrchestrationResult
-from app.services.store_service import StoreService
+from app.services.store_service import StoreService, InventoryUploadResult
 from tests.test_utils import assert_event_matches, get_typed_events
 
 
@@ -98,9 +99,13 @@ def store_service(
 
 
 @pytest.fixture
-def orchestrator(store_service: StoreService) -> StoreCreationOrchestrator:
+def orchestrator(
+    store_service: StoreService, 
+    event_store: EventStore,
+    event_publisher: EventPublisher
+) -> StoreCreationOrchestrator:
     """Create a StoreCreationOrchestrator for testing."""
-    return StoreCreationOrchestrator(store_service)
+    return StoreCreationOrchestrator(store_service, event_store, event_publisher)
 
 
 class TestUnifiedCreationLogic:
@@ -138,9 +143,16 @@ class TestUnifiedCreationLogic:
         )
 
     def test_create_store_with_inventory_processes_items_and_emits_orchestration_event(
-        self, orchestrator: StoreCreationOrchestrator, event_store: EventStore
+        self, orchestrator: StoreCreationOrchestrator, event_store: EventStore, inventory_parser: MockInventoryParserClient
     ) -> None:
         """Test that creating store with inventory text processes items and emits StoreCreatedWithInventory event."""
+        # Arrange - configure mock parser to return 2 items
+        parsed_items = [
+            ParsedInventoryItem(name="apples", quantity=2.0, unit="count"),
+            ParsedInventoryItem(name="bananas", quantity=3.0, unit="count"),
+        ]
+        inventory_parser.mock_results = parsed_items
+        
         # Act
         result = orchestrator.create_store_with_inventory(
             name="CSA Box",
@@ -168,15 +180,33 @@ class TestUnifiedCreationLogic:
         )
 
     def test_create_store_with_failing_inventory_returns_error_in_result(
-        self, orchestrator: StoreCreationOrchestrator, event_store: EventStore
+        self, store_service: StoreService, event_store: EventStore, event_publisher: EventPublisher
     ) -> None:
         """Test that inventory processing failures are captured in result with simple error message."""
-        # Act - using invalid inventory text that will cause parsing failure
-        result = orchestrator.create_store_with_inventory(
+        # Create a custom mock StoreService that fails on upload_inventory
+        class FailingStoreService:
+            def create_store(self, name: str, description: str = "", infinite_supply: bool = False) -> UUID:
+                return store_service.create_store(name, description, infinite_supply)
+            
+            def upload_inventory(self, store_id: UUID, inventory_text: str) -> InventoryUploadResult:
+                return InventoryUploadResult.error_result(["Simulated parsing failure"])
+                
+            def get_all_stores(self) -> List[Dict[str, Any]]:
+                return store_service.get_all_stores()
+                
+            def get_store_inventory(self, store_id: UUID) -> List[Dict[str, Any]]:
+                return store_service.get_store_inventory(store_id)
+        
+        failing_orchestrator = StoreCreationOrchestrator(
+            FailingStoreService(), event_store, event_publisher
+        )
+        
+        # Act - processing should fail due to simulated parsing failure
+        result = failing_orchestrator.create_store_with_inventory(
             name="CSA Box",
             description="Weekly vegetable box",
             infinite_supply=False,
-            inventory_text="invalid inventory format that causes error"
+            inventory_text="some inventory text"
         )
         
         # Assert - store still created successfully, but with error message
@@ -184,7 +214,7 @@ class TestUnifiedCreationLogic:
         assert isinstance(result.store_id, UUID)
         assert result.successful_items == 0
         assert result.error_message is not None
-        assert "error" in result.error_message.lower()
+        assert "failed" in result.error_message.lower()
         
         # Verify store was still created
         store_events = get_typed_events(event_store, f"store-{result.store_id}", StoreCreated)

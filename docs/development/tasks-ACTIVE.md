@@ -25,9 +25,9 @@
 **Goal**: Implement StoreCreationOrchestrator application service with unified creation flow
 
 ### 2.1 Orchestrator Service Structure - **SETUP ONLY**
-- [ ] **Create StoreCreationOrchestrator class** - New file `app/services/store_creation_orchestrator.py` with constructor taking required dependencies
-- [ ] **Add method signature** - `create_store_with_inventory(name, description, infinite_supply, inventory_text)` returning orchestration result
-- [ ] **Add orchestrator to dependency injection** - Include in `app/dependencies.py` factory functions
+- [x] **Create StoreCreationOrchestrator class** - New file `app/services/store_creation_orchestrator.py` with constructor taking required dependencies
+- [x] **Add method signature** - `create_store_with_inventory(name, description, infinite_supply, inventory_text)` returning orchestration result
+- [x] **Add orchestrator to dependency injection** - Include in `app/dependencies.py` factory functions
 
 ### 2.2 Unified Creation Logic - **NEW BEHAVIOR**
 - [ ] **Implement store creation step** - Call existing StoreService.create_store and capture store_id

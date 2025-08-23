@@ -1,9 +1,12 @@
 """Service interface protocols."""
 
-from typing import Any, Dict, List, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol
 from uuid import UUID
 
 from ..services.store_service import InventoryUploadResult
+
+if TYPE_CHECKING:
+    from ..services.store_creation_orchestrator import OrchestrationResult
 
 
 class StoreServiceProtocol(Protocol):
@@ -72,7 +75,7 @@ class StoreCreationOrchestratorProtocol(Protocol):
         description: str,
         infinite_supply: bool,
         inventory_text: Optional[str],
-    ) -> Any:  # TODO: Import OrchestrationResult in NEW BEHAVIOR task
+    ) -> "OrchestrationResult":
         """Create store and optionally process inventory in unified operation.
         
         Args:
