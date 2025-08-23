@@ -10,11 +10,10 @@ services:
       - DATABASE_URL=sqlite:////app/data/dev.db
       - BAML_ENV=development
       - PYTHONPATH=/app/packages/backend
+      # LLM Configuration - can be overridden by env file
+      - ENABLE_BAML=${ENABLE_BAML:-false}
       # Secret API keys from host environment
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - BAML_API_KEY=${BAML_API_KEY}
     volumes:
       # Mount only source code and configs for hot reload, exclude build artifacts
       - ./packages/backend/app:/app/packages/backend/app

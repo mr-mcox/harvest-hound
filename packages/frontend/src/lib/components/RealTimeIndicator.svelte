@@ -31,14 +31,14 @@
 	function getStatusText(state: ConnectionState): string {
 		switch (state) {
 			case ConnectionState.CONNECTED:
-				return 'Real-time updates active';
+				return 'Connected';
 			case ConnectionState.CONNECTING:
-				return 'Connecting to real-time updates...';
+				return 'Connecting...';
 			case ConnectionState.RECONNECTING:
-				return 'Reconnecting to real-time updates...';
+				return 'Reconnecting...';
 			case ConnectionState.DISCONNECTED:
 			default:
-				return 'Real-time updates unavailable';
+				return 'Disconnected';
 		}
 	}
 
@@ -60,7 +60,7 @@
 	}
 </script>
 
-<div class="mb-4">
+<div class="mb-4" data-testid="realtime-indicator">
 	<div class="chip {statusClass}">
 		<!-- Connection status indicator -->
 		<div class="flex items-center gap-2">
@@ -70,7 +70,7 @@
 	</div>
 
 	{#if formattedLastUpdate}
-		<div class="text-surface-500 mt-1 text-xs">
+		<div class="text-surface-500 mt-1 text-xs" data-testid="last-update">
 			Last updated: {formattedLastUpdate}
 		</div>
 	{/if}

@@ -10,9 +10,14 @@
 # BAML files and re-generate this code using: baml-cli generate
 # baml-cli is available with the baml package.
 
-from . import stream_types, types
+from . import types
+from . import stream_types
+
 
 type_map = {
+
     "types.Ingredient": types.Ingredient,
     "stream_types.Ingredient": stream_types.Ingredient,
+
+
 }

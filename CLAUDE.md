@@ -112,3 +112,11 @@ Each package has its own CLAUDE.md file with specific development guidelines:
 - Natural language MealPlanSpec inputs
 - Ingredient substitution and conflict resolution
 - Context management for planning sessions
+
+## Environment Configuration & Debugging
+
+### Docker Environment Variable Loading
+- **Issue**: Environment variables from `--env-file` may not override Docker Compose hardcoded values
+- **Solution**: Add environment variables to `docker-compose.dev.yml` using `${VAR_NAME:-default}` syntax
+- **Example**: `ENABLE_BAML=${ENABLE_BAML:-false}` allows env file override while providing default
+- **Why**: Docker Compose merges env files with hardcoded environment section, hardcoded takes precedence

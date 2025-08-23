@@ -351,6 +351,33 @@ class TestInventoryUpload:
         assert len(result.errors) == 1
         assert "Failed to parse inventory text" in result.errors[0]
 
+    def test_upload_inventory_with_empty_parsing_result(
+        self,
+        store_service: StoreService,
+        inventory_parser: MockInventoryParserClient,
+    ) -> None:
+        """Test that upload_inventory handles empty parsing results correctly."""
+        # Arrange
+        store_id = store_service.create_store("CSA Box")
+
+        # Configure parser to return empty list (parsing succeeds but finds nothing)
+        class EmptyResultMockParser(MockInventoryParserClient):
+            def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
+                # Simulate LLM returning empty list (valid response, but no items found)
+                return []
+
+        # Replace the parser with our empty result version
+        empty_parser = EmptyResultMockParser()
+        store_service.inventory_parser = empty_parser
+
+        # Act
+        result = store_service.upload_inventory(store_id, "some text that parses to nothing")
+
+        # Assert
+        assert result.success is True  # Parsing succeeded, just found no items
+        assert result.items_added == 0
+        assert result.errors == []
+
     def test_get_store_inventory_returns_current_inventory_with_ingredient_names(
         self,
         store_service: StoreService,

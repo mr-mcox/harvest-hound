@@ -12,9 +12,6 @@ services:
       - PYTHONPATH=/app/packages/backend
       # Secret API keys from host environment
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - BAML_API_KEY=${BAML_API_KEY}
     volumes:
       - .:/app
     networks:

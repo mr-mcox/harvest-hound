@@ -23,7 +23,7 @@
 {:else}
 	<div class="grid gap-4">
 		{#each stores as store (store.store_id)}
-			<div class="card p-4">
+			<div class="card p-4" data-testid="store-item">
 				<div class="flex items-start justify-between">
 					<div>
 						<h3 class="text-lg font-semibold">{store.name}</h3>

@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 # Check if .env file exists for secrets
 if [ ! -f ".env" ]; then
   echo "❌ .env file not found in project root"
-  echo "Please create .env file with your API keys (OPENAI_API_KEY, etc.)"
+  echo "Please create .env file with OPENAI_API_KEY"
   exit 1
 fi
 

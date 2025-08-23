@@ -56,10 +56,8 @@ def get_db_session() -> Generator[Session, None, None]:
 
 def get_inventory_parser() -> InventoryParserProtocol:
     """Provide inventory parser implementation."""
-    # For testing, use the fixture-based mock parser
-    # In production with ENABLE_BAML=true, this would use the real BAML client
-    from tests.mocks.llm_service import MockLLMInventoryParser
-    return MockLLMInventoryParser()
+    from .services.inventory_parser import create_inventory_parser_client
+    return create_inventory_parser_client()
 
 
 def get_store_view_store(
