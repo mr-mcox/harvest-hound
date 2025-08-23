@@ -23,9 +23,28 @@ If this opportunity comes from user feedback or observation:
 - Note workarounds users are currently employing
 - Identify frequency and impact of the problem
 
+## Clarifying Questions Phase
+
+Before writing the opportunity brief, ask the user clarifying questions to ensure you understand the full scope and context. Based on the preparation analysis, identify:
+
+### Questions to Ask
+- **Scope Boundaries**: Are there multiple distinct problems that should be separated into different opportunities?
+- **User Context**: What specific workflows or scenarios are most important to address?
+- **Solution Constraints**: What implementation approaches are preferred or ruled out?
+- **Success Metrics**: How would the user know this problem is solved?
+- **Priority/Urgency**: What's driving the need to solve this now?
+
+### Example Question Categories
+- **Workflow Details**: "When you say X, do you mean Y or Z specific flow?"
+- **Technical Preferences**: "Should this be implemented as A or B approach?"
+- **User Experience**: "What would the ideal experience look like in concrete terms?"
+- **Scope Clarification**: "Is this one opportunity or multiple related problems?"
+
+**IMPORTANT**: Wait for user responses to your clarifying questions before proceeding to write the opportunity brief(s).
+
 ## Opportunity Shaping
 
-Using the preparation analysis, create an opportunity brief following this structure:
+After gathering clarifying responses, create opportunity brief(s) following this structure:
 
 ### Opportunity Brief: [Descriptive Name]
 
