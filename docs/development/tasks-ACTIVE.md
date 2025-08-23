@@ -1,130 +1,129 @@
-# Implementation Tasks: WebSocket Foundation for Real-time Inventory Updates
+# Task Plan: Dashboard Inline Store Creation
 
-**Source TIP**: `docs/development/tips/tip-websocket-foundation.md`
-**Timeline**: 1-2 development iterations
-**Total Scope**: S - Simplified implementation leveraging existing event infrastructure
+**TIP Reference**: `docs/development/tips/tip-dashboard-inline-store-creation.md`  
+**Implementation Sequence**: Foundation → Core → Integration → Polish  
+**Timeline Estimate**: 2-3 development days (streamlined approach)
 
-## Task 1: Event Store Refactoring (TIP Work Stream 1)
-**Goal**: Implement async event bus pattern to decouple event store from consumers
+---
 
-### 1.1 Event Bus Infrastructure - **SETUP ONLY**
-- [x] **Create EventBus interface** - Define async publish/subscribe contract
-- [x] **Create InMemoryEventBus implementation** - Simple pub/sub for development
-- [x] **Add EventBusManager dependency** - Injectable service for FastAPI
-- [x] **Update event store constructor** - Accept event_bus parameter with default None
+## Task 1: Backend Event Schema Foundation (TIP Section 3: Event Flow Design)
+**Goal**: Create event schema infrastructure that enables orchestration service implementation
 
-### 1.2 Event Store Publishing - **REFACTOR**
-- [x] **Add async publish method to event store** - Call event_bus.publish(event) after storage
-- [x] **Maintain backward compatibility** - Keep existing projection_registry calls for now
-- [x] **Add integration test** - Verify events published to both old and new systems
-- [x] **Update event store tests** - Mock event bus to verify publish calls
+### 1.1 Event Schema Definition - **SETUP ONLY**
+- [ ] **Add StoreCreatedWithInventory event class** - Create event in `app/events/domain_events.py` with fields: store_id, successful_items, error_message (simplified)
+- [ ] **Update event imports** - Add new event to `app/events/__init__.py` exports
+- [ ] **Add event type registration** - Include in projection registry event type mappings
 
-### 1.3 Projection Handler Migration - **REFACTOR**
-- [x] **Refactor projection registry to use app state** - Move from global variable to app.state.projection_registry
-- [x] **Convert projection handlers to subscribers** - Subscribe to event bus on startup
-- [x] **Add async event handling** - Update handler methods to be async
-- [x] **Test projection handlers independently** - Verify they work via event bus subscription
-- [x] **Remove projection_registry from event store** - Clean up old coupling after verification
+### 1.2 Response Model Schema - **SETUP ONLY**
+- [ ] **Extend CreateStoreRequest model** - Add optional `inventory_text: str | None = None` field to existing model in `api.py`
+- [ ] **Extend CreateStoreResponse model** - Add optional fields: `successful_items: int | None`, `error_message: str | None` (simplified)
+- [ ] **Update API endpoint signature** - Modify return type annotation to include new fields
 
-## Task 2: WebSocket Infrastructure (TIP Work Stream 2)
-**Goal**: Build WebSocket connection manager with default room pattern and event broadcasting
+---
 
-### 2.1 WebSocket Connection Manager - **SETUP ONLY**
-- [x] **Create ConnectionManager class** - Track active connections by room
-- [x] **Add room management methods** - join_room, leave_room, broadcast_to_room
-- [x] **Create WebSocket message schemas** - Pydantic models for event envelopes
-- [x] **Add connection lifecycle methods** - connect, disconnect, cleanup
+## Task 2: Backend Orchestration Service (TIP Section 3: Bounded Context Impacts)
+**Goal**: Implement StoreCreationOrchestrator application service with unified creation flow
 
-### 2.2 WebSocket Endpoint - **NEW BEHAVIOR**
-- [x] **Implement /ws endpoint** - Accept WebSocket connections with default room
-- [x] **Handle connection handshake** - Accept connection and join default room
-- [x] **Add connection error handling** - Gracefully handle disconnections
-- [x] **Test WebSocket endpoint** - Connect, send message, verify receipt
+### 2.1 Orchestrator Service Structure - **SETUP ONLY**
+- [ ] **Create StoreCreationOrchestrator class** - New file `app/services/store_creation_orchestrator.py` with constructor taking required dependencies
+- [ ] **Add method signature** - `create_store_with_inventory(name, description, infinite_supply, inventory_text)` returning orchestration result
+- [ ] **Add orchestrator to dependency injection** - Include in `app/dependencies.py` factory functions
 
-### 2.3 Event Broadcasting Integration - **NEW BEHAVIOR**
-- [x] **Create WebSocket event subscriber** - Subscribe to event bus for domain events
-- [x] **Implement event filtering** - Transform domain events to WebSocket messages
-- [x] **Add broadcast logic** - Send filtered events to appropriate room connections
-- [x] **Test end-to-end flow** - Domain command → event store → event bus → WebSocket → client
+### 2.2 Unified Creation Logic - **NEW BEHAVIOR**
+- [ ] **Implement store creation step** - Call existing StoreService.create_store and capture store_id
+- [ ] **Implement conditional inventory processing** - When inventory_text provided, parse and add items using existing StoreService.upload_inventory
+- [ ] **Implement result aggregation** - Count successful items and capture simple error message if processing fails
+- [ ] **Implement StoreCreatedWithInventory event emission** - Generate event with complete operation results and publish via event bus
 
-## Task 3: Frontend Integration (TIP Work Stream 3)
-**Goal**: WebSocket client with simple reconnection and real-time UI updates
+### 2.3 Simple Error Handling - **NEW BEHAVIOR**
+- [ ] **Handle store creation failures** - Return error result when store creation fails, don't proceed to inventory
+- [ ] **Handle inventory processing failures** - Store still created successfully, return success with simple error message (defer complex partial success handling)
 
-### 3.1 WebSocket Client Service - **SETUP ONLY**
-- [x] **Create WebSocketService class** - Handle connection lifecycle
-- [x] **Add connection state management** - Track connected/disconnected/reconnecting states
-- [x] **Define event handling interface** - Type-safe event callback system
-- [x] **Create WebSocket store** - Svelte store for connection state and events
+---
 
-### 3.2 WebSocket Connection Logic - **NEW BEHAVIOR** ✅ COMPLETED
-- [x] **Implement connection establishment** - Connect to /ws with default room
-- [x] **Add simple reconnection logic** - Retry connection after disconnect with backoff
-- [x] **Handle incoming events** - Parse WebSocket messages and emit to subscribers
-- [x] **Test connection scenarios** - Connect, disconnect, reconnect, message handling
-- [x] **WebSocket store refactoring** - Removed overengineered methods, implemented essential Svelte store integration
+## Task 3: API Integration Layer (TIP Section 3: Integration Points)
+**Goal**: Enhance POST /stores endpoint to support unified creation and maintain backward compatibility
 
-### 3.3 Real-time UI Updates - **NEW BEHAVIOR** ✅ COMPLETED
-- [x] **Subscribe to inventory events** - Listen for InventoryItemAdded events
-- [x] **Update inventory store state** - Merge WebSocket updates with local state
-- [x] **Add visual feedback** - Show real-time update indicators in UI
-- [x] **Test multi-session updates** - Verify changes in one tab appear in another
-- [x] **Centralized inventory store** - Created reactive store for inventory data with WebSocket integration
-- [x] **Real-time indicator component** - Shows connection status and last update timestamp
-- [x] **Updated store pages** - Integrated real-time functionality into stores list and inventory views
+### 3.1 Enhanced Endpoint Logic - **NEW BEHAVIOR**
+- [ ] **Update create_store endpoint implementation** - Check for optional inventory_text field in request
+- [ ] **Implement conditional orchestration** - Route to StoreCreationOrchestrator when inventory_text present, otherwise use existing StoreService flow
+- [ ] **Update response construction** - Include orchestration results (successful_items, error_message) in response when applicable
 
-### 3.4 Integration with Existing Components - **REFACTOR** ✅ COMPLETED
-- [x] **Update InventoryTable component** - React to real-time inventory changes
-- [x] **Enhance StoreList component** - Show real-time item count updates
-- [x] **Add connection status indicator** - Display WebSocket connection state
-- [x] **Test existing functionality** - Ensure REST API workflows remain unaffected
+### 3.2 WebSocket Event Broadcasting - **NEW BEHAVIOR**
+- [ ] **Add StoreCreatedWithInventory event handler** - Create handler in `app/projections/handlers.py` to broadcast new event type
+- [ ] **Register WebSocket event mapping** - Add event type to WebSocket event catalog in connection manager
+- [ ] **Test event propagation** - Ensure events reach connected WebSocket clients within 100ms
 
-## Task 4: End-to-End Integration & Testing
-**Goal**: Verify complete real-time inventory update flow across multiple sessions
+---
 
-### 4.1 Backend Integration Testing - **NEW BEHAVIOR** ✅ COMPLETED
-- [x] **Multi-client WebSocket test** - Two connections, verify event broadcast to both
-- [x] **REST to WebSocket flow test** - POST inventory via REST, verify WebSocket event received
-- [x] **Connection lifecycle test** - Connect, disconnect, reconnect scenarios work correctly
-- [x] **Event ordering test** - Rapid updates maintain correct sequence across clients
+## Task 4: Frontend Component Foundation (TIP Section 3: Integration Points)
+**Goal**: Prepare StoreList component to support inline creation form
 
-### 4.2 Frontend E2E Testing - **NEW BEHAVIOR**
-- [x] **Multi-tab update test** - Playwright test with two browser tabs, verify real-time sync
-- [x] **Network interruption test** - Simulate offline/online, verify automatic recovery
-- [x] **Visual feedback test** - Verify real-time indicators appear correctly in UI
-- [x] **Mixed usage test** - Both REST and WebSocket operations work together seamlessly
+### 4.1 Component Structure Updates - **SETUP ONLY**
+- [ ] **Add form state to StoreList** - Create local state variables for inline form visibility and submission state
+- [ ] **Add form toggle UI** - Create "Add Store" button that shows/hides inline creation form
+- [ ] **Create inline form markup** - Add form HTML with fields for name, description, store_type, and inventory_text textarea
 
-### 4.3 Manual Testing Documentation - **SETUP ONLY**
-- [x] **Create manual test guide** - Step-by-step workflows for user experience validation
-- [x] **Performance observation checklist** - What to monitor in browser dev tools during testing
-- [x] **Edge case scenarios** - Documented test cases for exploratory testing (SKIPPED - too edge-casey)
-- [x] **Browser compatibility notes** - Which browsers to test manually and expected behavior (SKIPPED - low value)
+### 4.2 Enhanced API Client - **SETUP ONLY**
+- [ ] **Update apiPost function signature** - Accept optional inventory_text parameter in store creation call
+- [ ] **Update type definitions** - Add inventory_text to CreateStoreRequest type and extend CreateStoreResponse with simplified result fields
 
-## Dependencies and Sequencing
+---
 
-**Critical Path**:
-1. **Task 1 (Event Store Refactoring)** must complete before Task 2.3 (Event Broadcasting)
-2. **Task 2 (WebSocket Infrastructure)** must complete before Task 3 (Frontend Integration)
-3. **Task 3.1-3.2 (WebSocket Client)** must complete before Task 3.3 (Real-time UI)
-4. **Task 4 (Integration Testing)** requires completion of all previous tasks
+## Task 5: Frontend Progressive Enhancement (TIP Section 2: Pattern Applications)
+**Goal**: Implement use:enhance form handling to preserve dashboard context
 
-**Parallel Work Opportunities**:
-- Task 1.1 (Event Bus Setup) can run parallel with Task 2.1 (Connection Manager Setup)
-- Task 3.1 (WebSocket Client Setup) can run parallel with Task 2.2 (WebSocket Endpoint)
-- Task 1.3 (Projection Migration) can run parallel with Task 2.3 (Event Broadcasting)
+### 5.1 Form Enhancement Logic - **NEW BEHAVIOR**
+- [ ] **Add use:enhance to inline form** - Implement progressive enhancement with custom submit handler
+- [ ] **Implement loading state management** - Show loading indicator during form submission, disable form controls
+- [ ] **Implement optimistic UI updates** - Add "Creating store..." placeholder to store list immediately on submission
 
-## Success Metrics
+### 5.2 Simplified Response Handling - **NEW BEHAVIOR**
+- [ ] **Handle successful creation response** - Update store list with new store including final item count, clear form, hide inline form
+- [ ] **Handle error scenarios** - Show simple error message in form context, maintain form state for user correction (defer complex partial success UX)
 
-**Technical Validation**:
-- [ ] Event bus refactoring maintains all existing projection functionality
-- [ ] WebSocket connections establish and maintain default room subscriptions
-- [ ] Domain events flow from event store → event bus → WebSocket → frontend
-- [ ] Simple reconnection logic handles brief network interruptions
+---
 
-**User Validation**:
-- [ ] Users see inventory changes in real-time across multiple browser tabs
-- [ ] System remains fully functional when WebSocket is unavailable
-- [ ] No degradation of existing REST API workflows
+## Task 6: Basic WebSocket Updates (TIP Section 3: Event Flow Design)
+**Goal**: Simple WebSocket event broadcasting without premature optimization
 
-**Performance Validation**:
-- [ ] Sub-100ms event delivery for single-user scenario
-- [ ] Clean connection/disconnection handling without memory leaks
+### 6.1 Basic Event Handling - **NEW BEHAVIOR**
+- [ ] **Add StoreCreatedWithInventory event listener** - Subscribe to new event type in dashboard WebSocket connection
+- [ ] **Implement simple dashboard updates** - Update store list when receiving WebSocket events (rely on form response as primary update mechanism)
+
+---
+
+## Task 7: Integration Testing and Validation (TIP Section 4: Testing Strategy)
+**Goal**: Ensure complete workflow functions correctly end-to-end
+
+### 7.1 Backend Integration Tests - **NEW BEHAVIOR**
+- [ ] **Test complete orchestration flow** - Verify store creation with inventory succeeds and generates correct events
+- [ ] **Test simple error scenarios** - Verify store created successfully even when inventory processing fails (simple error message)
+- [ ] **Test WebSocket event propagation** - Ensure StoreCreatedWithInventory events broadcast correctly
+
+### 7.2 Frontend Integration Tests - **NEW BEHAVIOR**
+- [ ] **Test inline form submission** - Verify use:enhance preserves dashboard context and updates UI correctly
+- [ ] **Test basic error handling** - Verify simple error message display works as expected
+
+### 7.3 End-to-End Validation - **NEW BEHAVIOR**
+- [ ] **Test streamlined user workflow** - Dashboard → inline form → unified submission → success/error result
+- [ ] **Test performance requirements** - Verify operation completes within 3 seconds for ≤20 inventory items
+- [ ] **Test backward compatibility** - Ensure existing store creation workflow continues to function
+
+---
+
+## Success Criteria Validation
+
+Based on TIP Section 7 Definition of Done:
+- [ ] User can create store and upload inventory in single dashboard form
+- [ ] Store appears in list with final item count after processing completes  
+- [ ] Simple error messaging when inventory processing fails (enhancement opportunities identified for later)
+- [ ] Progressive enhancement provides immediate feedback during processing
+- [ ] All existing store creation functionality remains intact
+
+**Implementation Notes**:
+- Tasks 1-3 enable backend functionality (Phase 1)
+- Tasks 4-5 enable basic frontend functionality (Phase 2)  
+- Tasks 6-7 complete integration and testing (Phase 3)
+- Follow TIP risk mitigation: coordinate backend deployment before frontend updates
+- **Deferred Complexity**: Race condition handling, complex partial success UX, detailed error breakdowns - add later if actually needed
