@@ -552,7 +552,7 @@ class TestEnhancedPartialSuccess:
             items_added=2, 
             errors=["Item validation failed"], 
             success=False,
-            parsing_notes="LLM reported: 'Volvos' not a food item"  # type: ignore[call-arg]
+            parsing_notes="LLM reported: 'Volvos' not a food item"
         )
         
         # Assert - parsing_notes field exists and works
@@ -621,4 +621,4 @@ class TestEnhancedPartialSuccess:
         # Assert
         assert result.items_added == 1
         assert result.success is True
-        assert result.parsing_notes == "LLM noted: 'eggs' quantity unclear, processed as 2 count"  # type: ignore[attr-defined]
+        assert result.parsing_notes == "LLM noted: 'eggs' quantity unclear, processed as 2 count"

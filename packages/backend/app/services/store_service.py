@@ -31,16 +31,17 @@ class InventoryUploadResult:
     items_added: int
     errors: List[str]
     success: bool
+    parsing_notes: Optional[str] = None
 
     @classmethod
-    def success_result(cls, items_added: int) -> "InventoryUploadResult":
+    def success_result(cls, items_added: int, parsing_notes: Optional[str] = None) -> "InventoryUploadResult":
         """Create a successful result."""
-        return cls(items_added=items_added, errors=[], success=True)
+        return cls(items_added=items_added, errors=[], success=True, parsing_notes=parsing_notes)
 
     @classmethod
-    def error_result(cls, errors: List[str]) -> "InventoryUploadResult":
+    def error_result(cls, errors: List[str], parsing_notes: Optional[str] = None) -> "InventoryUploadResult":
         """Create an error result."""
-        return cls(items_added=0, errors=errors, success=False)
+        return cls(items_added=0, errors=errors, success=False, parsing_notes=parsing_notes)
 
 
 @dataclass
@@ -194,8 +195,9 @@ class StoreService:
                 ])
 
             items_added = 0
+            processing_errors = []
 
-            # Process each parsed item
+            # Process each parsed item (continue processing even if some fail)
             for i, parsed_item in enumerate(parsed_items):
                 try:
                     logger.info(
@@ -228,18 +230,38 @@ class StoreService:
                     logger.info("Successfully added item %d: %s", items_added, parsed_item.name)
 
                 except ValueError as validation_error:
-                    # Handle validation errors for individual items
+                    # Handle validation errors for individual items - continue processing others
+                    error_msg = f"Invalid item '{parsed_item.name}': {str(validation_error)}"
+                    processing_errors.append(error_msg)
                     logger.info(
-                        "Validation error for item '%s' in store %s: %s",
+                        "Validation error for item '%s' in store %s: %s - continuing with remaining items",
                         parsed_item.name,
                         store_id,
                         str(validation_error)
                     )
-                    return InventoryUploadResult.error_result([
-                        f"Invalid item '{parsed_item.name}': {str(validation_error)}"
-                    ])
+                except Exception as item_error:
+                    # Handle any other errors for individual items - continue processing others
+                    error_msg = f"Failed to process item '{parsed_item.name}': {str(item_error)}"
+                    processing_errors.append(error_msg)
+                    logger.info(
+                        "Processing error for item '%s' in store %s: %s - continuing with remaining items",
+                        parsed_item.name,
+                        store_id,
+                        str(item_error)
+                    )
 
-            return InventoryUploadResult.success_result(items_added)
+            # Get parsing notes from parser if available
+            parsing_notes = getattr(self.inventory_parser, 'mock_parsing_notes', None)
+
+            # Determine success - partial success is still success if any items were added
+            success = items_added > 0 or len(processing_errors) == 0
+            
+            return InventoryUploadResult(
+                items_added=items_added,
+                errors=processing_errors,
+                success=success,
+                parsing_notes=parsing_notes
+            )
 
         except AggregateNotFoundError:
             # Re-raise store not found errors so API can return 404

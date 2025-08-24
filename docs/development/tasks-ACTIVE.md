@@ -31,10 +31,10 @@
 - [x] **Clean up dependency injection** - Remove orchestrator factory functions from `app/dependencies.py`
 
 ### 2.2 Unified Creation Logic in StoreService - **NEW BEHAVIOR**  
-- [ ] **Add create_store_with_inventory method** - New method on StoreService with signature matching former orchestrator
-- [ ] **Implement conditional inventory processing** - When inventory_text provided, call existing upload_inventory method
-- [ ] **Implement result aggregation** - Count successful items and capture error message from upload results
-- [ ] **Implement StoreCreatedWithInventory event emission** - Generate event with complete operation results and publish via event bus
+- [x] **Add create_store_with_inventory method** - New method on StoreService with signature matching former orchestrator
+- [x] **Implement conditional inventory processing** - When inventory_text provided, call existing upload_inventory method
+- [x] **Implement result aggregation** - Count successful items and capture error message from upload results
+- [x] **Implement StoreCreatedWithInventory event emission** - Generate event with complete operation results and publish via event bus
 
 ### 2.3 Enhanced StoreService for Partial Success - **NEW BEHAVIOR**
 - [ ] **Enhance InventoryUploadResult** - Add `parsing_notes: Optional[str]` field to capture LLM error messages
