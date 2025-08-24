@@ -1,5 +1,5 @@
 from typing import Generator, List
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import create_engine
@@ -426,19 +426,109 @@ class TestUnifiedCreationLogic:
         self, store_service: StoreService, event_store: EventStore
     ) -> None:
         """Test that creating store without inventory text calls StoreService.create_store and returns proper result."""
-        # TODO: This will be implemented when we add create_store_with_inventory method to StoreService
-        pass
+        # Act
+        result = store_service.create_store_with_inventory(  # type: ignore[attr-defined]
+            name="CSA Box",
+            description="Weekly vegetable box", 
+            infinite_supply=False,
+            inventory_text=None
+        )
+        
+        # Assert result structure
+        assert hasattr(result, 'store_id')
+        assert hasattr(result, 'successful_items')
+        assert hasattr(result, 'error_message')
+        
+        # Assert result values
+        assert isinstance(result.store_id, type(uuid4()))
+        assert result.successful_items == 0
+        assert result.error_message is None
+        
+        # Verify StoreCreated event was persisted
+        store_events = get_typed_events(event_store, f"store-{result.store_id}", StoreCreated)
+        assert len(store_events) == 1
+        assert_event_matches(
+            store_events[0],
+            {
+                "store_id": result.store_id,
+                "name": "CSA Box",
+                "description": "Weekly vegetable box",
+                "infinite_supply": False,
+            }
+        )
 
     def test_create_store_with_inventory_processes_items_and_emits_orchestration_event(
         self, store_service: StoreService, event_store: EventStore, inventory_parser: MockInventoryParserClient
     ) -> None:
         """Test that creating store with inventory text processes items and emits StoreCreatedWithInventory event."""
-        # TODO: This will be implemented when we add create_store_with_inventory method to StoreService
-        pass
+        # Arrange - configure mock parser to return 2 items
+        parsed_items = [
+            ParsedInventoryItem(name="apples", quantity=2.0, unit="count"),
+            ParsedInventoryItem(name="bananas", quantity=3.0, unit="count"),
+        ]
+        inventory_parser.mock_results = parsed_items
+        
+        # Act
+        result = store_service.create_store_with_inventory(  # type: ignore[attr-defined]
+            name="CSA Box",
+            description="Weekly vegetable box",
+            infinite_supply=False,
+            inventory_text="2 apples\n3 bananas"
+        )
+        
+        # Assert  
+        assert isinstance(result.store_id, type(uuid4()))
+        assert result.successful_items == 2  # Mock parser returns 2 items
+        assert result.error_message is None
+        
+        # Verify StoreCreatedWithInventory event was persisted
+        orchestration_events = get_typed_events(event_store, f"unified-creation-{result.store_id}", StoreCreatedWithInventory)
+        assert len(orchestration_events) == 1
+        assert_event_matches(
+            orchestration_events[0],
+            {
+                "store_id": result.store_id,
+                "successful_items": 2,
+                "error_message": None,
+            }
+        )
 
     def test_create_store_with_failing_inventory_returns_error_in_result(
         self, store_service: StoreService, event_store: EventStore
     ) -> None:
         """Test that inventory processing failures are captured in result with simple error message."""
-        # TODO: This will be implemented when we add create_store_with_inventory method to StoreService
-        pass
+        # Arrange - Create a custom mock that fails on upload_inventory
+        class FailingInventoryService(StoreService):
+            def upload_inventory(self, store_id: UUID, inventory_text: str) -> InventoryUploadResult:
+                return InventoryUploadResult.error_result(["Simulated parsing failure"])
+        
+        failing_service = FailingInventoryService(
+            store_service.store_repository, 
+            store_service.ingredient_repository, 
+            store_service.inventory_parser,
+            store_service.store_view_store,
+            store_service.inventory_item_view_store
+        )
+        
+        # Act - processing should fail due to simulated parsing failure
+        result = failing_service.create_store_with_inventory(  # type: ignore[attr-defined]
+            name="CSA Box",
+            description="Weekly vegetable box",
+            infinite_supply=False,
+            inventory_text="some inventory text"
+        )
+        
+        # Assert - store still created successfully, but with error message
+        assert isinstance(result.store_id, type(uuid4()))
+        assert result.successful_items == 0
+        assert result.error_message is not None
+        assert "failed" in result.error_message.lower()
+        
+        # Verify store was still created
+        store_events = get_typed_events(event_store, f"store-{result.store_id}", StoreCreated)
+        assert len(store_events) == 1
+        
+        # Verify unified creation event includes error message
+        unified_events = get_typed_events(event_store, f"unified-creation-{result.store_id}", StoreCreatedWithInventory)
+        assert len(unified_events) == 1
+        assert unified_events[0].error_message is not None
