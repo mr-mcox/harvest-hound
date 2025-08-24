@@ -8,6 +8,7 @@ from uuid import UUID
 from ..events.domain_events import StoreCreatedWithInventory
 from ..infrastructure.event_publisher import EventPublisher
 from ..infrastructure.event_store import EventStore
+from ..interfaces.parser import InventoryParserProtocol
 from ..interfaces.service import StoreServiceProtocol
 
 
@@ -26,6 +27,7 @@ class StoreCreationOrchestrator:
     def __init__(
         self,
         store_service: StoreServiceProtocol,
+        inventory_parser: InventoryParserProtocol,
         event_store: EventStore,
         event_publisher: EventPublisher,
     ):
@@ -33,10 +35,12 @@ class StoreCreationOrchestrator:
         
         Args:
             store_service: Service for store operations
+            inventory_parser: Parser for inventory text processing
             event_store: Event store for persisting orchestration events
             event_publisher: Event publisher for broadcasting events
         """
         self.store_service = store_service
+        self.inventory_parser = inventory_parser
         self.event_store = event_store
         self.event_publisher = event_publisher
     
@@ -71,13 +75,25 @@ class StoreCreationOrchestrator:
         # Step 2: Conditionally process inventory if provided
         if inventory_text is not None:
             try:
-                # Process inventory using existing StoreService.upload_inventory
-                result = self.store_service.upload_inventory(store_id, inventory_text)
-                if result.success:
-                    successful_items = result.items_added
+                # Parse inventory with enhanced parsing that reports partial success
+                parsing_result = self.inventory_parser.parse_inventory_with_notes(inventory_text)
+                
+                if parsing_result.successful_items:
+                    # Process successfully parsed items using existing StoreService
+                    result = self.store_service.upload_inventory(store_id, inventory_text)
+                    if result.success:
+                        successful_items = result.items_added
+                        # Include parsing notes as error message if some items failed to parse
+                        error_message = parsing_result.parsing_notes
+                    else:
+                        # StoreService processing failed even with parsed items
+                        error_message = f"Processing failed: {'; '.join(result.errors)}"
+                        if parsing_result.parsing_notes:
+                            error_message += f". Parsing notes: {parsing_result.parsing_notes}"
                 else:
-                    # Simple error message aggregation
-                    error_message = f"Inventory processing failed: {'; '.join(result.errors)}"
+                    # No items could be parsed successfully
+                    error_message = parsing_result.parsing_notes or "No items could be parsed from inventory text"
+                    
             except Exception as e:
                 # Capture any processing failures with simple error message
                 error_message = f"Inventory processing error: {str(e)}"

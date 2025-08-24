@@ -13,7 +13,7 @@ from app.infrastructure.event_store import EventStore
 from app.infrastructure.repositories import IngredientRepository, StoreRepository
 from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
 from app.models.parsed_inventory import ParsedInventoryItem
-from app.services.inventory_parser import MockInventoryParserClient
+from app.services.inventory_parser import MockInventoryParserClient, InventoryParsingResult
 from app.services.store_creation_orchestrator import StoreCreationOrchestrator, OrchestrationResult
 from app.services.store_service import StoreService, InventoryUploadResult
 from tests.test_utils import assert_event_matches, get_typed_events
@@ -101,11 +101,12 @@ def store_service(
 @pytest.fixture
 def orchestrator(
     store_service: StoreService, 
+    inventory_parser: MockInventoryParserClient,
     event_store: EventStore,
     event_publisher: EventPublisher
 ) -> StoreCreationOrchestrator:
     """Create a StoreCreationOrchestrator for testing."""
-    return StoreCreationOrchestrator(store_service, event_store, event_publisher)
+    return StoreCreationOrchestrator(store_service, inventory_parser, event_store, event_publisher)
 
 
 class TestUnifiedCreationLogic:
@@ -180,7 +181,7 @@ class TestUnifiedCreationLogic:
         )
 
     def test_create_store_with_failing_inventory_returns_error_in_result(
-        self, store_service: StoreService, event_store: EventStore, event_publisher: EventPublisher
+        self, store_service: StoreService, inventory_parser: MockInventoryParserClient, event_store: EventStore, event_publisher: EventPublisher
     ) -> None:
         """Test that inventory processing failures are captured in result with simple error message."""
         # Create a custom mock StoreService that fails on upload_inventory
@@ -198,7 +199,7 @@ class TestUnifiedCreationLogic:
                 return store_service.get_store_inventory(store_id)
         
         failing_orchestrator = StoreCreationOrchestrator(
-            FailingStoreService(), event_store, event_publisher
+            FailingStoreService(), inventory_parser, event_store, event_publisher
         )
         
         # Act - processing should fail due to simulated parsing failure
@@ -224,3 +225,41 @@ class TestUnifiedCreationLogic:
         orchestration_events = get_typed_events(event_store, f"orchestration-{result.store_id}", StoreCreatedWithInventory)
         assert len(orchestration_events) == 1
         assert orchestration_events[0].error_message is not None
+
+    def test_create_store_with_partial_success_reports_both_success_and_errors(
+        self, orchestrator: StoreCreationOrchestrator, event_store: EventStore, inventory_parser: MockInventoryParserClient
+    ) -> None:
+        """Test partial success: some items parsed successfully, some failed with LLM notes."""
+        # Arrange - configure mock parser to return partial success with parsing notes
+        partial_success_result = InventoryParsingResult(
+            successful_items=[
+                ParsedInventoryItem(name="apples", quantity=2.0, unit="lbs"),
+                ParsedInventoryItem(name="bananas", quantity=3.0, unit="count"),
+            ],
+            parsing_notes="Could not parse 'Volvos' (not a food item) and '3 gazillion eggs' (unclear quantity)"
+        )
+        inventory_parser.mock_parsing_result = partial_success_result
+        
+        # Act
+        result = orchestrator.create_store_with_inventory(
+            name="CSA Box",
+            description="Weekly vegetable box",
+            infinite_supply=False,
+            inventory_text="2 lbs apples\n3 bananas\nVolvos\n3 gazillion eggs"
+        )
+        
+        # Assert - both successful items and error message present
+        assert isinstance(result, OrchestrationResult)
+        assert isinstance(result.store_id, UUID)
+        assert result.successful_items == 2  # 2 items successfully processed
+        assert result.error_message is not None
+        assert "Volvos" in result.error_message
+        assert "gazillion" in result.error_message
+        
+        # Verify orchestration event captures partial success
+        orchestration_events = get_typed_events(event_store, f"orchestration-{result.store_id}", StoreCreatedWithInventory)
+        assert len(orchestration_events) == 1
+        event = orchestration_events[0]
+        assert event.successful_items == 2
+        assert event.error_message is not None
+        assert "Could not parse" in event.error_message
