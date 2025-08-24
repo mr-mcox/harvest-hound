@@ -43,10 +43,10 @@
 - [x] **Return comprehensive results** - Include both successful item count and parsing notes in result
 
 ### 2.4 Enhanced Inventory Parsing with LLM Error Reporting - **NEW BEHAVIOR**
-- [ ] **Update BAML schema for error message field** - Add error_message field to BAML response schema
-- [ ] **Enhance BAML prompt engineering** - Update prompts to flag problematic items with natural language explanations (e.g., "Volvos" not a food item, "3 gazillion eggs" unclear quantity)  
-- [ ] **Update BamlInventoryParserClient** - Modify client to return enhanced parsing results with error messages
-- [ ] **Add BAML integration tests** - Test real LLM behavior with various partial success scenarios
+- [x] **Update BAML schema for error message field** - Added InventoryParsingResult class with parsing_notes field to BAML response schema
+- [x] **Enhance BAML prompt engineering** - Updated ExtractIngredientsWithNotes function with prompts to flag problematic items with natural language explanations (e.g., "Volvos" not a food item, "3 gazillion eggs" unclear quantity)  
+- [x] **Update BamlInventoryParserClient** - Modified client to return enhanced parsing results with LLM-generated error messages via parse_inventory_with_notes method
+- [x] **Add BAML integration tests** - Added integration tests for real LLM behavior with various partial success scenarios (skipped in unit tests, run with ENABLE_BAML=true)
 
 ---
 

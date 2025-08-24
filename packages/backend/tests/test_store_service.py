@@ -622,3 +622,58 @@ class TestEnhancedPartialSuccess:
         assert result.items_added == 1
         assert result.success is True
         assert result.parsing_notes == "LLM noted: 'eggs' quantity unclear, processed as 2 count"
+
+
+class TestBamlIntegrationErrorReporting:
+    """Test enhanced BAML parsing with LLM error reporting integration."""
+
+    def test_baml_parser_returns_parsing_notes_with_problematic_items(self) -> None:
+        """Test that BAML parser can flag problematic items with natural language explanations."""
+        import os
+        
+        if os.environ.get("ENABLE_BAML", "false").lower() != "true":
+            pytest.skip("BAML integration test - requires ENABLE_BAML=true and real LLM calls")
+        
+        from app.services.inventory_parser import BamlInventoryParserClient
+        
+        parser = BamlInventoryParserClient()
+        
+        # Test with mix of valid ingredients and problematic items
+        result = parser.parse_inventory_with_notes(
+            "2 apples, 1 Volvo car, 3 gazillion eggs, 1 banana"
+        )
+        
+        # Should extract valid items only
+        assert len(result.items) == 2  # apples, banana
+        valid_names = [item.name for item in result.items]
+        assert "apple" in valid_names
+        assert "banana" in valid_names
+        
+        # Should provide parsing notes about problematic items
+        assert result.parsing_notes is not None
+        notes_lower = result.parsing_notes.lower()
+        # Check that problematic items are mentioned in notes
+        assert any(term in notes_lower for term in ["volvo", "car", "gazillion"])
+
+    def test_baml_parser_clean_input_no_parsing_notes(self) -> None:
+        """Test that BAML parser returns no parsing notes for clean input."""
+        import os
+        
+        if os.environ.get("ENABLE_BAML", "false").lower() != "true":
+            pytest.skip("BAML integration test - requires ENABLE_BAML=true and real LLM calls")
+            
+        from app.services.inventory_parser import BamlInventoryParserClient
+        
+        parser = BamlInventoryParserClient()
+        
+        # Test with only valid ingredients
+        result = parser.parse_inventory_with_notes("2 apples, 1 banana")
+        
+        # Should extract both items
+        assert len(result.items) == 2
+        valid_names = [item.name for item in result.items]
+        assert "apple" in valid_names
+        assert "banana" in valid_names
+        
+        # Should have no parsing notes for clean input
+        assert result.parsing_notes is None

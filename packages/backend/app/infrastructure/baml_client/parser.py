@@ -24,9 +24,9 @@ class LlmResponseParser:
 
     def ExtractIngredients(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> typing.List["types.Ingredient"]:
+    ) -> types.InventoryParsingResult:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="request")
-        return typing.cast(typing.List["types.Ingredient"], result)
+        return typing.cast(types.InventoryParsingResult, result)
 
     
 
@@ -38,8 +38,8 @@ class LlmStreamParser:
 
     def ExtractIngredients(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> typing.List["stream_types.Ingredient"]:
+    ) -> stream_types.InventoryParsingResult:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="stream")
-        return typing.cast(typing.List["stream_types.Ingredient"], result)
+        return typing.cast(stream_types.InventoryParsingResult, result)
 
     

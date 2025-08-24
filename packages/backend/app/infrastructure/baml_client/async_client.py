@@ -75,11 +75,11 @@ class BamlAsyncClient:
     
     async def ExtractIngredients(self, text: str,
         baml_options: BamlCallOptions = {},
-    ) -> typing.List["types.Ingredient"]:
+    ) -> types.InventoryParsingResult:
         result = await self.__options.merge_options(baml_options).call_function_async(function_name="ExtractIngredients", args={
             "text": text,
         })
-        return typing.cast(typing.List["types.Ingredient"], result.cast_to(types, types, stream_types, False, __runtime__))
+        return typing.cast(types.InventoryParsingResult, result.cast_to(types, types, stream_types, False, __runtime__))
     
 
 
@@ -91,14 +91,14 @@ class BamlStreamClient:
 
     def ExtractIngredients(self, text: str,
         baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[typing.List["stream_types.Ingredient"], typing.List["types.Ingredient"]]:
+    ) -> baml_py.BamlStream[stream_types.InventoryParsingResult, types.InventoryParsingResult]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ExtractIngredients", args={
             "text": text,
         })
-        return baml_py.BamlStream[typing.List["stream_types.Ingredient"], typing.List["types.Ingredient"]](
+        return baml_py.BamlStream[stream_types.InventoryParsingResult, types.InventoryParsingResult](
           result,
-          lambda x: typing.cast(typing.List["stream_types.Ingredient"], x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(typing.List["types.Ingredient"], x.cast_to(types, types, stream_types, False, __runtime__)),
+          lambda x: typing.cast(stream_types.InventoryParsingResult, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.InventoryParsingResult, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     

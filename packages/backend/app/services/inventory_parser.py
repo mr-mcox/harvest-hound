@@ -35,25 +35,28 @@ class BamlInventoryParserClient(InventoryParserClient):
 
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text using BAML LLM service."""
-        if not inventory_text.strip():
-            return []
-
-        # Use BAML client to parse the text
-        translator = InventoryTranslator()
-        baml_ingredients = b.ExtractIngredients(inventory_text)
-
-        # Convert BAML result to domain objects
-        return [
-            translator.to_parsed_inventory_item(ingredient)
-            for ingredient in baml_ingredients
-        ]
+        result = self.parse_inventory_with_notes(inventory_text)
+        return result.items
 
     def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
         """Parse inventory text using BAML LLM service with parsing notes."""
-        items = self.parse_inventory(inventory_text)
-        # TODO: Task 2.4 will implement actual BAML parsing notes
-        # For now, return items without notes to maintain compatibility
-        return ParsedInventoryResult(items=items, parsing_notes=None)
+        if not inventory_text.strip():
+            return ParsedInventoryResult(items=[], parsing_notes=None)
+
+        # Use enhanced BAML client to parse with error reporting
+        translator = InventoryTranslator()
+        baml_result = b.ExtractIngredients(inventory_text)
+
+        # Convert BAML result to domain objects
+        items = [
+            translator.to_parsed_inventory_item(ingredient)
+            for ingredient in baml_result.ingredients
+        ]
+
+        return ParsedInventoryResult(
+            items=items, 
+            parsing_notes=baml_result.parsing_notes
+        )
 
 
 class MockInventoryParserClient(InventoryParserClient):

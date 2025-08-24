@@ -41,13 +41,17 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (1)
+# Generated classes (2)
 # #########################################################################
 
 class Ingredient(BaseModel):
     name: str
     quantity: float
     unit: str
+
+class InventoryParsingResult(BaseModel):
+    ingredients: typing.List["Ingredient"]
+    parsing_notes: typing.Optional[str] = None
 
 # #########################################################################
 # Generated type aliases (0)

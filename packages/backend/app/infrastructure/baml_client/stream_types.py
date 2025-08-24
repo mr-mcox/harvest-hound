@@ -23,13 +23,17 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (1)
+# Generated classes (2)
 # #########################################################################
 
 class Ingredient(BaseModel):
     name: typing.Optional[str] = None
     quantity: typing.Optional[float] = None
     unit: typing.Optional[str] = None
+
+class InventoryParsingResult(BaseModel):
+    ingredients: typing.List["Ingredient"]
+    parsing_notes: typing.Optional[str] = None
 
 # #########################################################################
 # Generated type aliases (0)
