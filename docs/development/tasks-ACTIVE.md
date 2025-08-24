@@ -29,15 +29,27 @@
 - [x] **Add method signature** - `create_store_with_inventory(name, description, infinite_supply, inventory_text)` returning orchestration result
 - [x] **Add orchestrator to dependency injection** - Include in `app/dependencies.py` factory functions
 
-### 2.2 Unified Creation Logic - **NEW BEHAVIOR**
+### 2.2 Unified Creation Logic - **NEW BEHAVIOR**  
 - [ ] **Implement store creation step** - Call existing StoreService.create_store and capture store_id
-- [ ] **Implement conditional inventory processing** - When inventory_text provided, parse and add items using existing StoreService.upload_inventory
-- [ ] **Implement result aggregation** - Count successful items and capture simple error message if processing fails
+- [ ] **Implement conditional inventory processing** - When inventory_text provided, call StoreService.upload_inventory 
+- [ ] **Implement result aggregation** - Count successful items and capture error message from StoreService results
 - [ ] **Implement StoreCreatedWithInventory event emission** - Generate event with complete operation results and publish via event bus
+
+### 2.2.1 Enhance StoreService for Partial Success - **NEW BEHAVIOR**
+- [ ] **Enhance InventoryUploadResult** - Add `parsing_notes: Optional[str]` field to capture LLM error messages
+- [ ] **Update StoreService.upload_inventory** - Modify to use enhanced parsing that reports partial success
+- [ ] **Remove fail-fast behavior** - Process all successfully parsed items instead of stopping on first error
+- [ ] **Return comprehensive results** - Include both successful item count and parsing notes in result
 
 ### 2.3 Simple Error Handling - **NEW BEHAVIOR**
 - [ ] **Handle store creation failures** - Return error result when store creation fails, don't proceed to inventory
 - [ ] **Handle inventory processing failures** - Store still created successfully, return success with simple error message (defer complex partial success handling)
+
+### 2.4 Enhanced Inventory Parsing with LLM Error Reporting - **NEW BEHAVIOR**
+- [ ] **Update BAML schema for partial success** - Modify BAML response to include both successful items and parsing error messages
+- [ ] **Enhance BAML prompt engineering** - Update prompts to flag problematic items with natural language explanations (e.g., "Volvos" not a food item, "3 gazillion eggs" unclear quantity)
+- [ ] **Update BamlInventoryParserClient** - Modify client to return enhanced parsing results with error messages
+- [ ] **Add BAML integration tests** - Test real LLM behavior with various partial success scenarios
 
 ---
 
