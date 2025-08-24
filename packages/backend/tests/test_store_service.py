@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated, StoreCreatedWithInventory
 from app.infrastructure.database import metadata
 from app.infrastructure.event_bus import InMemoryEventBus
 from app.infrastructure.event_publisher import EventPublisher
@@ -417,3 +417,28 @@ class TestInventoryUpload:
         assert kale_item["unit"] == "bunch"
         assert kale_item["notes"] is None
         assert "added_at" in kale_item
+
+
+class TestUnifiedCreationLogic:
+    """Test unified store creation with optional inventory processing."""
+
+    def test_create_store_without_inventory_calls_store_service_and_returns_result(
+        self, store_service: StoreService, event_store: EventStore
+    ) -> None:
+        """Test that creating store without inventory text calls StoreService.create_store and returns proper result."""
+        # TODO: This will be implemented when we add create_store_with_inventory method to StoreService
+        pass
+
+    def test_create_store_with_inventory_processes_items_and_emits_orchestration_event(
+        self, store_service: StoreService, event_store: EventStore, inventory_parser: MockInventoryParserClient
+    ) -> None:
+        """Test that creating store with inventory text processes items and emits StoreCreatedWithInventory event."""
+        # TODO: This will be implemented when we add create_store_with_inventory method to StoreService
+        pass
+
+    def test_create_store_with_failing_inventory_returns_error_in_result(
+        self, store_service: StoreService, event_store: EventStore
+    ) -> None:
+        """Test that inventory processing failures are captured in result with simple error message."""
+        # TODO: This will be implemented when we add create_store_with_inventory method to StoreService
+        pass

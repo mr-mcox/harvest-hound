@@ -5,10 +5,6 @@ from uuid import UUID
 
 from ..services.store_service import InventoryUploadResult
 
-if TYPE_CHECKING:
-    from ..services.store_creation_orchestrator import OrchestrationResult
-
-
 class StoreServiceProtocol(Protocol):
     """Protocol for store service operations."""
 
@@ -65,26 +61,3 @@ class StoreServiceProtocol(Protocol):
         """
         ...
 
-
-class StoreCreationOrchestratorProtocol(Protocol):
-    """Protocol for store creation orchestrator operations."""
-    
-    def create_store_with_inventory(
-        self,
-        name: str,
-        description: str,
-        infinite_supply: bool,
-        inventory_text: Optional[str],
-    ) -> "OrchestrationResult":
-        """Create store and optionally process inventory in unified operation.
-        
-        Args:
-            name: Store name
-            description: Store description  
-            infinite_supply: Whether store has infinite supply
-            inventory_text: Optional inventory text to process
-            
-        Returns:
-            Orchestration result with store_id, successful_items, and error_message
-        """
-        ...
