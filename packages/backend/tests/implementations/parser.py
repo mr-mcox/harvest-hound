@@ -1,11 +1,8 @@
 """Test implementations of inventory parser protocols."""
 
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional
 
 from app.models.parsed_inventory import ParsedInventoryItem
-
-if TYPE_CHECKING:
-    from app.services.inventory_parser import InventoryParsingResult
 
 
 class MockInventoryParser:
@@ -48,12 +45,6 @@ class MockInventoryParser:
         }
         
         return default_fixtures.get(inventory_text, [])
-    
-    def parse_inventory_with_notes(self, inventory_text: str) -> "InventoryParsingResult":
-        """Parse inventory with notes support - delegates to existing method."""
-        from app.services.inventory_parser import InventoryParsingResult
-        items = self.parse_inventory(inventory_text)
-        return InventoryParsingResult(successful_items=items, parsing_notes=None)
 
     @property
     def call_count(self) -> int:
@@ -82,14 +73,6 @@ class FailingMockInventoryParser:
             raise ConnectionError("Network error connecting to LLM service")
         else:
             raise RuntimeError(f"Unknown error type: {self.error_type}")
-    
-    def parse_inventory_with_notes(self, inventory_text: str) -> "InventoryParsingResult":
-        """Simulate parsing failures with notes support."""
-        # Same failures as parse_inventory
-        self.parse_inventory(inventory_text)
-        # Should never reach here due to exceptions above
-        from app.services.inventory_parser import InventoryParsingResult
-        return InventoryParsingResult(successful_items=[], parsing_notes=None)
 
 
 class ConfigurableMockInventoryParser:
@@ -133,9 +116,3 @@ class ConfigurableMockInventoryParser:
             return []
             
         return self._responses.get(inventory_text, [])
-    
-    def parse_inventory_with_notes(self, inventory_text: str) -> "InventoryParsingResult":
-        """Parse inventory with notes using configured responses or failures."""
-        from app.services.inventory_parser import InventoryParsingResult
-        items = self.parse_inventory(inventory_text)
-        return InventoryParsingResult(successful_items=items, parsing_notes=None)
