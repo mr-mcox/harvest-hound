@@ -37,10 +37,10 @@
 - [x] **Implement StoreCreatedWithInventory event emission** - Generate event with complete operation results and publish via event bus
 
 ### 2.3 Enhanced StoreService for Partial Success - **NEW BEHAVIOR**
-- [ ] **Enhance InventoryUploadResult** - Add `parsing_notes: Optional[str]` field to capture LLM error messages
-- [ ] **Update StoreService.upload_inventory** - Modify to use enhanced parsing that reports partial success
-- [ ] **Remove fail-fast behavior** - Process all successfully parsed items instead of stopping on first error
-- [ ] **Return comprehensive results** - Include both successful item count and parsing notes in result
+- [x] **Enhance InventoryUploadResult** - Add `parsing_notes: Optional[str]` field to capture LLM error messages
+- [x] **Update StoreService.upload_inventory** - Modify to use enhanced parsing that reports partial success
+- [x] **Remove fail-fast behavior** - Process all successfully parsed items instead of stopping on first error
+- [x] **Return comprehensive results** - Include both successful item count and parsing notes in result
 
 ### 2.4 Enhanced Inventory Parsing with LLM Error Reporting - **NEW BEHAVIOR**
 - [ ] **Update BAML schema for error message field** - Add error_message field to BAML response schema

@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from ..infrastructure.baml_client import b
 from ..infrastructure.translation import InventoryTranslator
+from ..interfaces.parser import ParsedInventoryResult
 from ..models.parsed_inventory import ParsedInventoryItem
 
 
@@ -13,6 +14,11 @@ class InventoryParserClient(ABC):
     @abstractmethod
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text into structured items."""
+        pass
+
+    @abstractmethod
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Parse inventory text and return items with parsing notes."""
         pass
 
 
@@ -42,6 +48,13 @@ class BamlInventoryParserClient(InventoryParserClient):
             for ingredient in baml_ingredients
         ]
 
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Parse inventory text using BAML LLM service with parsing notes."""
+        items = self.parse_inventory(inventory_text)
+        # TODO: Task 2.4 will implement actual BAML parsing notes
+        # For now, return items without notes to maintain compatibility
+        return ParsedInventoryResult(items=items, parsing_notes=None)
+
 
 class MockInventoryParserClient(InventoryParserClient):
     """Test implementation for inventory parser client."""
@@ -55,6 +68,11 @@ class MockInventoryParserClient(InventoryParserClient):
         if not inventory_text.strip():
             return []
         return self.mock_results
+
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Return pre-configured mock results with parsing notes."""
+        items = self.parse_inventory(inventory_text)
+        return ParsedInventoryResult(items=items, parsing_notes=self.mock_parsing_notes)
 
 
 def create_inventory_parser_client() -> InventoryParserClient:

@@ -168,9 +168,13 @@ class StoreService:
             # Load the store
             store = self.store_repository.load(store_id)
 
-            # Parse the inventory text using LLM
+            # Parse the inventory text using LLM (with notes)
+            parsing_notes = None  # Initialize outside try block
             try:
-                parsed_items = self._parse_inventory_text(inventory_text)
+                parsing_result = self.inventory_parser.parse_inventory_with_notes(inventory_text)
+                parsed_items = parsing_result.items
+                parsing_notes = parsing_result.parsing_notes
+                
                 logger.info(
                     "LLM parsing succeeded for store %s. Found %d items: %s",
                     store_id,
@@ -249,9 +253,6 @@ class StoreService:
                         store_id,
                         str(item_error)
                     )
-
-            # Get parsing notes from parser if available
-            parsing_notes = getattr(self.inventory_parser, 'mock_parsing_notes', None)
 
             # Determine success - partial success is still success if any items were added
             success = items_added > 0 or len(processing_errors) == 0
