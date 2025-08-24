@@ -540,3 +540,85 @@ class TestUnifiedCreationLogic:
         unified_events = get_typed_events(event_store, f"unified-creation-{result.store_id}", StoreCreatedWithInventory)
         assert len(unified_events) == 1
         assert unified_events[0].error_message is not None
+
+
+class TestEnhancedPartialSuccess:
+    """Test enhanced StoreService for partial success scenarios."""
+
+    def test_inventory_upload_result_includes_parsing_notes_field(self) -> None:
+        """Test that InventoryUploadResult includes parsing_notes field for LLM error messages."""
+        # Act - create result with parsing notes
+        result = InventoryUploadResult(
+            items_added=2, 
+            errors=["Item validation failed"], 
+            success=False,
+            parsing_notes="LLM reported: 'Volvos' not a food item"  # type: ignore[call-arg]
+        )
+        
+        # Assert - parsing_notes field exists and works
+        assert hasattr(result, 'parsing_notes')
+        assert result.parsing_notes == "LLM reported: 'Volvos' not a food item"
+
+    def test_upload_inventory_processes_all_valid_items_despite_individual_failures(
+        self, store_service: StoreService, inventory_parser: MockInventoryParserClient
+    ) -> None:
+        """Test that upload_inventory processes all successfully parsed items instead of stopping on first error."""
+        # Arrange
+        store_id = store_service.create_store("Test Store")
+        
+        # Create a failing service that will fail on specific ingredient name
+        class PartiallyFailingService(StoreService):
+            def _create_or_get_ingredient(self, name: str, default_unit: str) -> UUID:
+                if name == "problematic_item":
+                    raise ValueError("Simulated ingredient creation failure")
+                return super()._create_or_get_ingredient(name, default_unit)
+        
+        failing_service = PartiallyFailingService(
+            store_service.store_repository,
+            store_service.ingredient_repository,
+            inventory_parser,
+            store_service.store_view_store,
+            store_service.inventory_item_view_store,
+            store_service.event_store,
+            store_service.event_publisher
+        )
+        
+        # Configure parser to return valid parsed items
+        parsed_items = [
+            ParsedInventoryItem(name="valid_item_1", quantity=2.0, unit="pound"),
+            ParsedInventoryItem(name="problematic_item", quantity=1.0, unit="count"),  # Will fail in ingredient creation
+            ParsedInventoryItem(name="valid_item_2", quantity=3.0, unit="bunch"),
+        ]
+        inventory_parser.mock_results = parsed_items
+        
+        # Act - currently this will fail fast when ingredient creation fails
+        result = failing_service.upload_inventory(store_id, "2 lbs valid_item_1\n1 problematic_item\n3 bunches valid_item_2")
+        
+        # Assert - should process valid items despite invalid ones  
+        assert result.items_added == 2  # Should add both valid items
+        assert result.success is True  # Partial success is still success
+        assert len(result.errors) == 1  # Should capture the invalid item error
+        assert "problematic_item" in str(result.errors[0])
+
+    def test_upload_inventory_returns_comprehensive_results_with_parsing_notes(
+        self, store_service: StoreService, inventory_parser: MockInventoryParserClient
+    ) -> None:
+        """Test that upload_inventory returns comprehensive results including both successful item count and parsing notes."""
+        # Arrange
+        store_id = store_service.create_store("Test Store")
+        
+        # Configure parser to return items with parsing notes
+        parsed_items = [
+            ParsedInventoryItem(name="apples", quantity=2.0, unit="count"),
+        ]
+        inventory_parser.mock_results = parsed_items
+        # Configure mock to simulate parsing notes from LLM
+        inventory_parser.mock_parsing_notes = "LLM noted: 'eggs' quantity unclear, processed as 2 count"
+        
+        # Act  
+        result = store_service.upload_inventory(store_id, "2 apples and some eggs")
+        
+        # Assert
+        assert result.items_added == 1
+        assert result.success is True
+        assert result.parsing_notes == "LLM noted: 'eggs' quantity unclear, processed as 2 count"  # type: ignore[attr-defined]

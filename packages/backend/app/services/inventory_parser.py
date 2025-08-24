@@ -48,6 +48,7 @@ class MockInventoryParserClient(InventoryParserClient):
 
     def __init__(self, mock_results: Optional[List[ParsedInventoryItem]] = None):
         self.mock_results = mock_results or []
+        self.mock_parsing_notes: Optional[str] = None
 
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Return pre-configured mock results."""
