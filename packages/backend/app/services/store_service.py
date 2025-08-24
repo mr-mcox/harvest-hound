@@ -1,8 +1,12 @@
+import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
+from ..events.domain_events import StoreCreatedWithInventory
+from ..infrastructure.event_publisher import EventPublisher
+from ..infrastructure.event_store import EventStore
 from ..infrastructure.repositories import AggregateNotFoundError
 from ..interfaces.parser import InventoryParserProtocol
 from ..interfaces.repository import (
@@ -39,6 +43,15 @@ class InventoryUploadResult:
         return cls(items_added=0, errors=errors, success=False)
 
 
+@dataclass
+class UnifiedCreationResult:
+    """Result of unified store creation with inventory processing."""
+    
+    store_id: UUID
+    successful_items: int
+    error_message: Optional[str] = None
+
+
 class StoreService:
     """Application service for inventory store operations."""
 
@@ -49,12 +62,16 @@ class StoreService:
         inventory_parser: InventoryParserProtocol,
         store_view_store: StoreViewStoreProtocol,
         inventory_item_view_store: InventoryItemViewStoreProtocol,
+        event_store: Optional[EventStore] = None,
+        event_publisher: Optional[EventPublisher] = None,
     ):
         self.store_repository = store_repository
         self.ingredient_repository = ingredient_repository
         self.inventory_parser = inventory_parser
         self.store_view_store = store_view_store
         self.inventory_item_view_store = inventory_item_view_store
+        self.event_store = event_store
+        self.event_publisher = event_publisher
 
     def create_store(
         self,
@@ -77,6 +94,68 @@ class StoreService:
         self.store_repository.save(store, events)
 
         return store_id
+
+    def create_store_with_inventory(
+        self,
+        name: str,
+        description: str,
+        infinite_supply: bool,
+        inventory_text: Optional[str],
+    ) -> UnifiedCreationResult:
+        """Create store and optionally process inventory in unified operation."""
+        # Step 1: Create store using existing create_store method
+        store_id = self.create_store(
+            name=name,
+            description=description,
+            infinite_supply=infinite_supply,
+        )
+        
+        successful_items = 0
+        error_message = None
+        
+        # Step 2: Conditionally process inventory if provided
+        if inventory_text is not None:
+            try:
+                # Process inventory using existing upload_inventory method
+                result = self.upload_inventory(store_id, inventory_text)
+                if result.success:
+                    successful_items = result.items_added
+                else:
+                    # Simple error message aggregation
+                    error_message = f"Inventory processing failed: {'; '.join(result.errors)}"
+            except Exception as e:
+                # Capture any processing failures with simple error message
+                error_message = f"Inventory processing error: {str(e)}"
+        
+        # Step 3: Create and persist StoreCreatedWithInventory event
+        unified_event = StoreCreatedWithInventory(
+            store_id=store_id,
+            successful_items=successful_items,
+            error_message=error_message,
+        )
+        
+        # Persist event in event store if available
+        if self.event_store:
+            self.event_store.append_event(f"unified-creation-{store_id}", unified_event)
+        
+        # Publish event via event bus if available
+        if self.event_publisher:
+            try:
+                # Run async publish in sync context
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(self.event_publisher.publish_async(unified_event))
+            except RuntimeError:
+                # No event loop running, create one
+                asyncio.run(self.event_publisher.publish_async(unified_event))
+            except Exception:
+                # If event publishing fails, don't fail the operation
+                pass
+        
+        return UnifiedCreationResult(
+            store_id=store_id,
+            successful_items=successful_items,
+            error_message=error_message,
+        )
 
     def upload_inventory(
         self,

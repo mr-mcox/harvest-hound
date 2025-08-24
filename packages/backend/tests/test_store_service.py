@@ -15,7 +15,7 @@ from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStor
 from app.models.parsed_inventory import ParsedInventoryItem
 from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from app.services.inventory_parser import MockInventoryParserClient
-from app.services.store_service import InventoryUploadResult, StoreService
+from app.services.store_service import InventoryUploadResult, StoreService, UnifiedCreationResult
 from tests.test_utils import assert_event_matches, get_typed_events
 
 
@@ -112,14 +112,20 @@ def store_service(
     inventory_parser: MockInventoryParserClient,
     store_view_store: StoreViewStore,
     inventory_item_view_store: InventoryItemViewStore,
+    event_store: EventStore,
+    shared_event_bus: InMemoryEventBus,
 ) -> StoreService:
     """Create a StoreService for testing."""
+    from app.infrastructure.event_publisher import EventPublisher
+    event_publisher = EventPublisher(shared_event_bus)
     return StoreService(
         store_repository, 
         ingredient_repository, 
         inventory_parser,
         store_view_store,
-        inventory_item_view_store
+        inventory_item_view_store,
+        event_store,
+        event_publisher
     )
 
 
@@ -427,7 +433,7 @@ class TestUnifiedCreationLogic:
     ) -> None:
         """Test that creating store without inventory text calls StoreService.create_store and returns proper result."""
         # Act
-        result = store_service.create_store_with_inventory(  # type: ignore[attr-defined]
+        result = store_service.create_store_with_inventory(
             name="CSA Box",
             description="Weekly vegetable box", 
             infinite_supply=False,
@@ -469,7 +475,7 @@ class TestUnifiedCreationLogic:
         inventory_parser.mock_results = parsed_items
         
         # Act
-        result = store_service.create_store_with_inventory(  # type: ignore[attr-defined]
+        result = store_service.create_store_with_inventory(
             name="CSA Box",
             description="Weekly vegetable box",
             infinite_supply=False,
@@ -507,11 +513,13 @@ class TestUnifiedCreationLogic:
             store_service.ingredient_repository, 
             store_service.inventory_parser,
             store_service.store_view_store,
-            store_service.inventory_item_view_store
+            store_service.inventory_item_view_store,
+            store_service.event_store,
+            store_service.event_publisher
         )
         
         # Act - processing should fail due to simulated parsing failure
-        result = failing_service.create_store_with_inventory(  # type: ignore[attr-defined]
+        result = failing_service.create_store_with_inventory(
             name="CSA Box",
             description="Weekly vegetable box",
             infinite_supply=False,

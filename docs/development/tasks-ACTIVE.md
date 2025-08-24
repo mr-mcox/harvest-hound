@@ -25,10 +25,10 @@
 **Goal**: Enhance StoreService with unified creation flow and eliminate unnecessary orchestrator complexity
 
 ### 2.1 Remove StoreCreationOrchestrator - **REFACTOR**
-- [ ] **Migrate orchestrator tests to StoreService tests** - Move test cases from `test_store_creation_orchestrator.py` to `test_store_service.py`
-- [ ] **Update API endpoint imports** - Remove orchestrator imports from `api.py` and `dependencies.py`
-- [ ] **Delete orchestrator files** - Remove `app/services/store_creation_orchestrator.py` and `tests/test_store_creation_orchestrator.py`
-- [ ] **Clean up dependency injection** - Remove orchestrator factory functions from `app/dependencies.py`
+- [x] **Migrate orchestrator tests to StoreService tests** - Move test cases from `test_store_creation_orchestrator.py` to `test_store_service.py`
+- [x] **Update API endpoint imports** - Remove orchestrator imports from `api.py` and `dependencies.py`
+- [x] **Delete orchestrator files** - Remove `app/services/store_creation_orchestrator.py` and `tests/test_store_creation_orchestrator.py`
+- [x] **Clean up dependency injection** - Remove orchestrator factory functions from `app/dependencies.py`
 
 ### 2.2 Unified Creation Logic in StoreService - **NEW BEHAVIOR**  
 - [ ] **Add create_store_with_inventory method** - New method on StoreService with signature matching former orchestrator

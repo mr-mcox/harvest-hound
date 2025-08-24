@@ -189,6 +189,8 @@ def get_store_service(
     inventory_parser: Annotated[InventoryParserProtocol, Depends(get_inventory_parser)],
     store_view_store: Annotated[StoreViewStoreProtocol, Depends(get_store_view_store)],
     inventory_item_view_store: Annotated[InventoryItemViewStoreProtocol, Depends(get_inventory_item_view_store)],
+    event_store: Annotated[EventStore, Depends(get_event_store)],
+    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)],
 ) -> StoreServiceProtocol:
     """Provide store service implementation."""
     return StoreService(
@@ -197,6 +199,8 @@ def get_store_service(
         inventory_parser,
         store_view_store,
         inventory_item_view_store,
+        event_store,
+        event_publisher,
     )
 
 
