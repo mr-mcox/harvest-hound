@@ -30,7 +30,7 @@
 - [x] **Delete orchestrator files** - Remove `app/services/store_creation_orchestrator.py` and `tests/test_store_creation_orchestrator.py`
 - [x] **Clean up dependency injection** - Remove orchestrator factory functions from `app/dependencies.py`
 
-### 2.2 Unified Creation Logic in StoreService - **NEW BEHAVIOR**  
+### 2.2 Unified Creation Logic in StoreService - **NEW BEHAVIOR**
 - [x] **Add create_store_with_inventory method** - New method on StoreService with signature matching former orchestrator
 - [x] **Implement conditional inventory processing** - When inventory_text provided, call existing upload_inventory method
 - [x] **Implement result aggregation** - Count successful items and capture error message from upload results
@@ -44,7 +44,7 @@
 
 ### 2.4 Enhanced Inventory Parsing with LLM Error Reporting - **NEW BEHAVIOR**
 - [x] **Update BAML schema for error message field** - Added InventoryParsingResult class with parsing_notes field to BAML response schema
-- [x] **Enhance BAML prompt engineering** - Updated ExtractIngredientsWithNotes function with prompts to flag problematic items with natural language explanations (e.g., "Volvos" not a food item, "3 gazillion eggs" unclear quantity)  
+- [x] **Enhance BAML prompt engineering** - Updated ExtractIngredientsWithNotes function with prompts to flag problematic items with natural language explanations (e.g., "Volvos" not a food item, "3 gazillion eggs" unclear quantity)
 - [x] **Update BamlInventoryParserClient** - Modified client to return enhanced parsing results with LLM-generated error messages via parse_inventory_with_notes method
 - [x] **Add BAML integration tests** - Added integration tests for real LLM behavior with various partial success scenarios (skipped in unit tests, run with ENABLE_BAML=true)
 
@@ -61,8 +61,6 @@
 ### 3.2 WebSocket Event Broadcasting - **NEW BEHAVIOR**
 - [ ] **Add StoreCreatedWithInventory event handler** - Create handler in `app/projections/handlers.py` to broadcast new event type
 - [ ] **Register WebSocket event mapping** - Add event type to WebSocket event catalog in connection manager
-- [ ] **Test event propagation** - Ensure events reach connected WebSocket clients within 100ms
-
 ---
 
 ## Task 4: Frontend Component Foundation (TIP Section 3: Integration Points)

@@ -150,16 +150,11 @@ class TestWebSocketEventBroadcasting:
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
             
-            # Should receive multiple messages: StoreCreated, InventoryItemAdded (2x), and StoreCreatedWithInventory
+            # Should receive messages: StoreCreated, InventoryItemAdded (2x), StoreCreatedWithInventory
             messages = []
-            try:
-                # Collect all WebSocket messages (we expect 4 total messages)
-                for _ in range(10):  # Try up to 10 messages, break early if no more
-                    ws_message = websocket.receive_json()
-                    messages.append(ws_message)
-            except Exception:
-                # No more messages available
-                pass
+            for _ in range(4):  # Expect 4 messages: StoreCreated + 2 InventoryItemAdded + StoreCreatedWithInventory
+                ws_message = websocket.receive_json()
+                messages.append(ws_message)
             
             # Find the StoreCreatedWithInventory message
             store_with_inventory_messages = [
@@ -167,7 +162,7 @@ class TestWebSocketEventBroadcasting:
                 if msg.get("type") == "StoreCreatedWithInventory"
             ]
             
-            assert len(store_with_inventory_messages) == 1
+            assert len(store_with_inventory_messages) == 1, f"Expected 1 StoreCreatedWithInventory event but got message types: {[msg.get('type') for msg in messages]}"
             ws_message = store_with_inventory_messages[0]
             
             # Verify the message structure
