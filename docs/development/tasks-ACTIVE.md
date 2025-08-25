@@ -54,9 +54,9 @@
 **Goal**: Enhance POST /stores endpoint to support unified creation and maintain backward compatibility
 
 ### 3.1 Enhanced Endpoint Logic - **NEW BEHAVIOR**
-- [ ] **Update create_store endpoint implementation** - Check for optional inventory_text field in request
-- [ ] **Implement conditional unified creation** - Route to StoreService.create_store_with_inventory when inventory_text present, otherwise use existing create_store flow
-- [ ] **Update response construction** - Include unified creation results (successful_items, error_message) in response when applicable
+- [x] **Update create_store endpoint implementation** - Check for optional inventory_text field in request
+- [x] **Implement conditional unified creation** - Route to StoreService.create_store_with_inventory when inventory_text present, otherwise use existing create_store flow
+- [x] **Update response construction** - Include unified creation results (successful_items, error_message) in response when applicable
 
 ### 3.2 WebSocket Event Broadcasting - **NEW BEHAVIOR**
 - [ ] **Add StoreCreatedWithInventory event handler** - Create handler in `app/projections/handlers.py` to broadcast new event type
