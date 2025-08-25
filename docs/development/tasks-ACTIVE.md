@@ -59,8 +59,8 @@
 - [x] **Update response construction** - Include unified creation results (successful_items, error_message) in response when applicable
 
 ### 3.2 WebSocket Event Broadcasting - **NEW BEHAVIOR**
-- [ ] **Add StoreCreatedWithInventory event handler** - Create handler in `app/projections/handlers.py` to broadcast new event type
-- [ ] **Register WebSocket event mapping** - Add event type to WebSocket event catalog in connection manager
+- [x] **Add StoreCreatedWithInventory event handler** - Create handler in `app/projections/handlers.py` to broadcast new event type
+- [x] **Register WebSocket event mapping** - Add event type to WebSocket event catalog in connection manager
 ---
 
 ## Task 4: Frontend Component Foundation (TIP Section 3: Integration Points)
