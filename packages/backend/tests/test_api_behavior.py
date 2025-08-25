@@ -1,4 +1,5 @@
 import asyncio
+from typing import Generator
 from uuid import UUID, uuid4
 
 import pytest
@@ -11,9 +12,12 @@ from app.models.parsed_inventory import ParsedInventoryItem
 from app.services.inventory_parser import MockInventoryParserClient
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
+@pytest.fixture(scope="function")  # Changed to function scope for better isolation
+def client() -> Generator[TestClient, None, None]:
     """Create test client with proper startup initialization."""
+    # Clear any existing dependency overrides from previous tests
+    app.dependency_overrides.clear()
+    
     # TestClient with app will automatically trigger startup event
     # which initializes projection registry and event bus in app state
     client = TestClient(app)
@@ -22,7 +26,10 @@ def client() -> TestClient:
     if not _startup_completed:
         asyncio.run(startup_event())
         
-    return client
+    yield client
+    
+    # Clean up after each test
+    app.dependency_overrides.clear()
 
 
 class TestStoreCreation:
