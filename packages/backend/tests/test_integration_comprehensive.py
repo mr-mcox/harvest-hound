@@ -517,3 +517,164 @@ class TestServiceRobustness:
             test_store = next((s for s in stores if s["store_id"] == str(store_id)), None)
             assert test_store is not None
             assert test_store["item_count"] == 2
+
+
+class TestUnifiedStoreCreationIntegration:
+    """Integration tests for unified store creation with inventory functionality."""
+
+    def test_unified_creation_flow_generates_correct_events_and_responses(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test complete unified creation flow with events and response structure."""
+        # Given - Create store with inventory in single API call
+        store_data = {
+            "name": "Test Unified Store",
+            "description": "Store created with unified flow",
+            "infinite_supply": False,
+            "inventory_text": "2 lbs carrots, 1 bunch kale"
+        }
+        
+        # When - Make unified creation request
+        response = test_client_with_mocks.post("/stores", json=store_data)
+        
+        # Then - Should succeed with unified creation response
+        assert response.status_code == 201
+        response_data = response.json()
+        
+        # Verify response structure includes unified creation results
+        assert "store_id" in response_data
+        assert "successful_items" in response_data
+        assert "error_message" in response_data
+        
+        # Verify unified creation results
+        assert response_data["successful_items"] == 2  # carrots and kale
+        assert response_data["error_message"] is None
+        
+        # Verify store was created with correct data
+        store_id = UUID(response_data["store_id"])
+        stores = get_all_stores(test_client_with_mocks)
+        created_store = next((s for s in stores if s["store_id"] == str(store_id)), None)
+        assert created_store is not None
+        assert created_store["name"] == "Test Unified Store"
+        
+        # Verify inventory was processed
+        inventory_items = get_store_inventory(test_client_with_mocks, store_id)
+        assert len(inventory_items) == 2
+        
+        # Verify specific items were created
+        carrot_item = find_inventory_item_by_name(inventory_items, "carrot")
+        kale_item = find_inventory_item_by_name(inventory_items, "kale")
+        assert carrot_item["quantity"] == 2.0
+        assert kale_item["quantity"] == 1.0
+
+    def test_unified_creation_with_partial_parsing_errors_still_creates_store(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test unified creation with parsing errors still creates store successfully."""
+        # Override the inventory parser to return parsing errors
+        from app.dependencies import get_inventory_parser
+        from app.models.parsed_inventory import ParsedInventoryItem
+        from tests.implementations.parser import MockInventoryParser
+        
+        def override_inventory_parser() -> MockInventoryParser:
+            # Return parser that has mixed success/failure  
+            return MockInventoryParser({
+                "2 lbs carrots, 1 Volvo car, 1 bunch kale": [
+                    ParsedInventoryItem(name="carrot", quantity=2.0, unit="pound"),
+                    # Volvo car will be skipped by parser (not food)
+                    ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+                ]
+            })
+        
+        # Apply override for this test
+        app.dependency_overrides[get_inventory_parser] = override_inventory_parser
+        
+        try:
+            # Given - Create store with inventory that has parsing issues
+            store_data = {
+                "name": "Store with Parsing Issues",
+                "description": "Store with mixed valid/invalid inventory",
+                "infinite_supply": False,
+                "inventory_text": "2 lbs carrots, 1 Volvo car, 1 bunch kale"  # Mix of food and non-food
+            }
+            
+            # When - Make unified creation request
+            response = test_client_with_mocks.post("/stores", json=store_data)
+            
+            # Then - Should still create store successfully
+            assert response.status_code == 201
+            response_data = response.json()
+            
+            # Store should be created
+            assert "store_id" in response_data
+            store_id = UUID(response_data["store_id"])
+            
+            # Should have successfully processed valid items
+            assert response_data["successful_items"] == 2  # carrots and kale (Volvo filtered out)
+            
+            # Error message may or may not be present depending on implementation
+            # The key requirement is that store creation succeeded despite parsing issues
+            
+            # Verify store exists
+            stores = get_all_stores(test_client_with_mocks)
+            created_store = next((s for s in stores if s["store_id"] == str(store_id)), None)
+            assert created_store is not None
+            assert created_store["name"] == "Store with Parsing Issues"
+            
+            # Verify valid inventory was processed
+            inventory_items = get_store_inventory(test_client_with_mocks, store_id)
+            assert len(inventory_items) == 2  # Only carrots and kale
+            
+            carrot_item = find_inventory_item_by_name(inventory_items, "carrot")
+            kale_item = find_inventory_item_by_name(inventory_items, "kale")
+            assert carrot_item["quantity"] == 2.0
+            assert kale_item["quantity"] == 1.0
+            
+        finally:
+            # Clean up override
+            if get_inventory_parser in app.dependency_overrides:
+                del app.dependency_overrides[get_inventory_parser]
+
+    def test_unified_creation_websocket_events_propagate_correctly(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test that unified creation generates correct WebSocket events."""
+        # Connect to WebSocket before creating store with inventory
+        with test_client_with_mocks.websocket_connect("/ws") as websocket:
+            # Create store with inventory via unified creation
+            store_data = {
+                "name": "WebSocket Test Store",
+                "description": "Testing unified creation WebSocket events",
+                "infinite_supply": False,
+                "inventory_text": "2 lbs carrots, 1 bunch kale"
+            }
+            response = test_client_with_mocks.post("/stores", json=store_data)
+            assert response.status_code == 201
+            
+            # Should receive multiple messages: StoreCreated, InventoryItemAdded (2x), StoreCreatedWithInventory
+            messages = []
+            for _ in range(4):  # Expect 4 messages from unified creation
+                ws_message = websocket.receive_json()
+                messages.append(ws_message)
+            
+            # Verify we get all expected event types
+            message_types = [msg["type"] for msg in messages]
+            assert "StoreCreated" in message_types
+            assert "InventoryItemAdded" in message_types  
+            assert "StoreCreatedWithInventory" in message_types
+            
+            # Count InventoryItemAdded events (should be 2)
+            inventory_added_count = sum(1 for msg_type in message_types if msg_type == "InventoryItemAdded")
+            assert inventory_added_count == 2
+            
+            # Find and verify StoreCreatedWithInventory event
+            store_with_inventory_events = [
+                msg for msg in messages 
+                if msg["type"] == "StoreCreatedWithInventory"
+            ]
+            assert len(store_with_inventory_events) == 1
+            
+            event_data = store_with_inventory_events[0]["data"]
+            assert event_data["successful_items"] == 2  # carrots and kale
+            assert event_data["error_message"] is None
+            assert "store_id" in event_data
