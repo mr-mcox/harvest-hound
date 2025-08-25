@@ -7,7 +7,7 @@ transforming domain events into WebSocket messages and broadcasting them to appr
 
 from typing import Any, Dict
 
-from app.events.domain_events import DomainEvent, InventoryItemAdded, StoreCreated
+from app.events.domain_events import DomainEvent, InventoryItemAdded, StoreCreated, StoreCreatedWithInventory
 from app.infrastructure.websocket_manager import ConnectionManager, WebSocketMessage
 
 
@@ -68,6 +68,27 @@ class WebSocketEventSubscriber:
                 "unit": event.unit,
                 "notes": event.notes,
                 "added_at": event.added_at.isoformat(),
+            },
+            room="default"
+        )
+        
+        # Broadcast to all connections in default room
+        await self.connection_manager.broadcast_to_room(ws_message, "default")
+    
+    async def handle_store_created_with_inventory(self, event: StoreCreatedWithInventory) -> None:
+        """
+        Handle StoreCreatedWithInventory events and broadcast to WebSocket clients.
+        
+        Args:
+            event: The StoreCreatedWithInventory domain event
+        """
+        # Transform domain event to WebSocket message
+        ws_message = WebSocketMessage(
+            type="StoreCreatedWithInventory",
+            data={
+                "store_id": str(event.store_id),
+                "successful_items": event.successful_items,
+                "error_message": event.error_message,
             },
             room="default"
         )

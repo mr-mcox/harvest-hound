@@ -11,23 +11,6 @@ if TYPE_CHECKING:
 class StoreServiceProtocol(Protocol):
     """Protocol for store service operations."""
 
-    def create_store(
-        self,
-        name: str,
-        description: str = "",
-        infinite_supply: bool = False,
-    ) -> UUID:
-        """Create a new inventory store.
-        
-        Args:
-            name: Store name
-            description: Optional store description
-            infinite_supply: Whether store has infinite supply
-            
-        Returns:
-            UUID of the created store
-        """
-        ...
 
     def upload_inventory(
         self,

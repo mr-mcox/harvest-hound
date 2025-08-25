@@ -180,7 +180,7 @@ async def setup_event_bus_subscribers(
     # Subscribe WebSocket event subscriber to domain events
     await event_bus.subscribe(StoreCreated, websocket_event_subscriber.handle_store_created)
     await event_bus.subscribe(InventoryItemAdded, websocket_event_subscriber.handle_inventory_item_added)
-    # TODO: Add StoreCreatedWithInventory event subscriber in NEW BEHAVIOR task
+    await event_bus.subscribe(StoreCreatedWithInventory, websocket_event_subscriber.handle_store_created_with_inventory)
 
 
 def get_store_service(

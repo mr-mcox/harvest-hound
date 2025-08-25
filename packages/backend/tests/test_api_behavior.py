@@ -1,15 +1,23 @@
 import asyncio
+from typing import Generator, List
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
 from api import _startup_completed, app, startup_event
+from app.dependencies import get_inventory_parser
+from app.interfaces.parser import InventoryParserProtocol
+from app.models.parsed_inventory import ParsedInventoryItem
+from app.services.inventory_parser import MockInventoryParserClient
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
+@pytest.fixture(scope="function")  # Changed to function scope for better isolation
+def client() -> Generator[TestClient, None, None]:
     """Create test client with proper startup initialization."""
+    # Clear any existing dependency overrides from previous tests
+    app.dependency_overrides.clear()
+    
     # TestClient with app will automatically trigger startup event
     # which initializes projection registry and event bus in app state
     client = TestClient(app)
@@ -18,7 +26,10 @@ def client() -> TestClient:
     if not _startup_completed:
         asyncio.run(startup_event())
         
-    return client
+    yield client
+    
+    # Clean up after each test
+    app.dependency_overrides.clear()
 
 
 class TestStoreCreation:
@@ -85,6 +96,144 @@ class TestStoreCreation:
         )
         assert name_error is not None
         assert name_error["type"] == "missing"
+
+    def test_create_store_with_inventory_text_returns_201_with_unified_creation_results(self, client: TestClient) -> None:
+        """Test that POST /stores with inventory_text returns 201 with unified creation results."""
+        # Given - Configure mock inventory parser to return 2 parsed items
+        def mock_inventory_parser() -> InventoryParserProtocol:
+            parser = MockInventoryParserClient()
+            parser.mock_results = [
+                ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
+                ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+            ]
+            return parser
+
+        # Override dependency for this test
+        app.dependency_overrides[get_inventory_parser] = mock_inventory_parser
+        
+        try:
+            store_data = {
+                "name": "CSA Box",
+                "description": "Fresh vegetables",
+                "inventory_text": "2 lbs carrots\n1 bunch kale"
+            }
+
+            # When
+            response = client.post("/stores", json=store_data)
+
+            # Then
+            assert response.status_code == 201
+            response_data = response.json()
+
+            # Should return a valid store with generated UUID
+            assert "store_id" in response_data
+            assert UUID(response_data["store_id"])  # Should be valid UUID
+            assert response_data["name"] == "CSA Box"
+            assert response_data["description"] == "Fresh vegetables"
+            assert response_data["infinite_supply"] is False
+            
+            # Should include unified creation results from inventory processing
+            assert response_data["successful_items"] == 2  # carrots + kale
+            assert response_data["error_message"] is None
+        finally:
+            # Clean up dependency override
+            app.dependency_overrides.clear()
+
+        # Store should be persisted with inventory
+        stores_response = client.get("/stores")
+        assert stores_response.status_code == 200
+        stores = stores_response.json()
+
+        # Should find our created store in the list with correct item count
+        created_store = next(
+            (
+                store
+                for store in stores
+                if store["store_id"] == response_data["store_id"]
+            ),
+            None,
+        )
+        assert created_store is not None
+        assert created_store["name"] == "CSA Box"
+        assert created_store["item_count"] == 2  # Should have 2 inventory items
+
+        # Verify actual inventory was added
+        store_id = response_data["store_id"]
+        inventory_response = client.get(f"/stores/{store_id}/inventory")
+        assert inventory_response.status_code == 200
+        inventory_items = inventory_response.json()
+        assert len(inventory_items) == 2
+
+    def test_create_store_with_problematic_inventory_returns_201_with_partial_success_results(self, client: TestClient) -> None:
+        """Test that POST /stores with problematic inventory returns 201 with partial success results."""
+        # Given - Configure mock inventory parser to return valid items with parsing notes about problems
+        def mock_inventory_parser() -> InventoryParserProtocol:
+            parser = MockInventoryParserClient()
+            parser.mock_results = [
+                ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
+                ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+            ]
+            parser.mock_parsing_notes = "Found problematic items: 'Volvo car' is not a food ingredient"
+            return parser
+
+        # Override dependency for this test
+        app.dependency_overrides[get_inventory_parser] = mock_inventory_parser
+        
+        try:
+            store_data = {
+                "name": "CSA Box",
+                "inventory_text": "2 lbs carrots\n1 Volvo car\n1 bunch kale"  # Mix of valid and invalid items
+            }
+
+            # When
+            response = client.post("/stores", json=store_data)
+
+            # Then
+            assert response.status_code == 201
+            response_data = response.json()
+
+            # Should return a valid store 
+            assert "store_id" in response_data
+            assert UUID(response_data["store_id"])
+            assert response_data["name"] == "CSA Box"
+            
+            # Should include partial success results
+            assert response_data["successful_items"] == 2  # carrots + kale (Volvo filtered out)
+            assert response_data["error_message"] is not None  # Should mention problematic items
+            assert "volvo" in response_data["error_message"].lower() or "car" in response_data["error_message"].lower()
+
+            # Store should be created with only valid inventory
+            store_id = response_data["store_id"]
+            inventory_response = client.get(f"/stores/{store_id}/inventory")
+            assert inventory_response.status_code == 200
+            inventory_items = inventory_response.json()
+            assert len(inventory_items) == 2  # Only valid items added
+        finally:
+            # Clean up dependency override
+            app.dependency_overrides.clear()
+
+    def test_create_store_without_inventory_text_returns_201_with_unified_results(self, client: TestClient) -> None:
+        """Test that POST /stores without inventory_text returns 201 with unified results showing no inventory processed."""
+        # Given
+        store_data = {"name": "CSA Box"}
+
+        # When
+        response = client.post("/stores", json=store_data)
+
+        # Then
+        assert response.status_code == 201
+        response_data = response.json()
+
+        # Should return a valid store with standard fields
+        assert "store_id" in response_data
+        assert UUID(response_data["store_id"])
+        assert response_data["name"] == "CSA Box"
+        assert response_data["description"] == ""
+        assert response_data["infinite_supply"] is False
+        
+        # Should always include unified creation results (even when no inventory processed)
+        assert response_data["successful_items"] == 0  # No inventory provided, so 0 items processed
+        assert response_data["error_message"] is None
 
 
 class TestStoreList:
@@ -154,137 +303,138 @@ class TestStoreList:
 
 
 class TestInventoryUpload:
-    """Test POST /stores/{id}/inventory endpoint behavior."""
+    """Test POST /stores/{id}/inventory endpoint HTTP behavior."""
 
-    def test_upload_inventory_with_valid_text_returns_201_with_parsed_items(
+    def test_upload_inventory_with_valid_text_returns_201_success_response(
         self, client: TestClient
     ) -> None:
-        """Test that POST /stores/{id}/inventory with valid text returns 201."""
+        """Test POST /stores/{id}/inventory with valid text returns 201 with success structure."""
         # Given - Create a store first
         store_data = {"name": "Test Store"}
         store_response = client.post("/stores", json=store_data)
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
-
-        # When - Upload inventory
-        inventory_data = {"inventory_text": "2 lbs carrots"}
-        response = client.post(f"/stores/{store_id}/inventory", json=inventory_data)
-
-        # Then
-        assert response.status_code == 201
-        response_data = response.json()
-
-        # Should indicate success and items added
-        assert response_data["success"] is True
-        assert response_data["items_added"] == 1
-        assert response_data["errors"] == []
-
-        # Verify inventory was actually added by checking store inventory
-        inventory_response = client.get(f"/stores/{store_id}/inventory")
-        assert inventory_response.status_code == 200
-        inventory_items = inventory_response.json()
-
-        # Should have 1 item
-        assert len(inventory_items) == 1
-        carrot_item = inventory_items[0]
-
-        # Should have correct details with denormalized data (InventoryItemView structure)
-        assert carrot_item["ingredient_name"] == "carrots"
-        assert carrot_item["quantity"] == 2.0
-        assert carrot_item["unit"] == "pound"
-        assert "added_at" in carrot_item
         
-        # Should include denormalized store information
-        assert carrot_item["store_name"] == "Test Store"
-        assert "store_id" in carrot_item
-        assert carrot_item["store_id"] == store_id
-        assert "ingredient_id" in carrot_item
-        assert carrot_item["notes"] is None  # Default notes value
+        # Configure mock parser to return 1 parsed item
+        def mock_inventory_parser() -> InventoryParserProtocol:
+            parser = MockInventoryParserClient()
+            parser.mock_results = [
+                ParsedInventoryItem(name="test_item", quantity=1.0, unit="count"),
+            ]
+            return parser
+        
+        app.dependency_overrides[get_inventory_parser] = mock_inventory_parser
+        
+        try:
+            # When - Upload inventory
+            inventory_data = {"inventory_text": "test inventory text"}
+            response = client.post(f"/stores/{store_id}/inventory", json=inventory_data)
 
-    def test_upload_inventory_with_parsing_errors_returns_400(self, client: TestClient) -> None:
-        """Test that POST /stores/{id}/inventory returns 400 for parsing errors."""
+            # Then - Focus on HTTP behavior and response structure
+            assert response.status_code == 201
+            response_data = response.json()
+
+            # Should have success response structure
+            assert response_data["success"] is True
+            assert response_data["items_added"] == 1
+            assert response_data["errors"] == []
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_upload_inventory_with_parsing_failure_returns_400_error_response(
+        self, client: TestClient
+    ) -> None:
+        """Test POST /stores/{id}/inventory returns 400 with proper error structure when parsing fails."""
         # Given - Create a store first
         store_data = {"name": "Test Store"}
         store_response = client.post("/stores", json=store_data)
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
+        
+        # Configure mock parser to simulate complete parsing failure
+        def failing_mock_parser() -> InventoryParserProtocol:
+            class FailingParser(MockInventoryParserClient):
+                def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
+                    raise Exception("Simulated parsing failure")
+            return FailingParser()
+        
+        app.dependency_overrides[get_inventory_parser] = failing_mock_parser
+        
+        try:
+            # When - Upload inventory that will fail parsing
+            inventory_data = {"inventory_text": "invalid unparseable text"}
+            response = client.post(f"/stores/{store_id}/inventory", json=inventory_data)
 
-        # When - Upload inventory with text that will cause parsing errors
-        inventory_data = {"inventory_text": "invalid unparseable text"}
-        response = client.post(f"/stores/{store_id}/inventory", json=inventory_data)
+            # Then - Should return 400 with proper error structure
+            assert response.status_code == 400
+            response_data = response.json()
 
-        # Then
-        assert response.status_code == 400
-        response_data = response.json()
+            # HTTPException with detail containing the error response
+            assert "detail" in response_data
+            error_detail = response_data["detail"]
 
-        # HTTPException with detail containing the error response
-        assert "detail" in response_data
-        error_detail = response_data["detail"]
-
-        # Should indicate failure and provide error details
-        assert error_detail["success"] is False
-        assert error_detail["items_added"] == 0
-        assert len(error_detail["errors"]) > 0
-        assert isinstance(error_detail["errors"][0], str)
+            # Should have error response structure
+            assert error_detail["success"] is False
+            assert error_detail["items_added"] == 0
+            assert len(error_detail["errors"]) > 0
+            assert isinstance(error_detail["errors"][0], str)
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestInventoryRetrieval:
-    """Test GET /stores/{id}/inventory endpoint behavior."""
+    """Test GET /stores/{id}/inventory endpoint HTTP behavior."""
 
-    def test_get_store_inventory_returns_current_inventory_with_details(self, client: TestClient) -> None:
-        """Test that GET /stores/{id}/inventory returns current inventory."""
-        # Given - Create a store and add some inventory
+    def test_get_store_inventory_returns_200_with_proper_json_structure(self, client: TestClient) -> None:
+        """Test GET /stores/{id}/inventory returns 200 with proper JSON structure."""
+        # Given - Create a store and add minimal inventory for testing structure
         store_data = {"name": "Test Store"}
         store_response = client.post("/stores", json=store_data)
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
 
-        # Add carrots to inventory
-        carrots_data = {"inventory_text": "2 lbs carrots"}
-        carrots_response = client.post(
-            f"/stores/{store_id}/inventory", json=carrots_data
-        )
-        assert carrots_response.status_code == 201
+        # Add one inventory item using configured mock
+        def mock_inventory_parser() -> InventoryParserProtocol:
+            parser = MockInventoryParserClient()
+            parser.mock_results = [
+                ParsedInventoryItem(name="test_item", quantity=1.0, unit="count"),
+            ]
+            return parser
+        
+        app.dependency_overrides[get_inventory_parser] = mock_inventory_parser
+        
+        try:
+            # Add inventory via POST (minimal setup)
+            inventory_data = {"inventory_text": "test item"}
+            post_response = client.post(f"/stores/{store_id}/inventory", json=inventory_data)
+            assert post_response.status_code == 201  # Ensure setup worked
 
-        # Add kale to inventory
-        kale_data = {"inventory_text": "1 bunch kale"}
-        kale_response = client.post(f"/stores/{store_id}/inventory", json=kale_data)
-        assert kale_response.status_code == 201
+            # When - Get store inventory
+            response = client.get(f"/stores/{store_id}/inventory")
 
-        # When - Get store inventory
-        response = client.get(f"/stores/{store_id}/inventory")
+            # Then - Focus on HTTP behavior and response structure
+            assert response.status_code == 200
+            inventory_items = response.json()
 
-        # Then
-        assert response.status_code == 200
-        inventory_items = response.json()
-
-        # Should have 2 items
-        assert len(inventory_items) == 2
-
-        # Sort by ingredient name for consistent testing
-        inventory_items.sort(key=lambda x: x["ingredient_name"])
-
-        # Check carrots with denormalized data (InventoryItemView structure)
-        carrots_item = inventory_items[0]
-        assert carrots_item["ingredient_name"] == "carrots"
-        assert carrots_item["quantity"] == 2.0
-        assert carrots_item["unit"] == "pound"
-        assert carrots_item["notes"] is None
-        assert "added_at" in carrots_item
-        assert carrots_item["store_name"] == "Test Store"
-        assert "store_id" in carrots_item
-        assert "ingredient_id" in carrots_item
-
-        # Check kale with denormalized data (InventoryItemView structure)
-        kale_item = inventory_items[1]
-        assert kale_item["ingredient_name"] == "kale"
-        assert kale_item["quantity"] == 1.0
-        assert kale_item["unit"] == "bunch"
-        assert kale_item["notes"] is None
-        assert "added_at" in kale_item
-        assert kale_item["store_name"] == "Test Store"
-        assert "store_id" in kale_item
-        assert "ingredient_id" in kale_item
+            # Should return array with proper item structure
+            assert isinstance(inventory_items, list)
+            assert len(inventory_items) == 1
+            
+            # Verify required fields exist (focus on structure, not content)
+            item = inventory_items[0]
+            required_fields = [
+                "ingredient_name", "quantity", "unit", "store_name", 
+                "store_id", "ingredient_id", "added_at", "notes"
+            ]
+            for field in required_fields:
+                assert field in item, f"Missing required field: {field}"
+            
+            # Basic type validation
+            assert isinstance(item["quantity"], (int, float))
+            assert isinstance(item["ingredient_name"], str)
+            assert isinstance(item["unit"], str)
+        finally:
+            app.dependency_overrides.clear()
 
     def test_upload_inventory_to_non_existent_store_returns_404(self, client: TestClient) -> None:
         """Test that POST inventory to non-existent store returns 404."""

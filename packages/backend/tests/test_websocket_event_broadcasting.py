@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from app.events.domain_events import InventoryItemAdded, StoreCreated
+from app.events.domain_events import InventoryItemAdded, StoreCreated, StoreCreatedWithInventory
 
 
 class TestWebSocketEventBroadcasting:
@@ -133,3 +133,45 @@ class TestWebSocketEventBroadcasting:
             assert isinstance(ws_message["data"], dict)
             assert isinstance(ws_message["room"], str)
             assert ws_message["room"] == "default"
+    
+    def test_store_created_with_inventory_event_broadcasts_to_websocket(
+        self, test_client_with_mocks: TestClient
+    ) -> None:
+        """Test that StoreCreatedWithInventory events are broadcast to WebSocket clients."""
+        # Connect to WebSocket before creating store with inventory
+        with test_client_with_mocks.websocket_connect("/ws") as websocket:
+            # Create a store with inventory via REST API (unified creation)
+            store_data = {
+                "name": "Test Store with Inventory",
+                "description": "A test store created with inventory",
+                "infinite_supply": False,
+                "inventory_text": "2 lbs carrots, 1 bunch kale"
+            }
+            response = test_client_with_mocks.post("/stores", json=store_data)
+            assert response.status_code == 201
+            
+            # Should receive messages: StoreCreated, InventoryItemAdded (2x), StoreCreatedWithInventory
+            messages = []
+            for _ in range(4):  # Expect 4 messages: StoreCreated + 2 InventoryItemAdded + StoreCreatedWithInventory
+                ws_message = websocket.receive_json()
+                messages.append(ws_message)
+            
+            # Find the StoreCreatedWithInventory message
+            store_with_inventory_messages = [
+                msg for msg in messages 
+                if msg.get("type") == "StoreCreatedWithInventory"
+            ]
+            
+            assert len(store_with_inventory_messages) == 1, f"Expected 1 StoreCreatedWithInventory event but got message types: {[msg.get('type') for msg in messages]}"
+            ws_message = store_with_inventory_messages[0]
+            
+            # Verify the message structure
+            assert ws_message["type"] == "StoreCreatedWithInventory"
+            assert ws_message["room"] == "default"
+            assert "data" in ws_message
+            
+            # Verify event data
+            event_data = ws_message["data"]
+            assert "store_id" in event_data
+            assert event_data["successful_items"] == 2  # carrots and kale
+            assert event_data["error_message"] is None

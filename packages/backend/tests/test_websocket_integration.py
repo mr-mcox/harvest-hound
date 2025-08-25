@@ -27,11 +27,18 @@ class TestWebSocketIntegration:
             assert response.status_code == 201
             store_id = response.json()["store_id"]
             
-            # Should immediately receive WebSocket notification
-            store_event = websocket.receive_json()
-            assert store_event["type"] == "StoreCreated"
-            assert store_event["data"]["name"] == "Real-time CSA Box"
-            assert store_event["data"]["store_id"] == store_id
+            # Should receive WebSocket notifications from unified creation
+            store_created_event = websocket.receive_json()
+            assert store_created_event["type"] == "StoreCreated"
+            assert store_created_event["data"]["name"] == "Real-time CSA Box"
+            assert store_created_event["data"]["store_id"] == store_id
+            
+            # Should also receive StoreCreatedWithInventory event (unified flow)
+            unified_event = websocket.receive_json()
+            assert unified_event["type"] == "StoreCreatedWithInventory"
+            assert unified_event["data"]["store_id"] == store_id
+            assert unified_event["data"]["successful_items"] == 0  # No inventory provided
+            assert unified_event["data"]["error_message"] is None
             
             # Step 2: Add inventory to the store
             inventory_data = {"inventory_text": "2 lbs carrots, 1 bunch kale"}
@@ -116,6 +123,11 @@ class TestWebSocketIntegration:
             assert store_event["data"]["store_id"] == store_id
             assert store_event["data"]["name"] == "REST API Test Store"
             assert store_event["room"] == "default"
+            
+            # Also consume the StoreCreatedWithInventory event from unified flow
+            unified_event = websocket.receive_json()
+            assert unified_event["type"] == "StoreCreatedWithInventory"
+            assert unified_event["data"]["store_id"] == store_id
             
             # Test 2: Inventory addition via REST API
             inventory_data = {"inventory_text": "2 lbs carrots, 1 bunch kale"}
@@ -226,7 +238,8 @@ class TestWebSocketIntegration:
                 events_client1 = []
                 events_client2 = []
                 
-                for _ in range(len(store_names)):
+                # Each store creation now emits 2 events: StoreCreated + StoreCreatedWithInventory
+                for _ in range(len(store_names) * 2):
                     event1 = websocket1.receive_json()
                     event2 = websocket2.receive_json()
                     events_client1.append(event1)
@@ -235,14 +248,21 @@ class TestWebSocketIntegration:
                 # Verify events are identical across clients
                 assert len(events_client1) == len(events_client2)
                 for event1, event2 in zip(events_client1, events_client2):
-                    assert event1["type"] == "StoreCreated"
-                    assert event2["type"] == "StoreCreated"
+                    # Events can be either StoreCreated or StoreCreatedWithInventory
+                    assert event1["type"] in ["StoreCreated", "StoreCreatedWithInventory"]
+                    assert event2["type"] in ["StoreCreated", "StoreCreatedWithInventory"]
+                    assert event1["type"] == event2["type"]  # Same type for both clients
                     assert event1["data"] == event2["data"]
                     assert event1["room"] == "default"
                     assert event2["room"] == "default"
                 
-                # Verify events maintain creation order
-                for i, (event1, event2) in enumerate(zip(events_client1, events_client2)):
+                # Verify StoreCreated events maintain creation order
+                store_created_events_client1 = [e for e in events_client1 if e["type"] == "StoreCreated"]
+                store_created_events_client2 = [e for e in events_client2 if e["type"] == "StoreCreated"]
+                assert len(store_created_events_client1) == len(store_names)
+                assert len(store_created_events_client2) == len(store_names)
+                
+                for i, (event1, event2) in enumerate(zip(store_created_events_client1, store_created_events_client2)):
                     assert event1["data"]["name"] == store_names[i]
                     assert event2["data"]["name"] == store_names[i]
                     assert event1["data"]["store_id"] == created_store_ids[i]

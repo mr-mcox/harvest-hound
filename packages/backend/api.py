@@ -157,23 +157,22 @@ async def create_store(
     request: CreateStoreRequest,
     store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
 ) -> CreateStoreResponse:
-    """Create a new inventory store."""
-    # TODO: Add conditional orchestration logic in NEW BEHAVIOR task
-    # When inventory_text is provided, route to StoreCreationOrchestrator
-    store_id = store_service.create_store(
+    """Create a new inventory store with optional inventory processing."""
+    # Always use unified creation flow
+    result = store_service.create_store_with_inventory(
         name=request.name,
         description=request.description or "",
         infinite_supply=request.infinite_supply or False,
+        inventory_text=request.inventory_text,  # Can be None
     )
-
+    
     return CreateStoreResponse(
-        store_id=store_id,
+        store_id=result.store_id,
         name=request.name,
         description=request.description or "",
         infinite_supply=request.infinite_supply or False,
-        # TODO: Include orchestration results when applicable in NEW BEHAVIOR task
-        successful_items=None,
-        error_message=None,
+        successful_items=result.successful_items,
+        error_message=result.error_message,
     )
 
 
