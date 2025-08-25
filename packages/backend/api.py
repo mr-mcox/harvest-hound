@@ -158,23 +158,41 @@ async def create_store(
     store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
 ) -> CreateStoreResponse:
     """Create a new inventory store."""
-    # TODO: Add conditional orchestration logic in NEW BEHAVIOR task
-    # When inventory_text is provided, route to StoreCreationOrchestrator
-    store_id = store_service.create_store(
-        name=request.name,
-        description=request.description or "",
-        infinite_supply=request.infinite_supply or False,
-    )
+    # Check for optional inventory_text field in request
+    if request.inventory_text is not None:
+        # Route to unified creation when inventory_text is provided
+        result = store_service.create_store_with_inventory(
+            name=request.name,
+            description=request.description or "",
+            infinite_supply=request.infinite_supply or False,
+            inventory_text=request.inventory_text,
+        )
 
-    return CreateStoreResponse(
-        store_id=store_id,
-        name=request.name,
-        description=request.description or "",
-        infinite_supply=request.infinite_supply or False,
-        # TODO: Include orchestration results when applicable in NEW BEHAVIOR task
-        successful_items=None,
-        error_message=None,
-    )
+        # Include unified creation results in response
+        return CreateStoreResponse(
+            store_id=result.store_id,
+            name=request.name,
+            description=request.description or "",
+            infinite_supply=request.infinite_supply or False,
+            successful_items=result.successful_items,
+            error_message=result.error_message,
+        )
+    else:
+        # Use existing create_store flow for backward compatibility
+        store_id = store_service.create_store(
+            name=request.name,
+            description=request.description or "",
+            infinite_supply=request.infinite_supply or False,
+        )
+
+        return CreateStoreResponse(
+            store_id=store_id,
+            name=request.name,
+            description=request.description or "",
+            infinite_supply=request.infinite_supply or False,
+            successful_items=None,
+            error_message=None,
+        )
 
 
 @app.get("/stores", response_model=List[StoreListItem])

@@ -5,6 +5,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api import _startup_completed, app, startup_event
+from app.dependencies import get_inventory_parser
+from app.interfaces.parser import InventoryParserProtocol
+from app.models.parsed_inventory import ParsedInventoryItem
+from app.services.inventory_parser import MockInventoryParserClient
 
 
 @pytest.fixture(scope="module")
@@ -88,30 +92,45 @@ class TestStoreCreation:
 
     def test_create_store_with_inventory_text_returns_201_with_unified_creation_results(self, client: TestClient) -> None:
         """Test that POST /stores with inventory_text returns 201 with unified creation results."""
-        # Given
-        store_data = {
-            "name": "CSA Box",
-            "description": "Fresh vegetables",
-            "inventory_text": "2 lbs carrots\n1 bunch kale"
-        }
+        # Given - Configure mock inventory parser to return 2 parsed items
+        def mock_inventory_parser() -> InventoryParserProtocol:
+            parser = MockInventoryParserClient()
+            parser.mock_results = [
+                ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
+                ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+            ]
+            return parser
 
-        # When
-        response = client.post("/stores", json=store_data)
-
-        # Then
-        assert response.status_code == 201
-        response_data = response.json()
-
-        # Should return a valid store with generated UUID
-        assert "store_id" in response_data
-        assert UUID(response_data["store_id"])  # Should be valid UUID
-        assert response_data["name"] == "CSA Box"
-        assert response_data["description"] == "Fresh vegetables"
-        assert response_data["infinite_supply"] is False
+        # Override dependency for this test
+        app.dependency_overrides[get_inventory_parser] = mock_inventory_parser
         
-        # Should include unified creation results from inventory processing
-        assert response_data["successful_items"] == 2  # carrots + kale
-        assert response_data["error_message"] is None
+        try:
+            store_data = {
+                "name": "CSA Box",
+                "description": "Fresh vegetables",
+                "inventory_text": "2 lbs carrots\n1 bunch kale"
+            }
+
+            # When
+            response = client.post("/stores", json=store_data)
+
+            # Then
+            assert response.status_code == 201
+            response_data = response.json()
+
+            # Should return a valid store with generated UUID
+            assert "store_id" in response_data
+            assert UUID(response_data["store_id"])  # Should be valid UUID
+            assert response_data["name"] == "CSA Box"
+            assert response_data["description"] == "Fresh vegetables"
+            assert response_data["infinite_supply"] is False
+            
+            # Should include unified creation results from inventory processing
+            assert response_data["successful_items"] == 2  # carrots + kale
+            assert response_data["error_message"] is None
+        finally:
+            # Clean up dependency override
+            app.dependency_overrides.clear()
 
         # Store should be persisted with inventory
         stores_response = client.get("/stores")
@@ -140,35 +159,51 @@ class TestStoreCreation:
 
     def test_create_store_with_problematic_inventory_returns_201_with_partial_success_results(self, client: TestClient) -> None:
         """Test that POST /stores with problematic inventory returns 201 with partial success results."""
-        # Given
-        store_data = {
-            "name": "CSA Box",
-            "inventory_text": "2 lbs carrots\n1 Volvo car\n1 bunch kale"  # Mix of valid and invalid items
-        }
+        # Given - Configure mock inventory parser to return valid items with parsing notes about problems
+        def mock_inventory_parser() -> InventoryParserProtocol:
+            parser = MockInventoryParserClient()
+            parser.mock_results = [
+                ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
+                ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+            ]
+            parser.mock_parsing_notes = "Found problematic items: 'Volvo car' is not a food ingredient"
+            return parser
 
-        # When
-        response = client.post("/stores", json=store_data)
-
-        # Then
-        assert response.status_code == 201
-        response_data = response.json()
-
-        # Should return a valid store 
-        assert "store_id" in response_data
-        assert UUID(response_data["store_id"])
-        assert response_data["name"] == "CSA Box"
+        # Override dependency for this test
+        app.dependency_overrides[get_inventory_parser] = mock_inventory_parser
         
-        # Should include partial success results
-        assert response_data["successful_items"] == 2  # carrots + kale (Volvo filtered out)
-        assert response_data["error_message"] is not None  # Should mention problematic items
-        assert "volvo" in response_data["error_message"].lower() or "car" in response_data["error_message"].lower()
+        try:
+            store_data = {
+                "name": "CSA Box",
+                "inventory_text": "2 lbs carrots\n1 Volvo car\n1 bunch kale"  # Mix of valid and invalid items
+            }
 
-        # Store should be created with only valid inventory
-        store_id = response_data["store_id"]
-        inventory_response = client.get(f"/stores/{store_id}/inventory")
-        assert inventory_response.status_code == 200
-        inventory_items = inventory_response.json()
-        assert len(inventory_items) == 2  # Only valid items added
+            # When
+            response = client.post("/stores", json=store_data)
+
+            # Then
+            assert response.status_code == 201
+            response_data = response.json()
+
+            # Should return a valid store 
+            assert "store_id" in response_data
+            assert UUID(response_data["store_id"])
+            assert response_data["name"] == "CSA Box"
+            
+            # Should include partial success results
+            assert response_data["successful_items"] == 2  # carrots + kale (Volvo filtered out)
+            assert response_data["error_message"] is not None  # Should mention problematic items
+            assert "volvo" in response_data["error_message"].lower() or "car" in response_data["error_message"].lower()
+
+            # Store should be created with only valid inventory
+            store_id = response_data["store_id"]
+            inventory_response = client.get(f"/stores/{store_id}/inventory")
+            assert inventory_response.status_code == 200
+            inventory_items = inventory_response.json()
+            assert len(inventory_items) == 2  # Only valid items added
+        finally:
+            # Clean up dependency override
+            app.dependency_overrides.clear()
 
     def test_create_store_without_inventory_text_returns_201_with_no_unified_results(self, client: TestClient) -> None:
         """Test that POST /stores without inventory_text returns 201 with no unified results (backward compatibility)."""

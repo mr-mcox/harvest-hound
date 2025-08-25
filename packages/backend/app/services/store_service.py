@@ -121,8 +121,11 @@ class StoreService:
                 result = self.upload_inventory(store_id, inventory_text)
                 if result.success:
                     successful_items = result.items_added
+                    # Include parsing notes in error message even for successful scenarios
+                    if result.parsing_notes:
+                        error_message = result.parsing_notes
                 else:
-                    # Simple error message aggregation
+                    # Simple error message aggregation for failures
                     error_message = f"Inventory processing failed: {'; '.join(result.errors)}"
             except Exception as e:
                 # Capture any processing failures with simple error message
@@ -141,16 +144,7 @@ class StoreService:
         
         # Publish event via event bus if available
         if self.event_publisher:
-            try:
-                # Run async publish in sync context
-                loop = asyncio.get_event_loop()
-                loop.run_until_complete(self.event_publisher.publish_async(unified_event))
-            except RuntimeError:
-                # No event loop running, create one
-                asyncio.run(self.event_publisher.publish_async(unified_event))
-            except Exception:
-                # If event publishing fails, don't fail the operation
-                pass
+            self.event_publisher.publish_sync(unified_event)
         
         return UnifiedCreationResult(
             store_id=store_id,
