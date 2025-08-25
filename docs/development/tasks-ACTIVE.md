@@ -104,9 +104,9 @@
 **Goal**: Ensure complete workflow functions correctly end-to-end
 
 ### 7.1 Backend Integration Tests - **NEW BEHAVIOR**
-- [ ] **Test complete unified creation flow** - Verify store creation with inventory succeeds and generates correct events
-- [ ] **Test simple error scenarios** - Verify store created successfully even when inventory processing fails (simple error message)
-- [ ] **Test WebSocket event propagation** - Ensure StoreCreatedWithInventory events broadcast correctly
+- [x] **Test complete unified creation flow** - Verify store creation with inventory succeeds and generates correct events
+- [x] **Test simple error scenarios** - Verify store created successfully even when inventory processing fails (simple error message)
+- [x] **Test WebSocket event propagation** - Ensure StoreCreatedWithInventory events broadcast correctly
 
 ### 7.2 Frontend Integration Tests - **NEW BEHAVIOR**
 - [ ] **Test inline form submission** - Verify use:enhance preserves dashboard context and updates UI correctly
