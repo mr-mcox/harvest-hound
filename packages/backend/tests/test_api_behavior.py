@@ -86,6 +86,113 @@ class TestStoreCreation:
         assert name_error is not None
         assert name_error["type"] == "missing"
 
+    def test_create_store_with_inventory_text_returns_201_with_unified_creation_results(self, client: TestClient) -> None:
+        """Test that POST /stores with inventory_text returns 201 with unified creation results."""
+        # Given
+        store_data = {
+            "name": "CSA Box",
+            "description": "Fresh vegetables",
+            "inventory_text": "2 lbs carrots\n1 bunch kale"
+        }
+
+        # When
+        response = client.post("/stores", json=store_data)
+
+        # Then
+        assert response.status_code == 201
+        response_data = response.json()
+
+        # Should return a valid store with generated UUID
+        assert "store_id" in response_data
+        assert UUID(response_data["store_id"])  # Should be valid UUID
+        assert response_data["name"] == "CSA Box"
+        assert response_data["description"] == "Fresh vegetables"
+        assert response_data["infinite_supply"] is False
+        
+        # Should include unified creation results from inventory processing
+        assert response_data["successful_items"] == 2  # carrots + kale
+        assert response_data["error_message"] is None
+
+        # Store should be persisted with inventory
+        stores_response = client.get("/stores")
+        assert stores_response.status_code == 200
+        stores = stores_response.json()
+
+        # Should find our created store in the list with correct item count
+        created_store = next(
+            (
+                store
+                for store in stores
+                if store["store_id"] == response_data["store_id"]
+            ),
+            None,
+        )
+        assert created_store is not None
+        assert created_store["name"] == "CSA Box"
+        assert created_store["item_count"] == 2  # Should have 2 inventory items
+
+        # Verify actual inventory was added
+        store_id = response_data["store_id"]
+        inventory_response = client.get(f"/stores/{store_id}/inventory")
+        assert inventory_response.status_code == 200
+        inventory_items = inventory_response.json()
+        assert len(inventory_items) == 2
+
+    def test_create_store_with_problematic_inventory_returns_201_with_partial_success_results(self, client: TestClient) -> None:
+        """Test that POST /stores with problematic inventory returns 201 with partial success results."""
+        # Given
+        store_data = {
+            "name": "CSA Box",
+            "inventory_text": "2 lbs carrots\n1 Volvo car\n1 bunch kale"  # Mix of valid and invalid items
+        }
+
+        # When
+        response = client.post("/stores", json=store_data)
+
+        # Then
+        assert response.status_code == 201
+        response_data = response.json()
+
+        # Should return a valid store 
+        assert "store_id" in response_data
+        assert UUID(response_data["store_id"])
+        assert response_data["name"] == "CSA Box"
+        
+        # Should include partial success results
+        assert response_data["successful_items"] == 2  # carrots + kale (Volvo filtered out)
+        assert response_data["error_message"] is not None  # Should mention problematic items
+        assert "volvo" in response_data["error_message"].lower() or "car" in response_data["error_message"].lower()
+
+        # Store should be created with only valid inventory
+        store_id = response_data["store_id"]
+        inventory_response = client.get(f"/stores/{store_id}/inventory")
+        assert inventory_response.status_code == 200
+        inventory_items = inventory_response.json()
+        assert len(inventory_items) == 2  # Only valid items added
+
+    def test_create_store_without_inventory_text_returns_201_with_no_unified_results(self, client: TestClient) -> None:
+        """Test that POST /stores without inventory_text returns 201 with no unified results (backward compatibility)."""
+        # Given
+        store_data = {"name": "CSA Box"}
+
+        # When
+        response = client.post("/stores", json=store_data)
+
+        # Then
+        assert response.status_code == 201
+        response_data = response.json()
+
+        # Should return a valid store with standard fields
+        assert "store_id" in response_data
+        assert UUID(response_data["store_id"])
+        assert response_data["name"] == "CSA Box"
+        assert response_data["description"] == ""
+        assert response_data["infinite_supply"] is False
+        
+        # Should NOT include unified creation results when no inventory provided
+        assert response_data["successful_items"] is None
+        assert response_data["error_message"] is None
+
 
 class TestStoreList:
     """Test GET /stores endpoint behavior."""
