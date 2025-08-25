@@ -1,11 +1,11 @@
 from typing import Generator, List
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
+from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated, StoreCreatedWithInventory
 from app.infrastructure.database import metadata
 from app.infrastructure.event_bus import InMemoryEventBus
 from app.infrastructure.event_publisher import EventPublisher
@@ -15,7 +15,7 @@ from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStor
 from app.models.parsed_inventory import ParsedInventoryItem
 from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 from app.services.inventory_parser import MockInventoryParserClient
-from app.services.store_service import InventoryUploadResult, StoreService
+from app.services.store_service import InventoryUploadResult, StoreService, UnifiedCreationResult
 from tests.test_utils import assert_event_matches, get_typed_events
 
 
@@ -112,14 +112,20 @@ def store_service(
     inventory_parser: MockInventoryParserClient,
     store_view_store: StoreViewStore,
     inventory_item_view_store: InventoryItemViewStore,
+    event_store: EventStore,
+    shared_event_bus: InMemoryEventBus,
 ) -> StoreService:
     """Create a StoreService for testing."""
+    from app.infrastructure.event_publisher import EventPublisher
+    event_publisher = EventPublisher(shared_event_bus)
     return StoreService(
         store_repository, 
         ingredient_repository, 
         inventory_parser,
         store_view_store,
-        inventory_item_view_store
+        inventory_item_view_store,
+        event_store,
+        event_publisher
     )
 
 
@@ -417,3 +423,257 @@ class TestInventoryUpload:
         assert kale_item["unit"] == "bunch"
         assert kale_item["notes"] is None
         assert "added_at" in kale_item
+
+
+class TestUnifiedCreationLogic:
+    """Test unified store creation with optional inventory processing."""
+
+    def test_create_store_without_inventory_calls_store_service_and_returns_result(
+        self, store_service: StoreService, event_store: EventStore
+    ) -> None:
+        """Test that creating store without inventory text calls StoreService.create_store and returns proper result."""
+        # Act
+        result = store_service.create_store_with_inventory(
+            name="CSA Box",
+            description="Weekly vegetable box", 
+            infinite_supply=False,
+            inventory_text=None
+        )
+        
+        # Assert result structure
+        assert hasattr(result, 'store_id')
+        assert hasattr(result, 'successful_items')
+        assert hasattr(result, 'error_message')
+        
+        # Assert result values
+        assert isinstance(result.store_id, type(uuid4()))
+        assert result.successful_items == 0
+        assert result.error_message is None
+        
+        # Verify StoreCreated event was persisted
+        store_events = get_typed_events(event_store, f"store-{result.store_id}", StoreCreated)
+        assert len(store_events) == 1
+        assert_event_matches(
+            store_events[0],
+            {
+                "store_id": result.store_id,
+                "name": "CSA Box",
+                "description": "Weekly vegetable box",
+                "infinite_supply": False,
+            }
+        )
+
+    def test_create_store_with_inventory_processes_items_and_emits_orchestration_event(
+        self, store_service: StoreService, event_store: EventStore, inventory_parser: MockInventoryParserClient
+    ) -> None:
+        """Test that creating store with inventory text processes items and emits StoreCreatedWithInventory event."""
+        # Arrange - configure mock parser to return 2 items
+        parsed_items = [
+            ParsedInventoryItem(name="apples", quantity=2.0, unit="count"),
+            ParsedInventoryItem(name="bananas", quantity=3.0, unit="count"),
+        ]
+        inventory_parser.mock_results = parsed_items
+        
+        # Act
+        result = store_service.create_store_with_inventory(
+            name="CSA Box",
+            description="Weekly vegetable box",
+            infinite_supply=False,
+            inventory_text="2 apples\n3 bananas"
+        )
+        
+        # Assert  
+        assert isinstance(result.store_id, type(uuid4()))
+        assert result.successful_items == 2  # Mock parser returns 2 items
+        assert result.error_message is None
+        
+        # Verify StoreCreatedWithInventory event was persisted
+        orchestration_events = get_typed_events(event_store, f"unified-creation-{result.store_id}", StoreCreatedWithInventory)
+        assert len(orchestration_events) == 1
+        assert_event_matches(
+            orchestration_events[0],
+            {
+                "store_id": result.store_id,
+                "successful_items": 2,
+                "error_message": None,
+            }
+        )
+
+    def test_create_store_with_failing_inventory_returns_error_in_result(
+        self, store_service: StoreService, event_store: EventStore
+    ) -> None:
+        """Test that inventory processing failures are captured in result with simple error message."""
+        # Arrange - Create a custom mock that fails on upload_inventory
+        class FailingInventoryService(StoreService):
+            def upload_inventory(self, store_id: UUID, inventory_text: str) -> InventoryUploadResult:
+                return InventoryUploadResult.error_result(["Simulated parsing failure"])
+        
+        failing_service = FailingInventoryService(
+            store_service.store_repository, 
+            store_service.ingredient_repository, 
+            store_service.inventory_parser,
+            store_service.store_view_store,
+            store_service.inventory_item_view_store,
+            store_service.event_store,
+            store_service.event_publisher
+        )
+        
+        # Act - processing should fail due to simulated parsing failure
+        result = failing_service.create_store_with_inventory(
+            name="CSA Box",
+            description="Weekly vegetable box",
+            infinite_supply=False,
+            inventory_text="some inventory text"
+        )
+        
+        # Assert - store still created successfully, but with error message
+        assert isinstance(result.store_id, type(uuid4()))
+        assert result.successful_items == 0
+        assert result.error_message is not None
+        assert "failed" in result.error_message.lower()
+        
+        # Verify store was still created
+        store_events = get_typed_events(event_store, f"store-{result.store_id}", StoreCreated)
+        assert len(store_events) == 1
+        
+        # Verify unified creation event includes error message
+        unified_events = get_typed_events(event_store, f"unified-creation-{result.store_id}", StoreCreatedWithInventory)
+        assert len(unified_events) == 1
+        assert unified_events[0].error_message is not None
+
+
+class TestEnhancedPartialSuccess:
+    """Test enhanced StoreService for partial success scenarios."""
+
+    def test_inventory_upload_result_includes_parsing_notes_field(self) -> None:
+        """Test that InventoryUploadResult includes parsing_notes field for LLM error messages."""
+        # Act - create result with parsing notes
+        result = InventoryUploadResult(
+            items_added=2, 
+            errors=["Item validation failed"], 
+            success=False,
+            parsing_notes="LLM reported: 'Volvos' not a food item"
+        )
+        
+        # Assert - parsing_notes field exists and works
+        assert hasattr(result, 'parsing_notes')
+        assert result.parsing_notes == "LLM reported: 'Volvos' not a food item"
+
+    def test_upload_inventory_processes_all_valid_items_despite_individual_failures(
+        self, store_service: StoreService, inventory_parser: MockInventoryParserClient
+    ) -> None:
+        """Test that upload_inventory processes all successfully parsed items instead of stopping on first error."""
+        # Arrange
+        store_id = store_service.create_store("Test Store")
+        
+        # Create a failing service that will fail on specific ingredient name
+        class PartiallyFailingService(StoreService):
+            def _create_or_get_ingredient(self, name: str, default_unit: str) -> UUID:
+                if name == "problematic_item":
+                    raise ValueError("Simulated ingredient creation failure")
+                return super()._create_or_get_ingredient(name, default_unit)
+        
+        failing_service = PartiallyFailingService(
+            store_service.store_repository,
+            store_service.ingredient_repository,
+            inventory_parser,
+            store_service.store_view_store,
+            store_service.inventory_item_view_store,
+            store_service.event_store,
+            store_service.event_publisher
+        )
+        
+        # Configure parser to return valid parsed items
+        parsed_items = [
+            ParsedInventoryItem(name="valid_item_1", quantity=2.0, unit="pound"),
+            ParsedInventoryItem(name="problematic_item", quantity=1.0, unit="count"),  # Will fail in ingredient creation
+            ParsedInventoryItem(name="valid_item_2", quantity=3.0, unit="bunch"),
+        ]
+        inventory_parser.mock_results = parsed_items
+        
+        # Act - currently this will fail fast when ingredient creation fails
+        result = failing_service.upload_inventory(store_id, "2 lbs valid_item_1\n1 problematic_item\n3 bunches valid_item_2")
+        
+        # Assert - should process valid items despite invalid ones  
+        assert result.items_added == 2  # Should add both valid items
+        assert result.success is True  # Partial success is still success
+        assert len(result.errors) == 1  # Should capture the invalid item error
+        assert "problematic_item" in str(result.errors[0])
+
+    def test_upload_inventory_returns_comprehensive_results_with_parsing_notes(
+        self, store_service: StoreService, inventory_parser: MockInventoryParserClient
+    ) -> None:
+        """Test that upload_inventory returns comprehensive results including both successful item count and parsing notes."""
+        # Arrange
+        store_id = store_service.create_store("Test Store")
+        
+        # Configure parser to return items with parsing notes
+        parsed_items = [
+            ParsedInventoryItem(name="apples", quantity=2.0, unit="count"),
+        ]
+        inventory_parser.mock_results = parsed_items
+        # Configure mock to simulate parsing notes from LLM
+        inventory_parser.mock_parsing_notes = "LLM noted: 'eggs' quantity unclear, processed as 2 count"
+        
+        # Act  
+        result = store_service.upload_inventory(store_id, "2 apples and some eggs")
+        
+        # Assert
+        assert result.items_added == 1
+        assert result.success is True
+        assert result.parsing_notes == "LLM noted: 'eggs' quantity unclear, processed as 2 count"
+
+
+class TestBamlIntegrationErrorReporting:
+    """Test enhanced BAML parsing with LLM error reporting integration."""
+
+    def test_baml_parser_returns_parsing_notes_with_problematic_items(self) -> None:
+        """Test that BAML parser can flag problematic items with natural language explanations."""
+        import os
+        
+        if os.environ.get("ENABLE_BAML", "false").lower() != "true":
+            pytest.skip("BAML integration test - requires ENABLE_BAML=true and real LLM calls")
+        
+        from app.services.inventory_parser import BamlInventoryParserClient
+        
+        parser = BamlInventoryParserClient()
+        
+        # Test with mix of valid ingredients and problematic items
+        result = parser.parse_inventory_with_notes(
+            "2 apples, 1 Volvo car, 3 gazillion eggs, 1 banana"
+        )
+        
+        # Should extract valid items only
+        assert len(result.items) == 2  # apples, banana
+        valid_names = [item.name for item in result.items]
+        assert "apple" in valid_names
+        assert "banana" in valid_names
+        
+        # Should provide parsing notes about problematic items
+        assert result.parsing_notes is not None
+        notes_lower = result.parsing_notes.lower()
+        # Check that problematic items are mentioned in notes
+        assert any(term in notes_lower for term in ["volvo", "car", "gazillion"])
+
+    def test_baml_parser_clean_input_no_parsing_notes(self) -> None:
+        """Test that BAML parser returns no parsing notes for clean input."""
+        import os
+        
+        if os.environ.get("ENABLE_BAML", "false").lower() != "true":
+            pytest.skip("BAML integration test - requires ENABLE_BAML=true and real LLM calls")
+            
+        from app.services.inventory_parser import BamlInventoryParserClient
+        
+        parser = BamlInventoryParserClient()
+        
+        # Test with only valid ingredients
+        result = parser.parse_inventory_with_notes("2 apples, 1 banana")
+        
+        # Should extract both items
+        assert len(result.items) == 2
+        valid_names = [item.name for item in result.items]
+        assert "apple" in valid_names
+        assert "banana" in valid_names
+        
+        # Should have no parsing notes for clean input
+        assert result.parsing_notes is None

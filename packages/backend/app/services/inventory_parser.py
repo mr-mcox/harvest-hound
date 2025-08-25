@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from ..infrastructure.baml_client import b
 from ..infrastructure.translation import InventoryTranslator
+from ..interfaces.parser import ParsedInventoryResult
 from ..models.parsed_inventory import ParsedInventoryItem
 
 
@@ -13,6 +14,11 @@ class InventoryParserClient(ABC):
     @abstractmethod
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text into structured items."""
+        pass
+
+    @abstractmethod
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Parse inventory text and return items with parsing notes."""
         pass
 
 
@@ -29,18 +35,28 @@ class BamlInventoryParserClient(InventoryParserClient):
 
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text using BAML LLM service."""
-        if not inventory_text.strip():
-            return []
+        result = self.parse_inventory_with_notes(inventory_text)
+        return result.items
 
-        # Use BAML client to parse the text
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Parse inventory text using BAML LLM service with parsing notes."""
+        if not inventory_text.strip():
+            return ParsedInventoryResult(items=[], parsing_notes=None)
+
+        # Use enhanced BAML client to parse with error reporting
         translator = InventoryTranslator()
-        baml_ingredients = b.ExtractIngredients(inventory_text)
+        baml_result = b.ExtractIngredients(inventory_text)
 
         # Convert BAML result to domain objects
-        return [
+        items = [
             translator.to_parsed_inventory_item(ingredient)
-            for ingredient in baml_ingredients
+            for ingredient in baml_result.ingredients
         ]
+
+        return ParsedInventoryResult(
+            items=items, 
+            parsing_notes=baml_result.parsing_notes
+        )
 
 
 class MockInventoryParserClient(InventoryParserClient):
@@ -48,12 +64,18 @@ class MockInventoryParserClient(InventoryParserClient):
 
     def __init__(self, mock_results: Optional[List[ParsedInventoryItem]] = None):
         self.mock_results = mock_results or []
+        self.mock_parsing_notes: Optional[str] = None
 
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Return pre-configured mock results."""
         if not inventory_text.strip():
             return []
         return self.mock_results
+
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Return pre-configured mock results with parsing notes."""
+        items = self.parse_inventory(inventory_text)
+        return ParsedInventoryResult(items=items, parsing_notes=self.mock_parsing_notes)
 
 
 def create_inventory_parser_client() -> InventoryParserClient:

@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional
 
+from app.interfaces.parser import ParsedInventoryResult
 from app.models.parsed_inventory import ParsedInventoryItem
 
 
@@ -46,6 +47,11 @@ class MockInventoryParser:
         
         return default_fixtures.get(inventory_text, [])
 
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Parse inventory text with optional parsing notes."""
+        items = self.parse_inventory(inventory_text)
+        return ParsedInventoryResult(items=items, parsing_notes=None)
+
     @property
     def call_count(self) -> int:
         """Get number of times parse_inventory was called."""
@@ -73,6 +79,11 @@ class FailingMockInventoryParser:
             raise ConnectionError("Network error connecting to LLM service")
         else:
             raise RuntimeError(f"Unknown error type: {self.error_type}")
+
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Simulate parsing failures for parse_inventory_with_notes."""
+        items = self.parse_inventory(inventory_text)  # This will raise the same errors
+        return ParsedInventoryResult(items=items, parsing_notes=None)
 
 
 class ConfigurableMockInventoryParser:
@@ -116,3 +127,8 @@ class ConfigurableMockInventoryParser:
             return []
             
         return self._responses.get(inventory_text, [])
+
+    def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
+        """Parse inventory with notes using configured responses or failures."""
+        items = self.parse_inventory(inventory_text)  # This will handle failures and responses
+        return ParsedInventoryResult(items=items, parsing_notes=None)

@@ -1,8 +1,12 @@
+import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
+from ..events.domain_events import StoreCreatedWithInventory
+from ..infrastructure.event_publisher import EventPublisher
+from ..infrastructure.event_store import EventStore
 from ..infrastructure.repositories import AggregateNotFoundError
 from ..interfaces.parser import InventoryParserProtocol
 from ..interfaces.repository import (
@@ -27,16 +31,26 @@ class InventoryUploadResult:
     items_added: int
     errors: List[str]
     success: bool
+    parsing_notes: Optional[str] = None
 
     @classmethod
-    def success_result(cls, items_added: int) -> "InventoryUploadResult":
+    def success_result(cls, items_added: int, parsing_notes: Optional[str] = None) -> "InventoryUploadResult":
         """Create a successful result."""
-        return cls(items_added=items_added, errors=[], success=True)
+        return cls(items_added=items_added, errors=[], success=True, parsing_notes=parsing_notes)
 
     @classmethod
-    def error_result(cls, errors: List[str]) -> "InventoryUploadResult":
+    def error_result(cls, errors: List[str], parsing_notes: Optional[str] = None) -> "InventoryUploadResult":
         """Create an error result."""
-        return cls(items_added=0, errors=errors, success=False)
+        return cls(items_added=0, errors=errors, success=False, parsing_notes=parsing_notes)
+
+
+@dataclass
+class UnifiedCreationResult:
+    """Result of unified store creation with inventory processing."""
+    
+    store_id: UUID
+    successful_items: int
+    error_message: Optional[str] = None
 
 
 class StoreService:
@@ -49,12 +63,16 @@ class StoreService:
         inventory_parser: InventoryParserProtocol,
         store_view_store: StoreViewStoreProtocol,
         inventory_item_view_store: InventoryItemViewStoreProtocol,
+        event_store: Optional[EventStore] = None,
+        event_publisher: Optional[EventPublisher] = None,
     ):
         self.store_repository = store_repository
         self.ingredient_repository = ingredient_repository
         self.inventory_parser = inventory_parser
         self.store_view_store = store_view_store
         self.inventory_item_view_store = inventory_item_view_store
+        self.event_store = event_store
+        self.event_publisher = event_publisher
 
     def create_store(
         self,
@@ -78,6 +96,68 @@ class StoreService:
 
         return store_id
 
+    def create_store_with_inventory(
+        self,
+        name: str,
+        description: str,
+        infinite_supply: bool,
+        inventory_text: Optional[str],
+    ) -> UnifiedCreationResult:
+        """Create store and optionally process inventory in unified operation."""
+        # Step 1: Create store using existing create_store method
+        store_id = self.create_store(
+            name=name,
+            description=description,
+            infinite_supply=infinite_supply,
+        )
+        
+        successful_items = 0
+        error_message = None
+        
+        # Step 2: Conditionally process inventory if provided
+        if inventory_text is not None:
+            try:
+                # Process inventory using existing upload_inventory method
+                result = self.upload_inventory(store_id, inventory_text)
+                if result.success:
+                    successful_items = result.items_added
+                else:
+                    # Simple error message aggregation
+                    error_message = f"Inventory processing failed: {'; '.join(result.errors)}"
+            except Exception as e:
+                # Capture any processing failures with simple error message
+                error_message = f"Inventory processing error: {str(e)}"
+        
+        # Step 3: Create and persist StoreCreatedWithInventory event
+        unified_event = StoreCreatedWithInventory(
+            store_id=store_id,
+            successful_items=successful_items,
+            error_message=error_message,
+        )
+        
+        # Persist event in event store if available
+        if self.event_store:
+            self.event_store.append_event(f"unified-creation-{store_id}", unified_event)
+        
+        # Publish event via event bus if available
+        if self.event_publisher:
+            try:
+                # Run async publish in sync context
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(self.event_publisher.publish_async(unified_event))
+            except RuntimeError:
+                # No event loop running, create one
+                asyncio.run(self.event_publisher.publish_async(unified_event))
+            except Exception:
+                # If event publishing fails, don't fail the operation
+                pass
+        
+        return UnifiedCreationResult(
+            store_id=store_id,
+            successful_items=successful_items,
+            error_message=error_message,
+        )
+
     def upload_inventory(
         self,
         store_id: UUID,
@@ -88,9 +168,13 @@ class StoreService:
             # Load the store
             store = self.store_repository.load(store_id)
 
-            # Parse the inventory text using LLM
+            # Parse the inventory text using LLM (with notes)
+            parsing_notes = None  # Initialize outside try block
             try:
-                parsed_items = self._parse_inventory_text(inventory_text)
+                parsing_result = self.inventory_parser.parse_inventory_with_notes(inventory_text)
+                parsed_items = parsing_result.items
+                parsing_notes = parsing_result.parsing_notes
+                
                 logger.info(
                     "LLM parsing succeeded for store %s. Found %d items: %s",
                     store_id,
@@ -115,8 +199,9 @@ class StoreService:
                 ])
 
             items_added = 0
+            processing_errors = []
 
-            # Process each parsed item
+            # Process each parsed item (continue processing even if some fail)
             for i, parsed_item in enumerate(parsed_items):
                 try:
                     logger.info(
@@ -149,18 +234,35 @@ class StoreService:
                     logger.info("Successfully added item %d: %s", items_added, parsed_item.name)
 
                 except ValueError as validation_error:
-                    # Handle validation errors for individual items
+                    # Handle validation errors for individual items - continue processing others
+                    error_msg = f"Invalid item '{parsed_item.name}': {str(validation_error)}"
+                    processing_errors.append(error_msg)
                     logger.info(
-                        "Validation error for item '%s' in store %s: %s",
+                        "Validation error for item '%s' in store %s: %s - continuing with remaining items",
                         parsed_item.name,
                         store_id,
                         str(validation_error)
                     )
-                    return InventoryUploadResult.error_result([
-                        f"Invalid item '{parsed_item.name}': {str(validation_error)}"
-                    ])
+                except Exception as item_error:
+                    # Handle any other errors for individual items - continue processing others
+                    error_msg = f"Failed to process item '{parsed_item.name}': {str(item_error)}"
+                    processing_errors.append(error_msg)
+                    logger.info(
+                        "Processing error for item '%s' in store %s: %s - continuing with remaining items",
+                        parsed_item.name,
+                        store_id,
+                        str(item_error)
+                    )
 
-            return InventoryUploadResult.success_result(items_added)
+            # Determine success - partial success is still success if any items were added
+            success = items_added > 0 or len(processing_errors) == 0
+            
+            return InventoryUploadResult(
+                items_added=items_added,
+                errors=processing_errors,
+                success=success,
+                parsing_notes=parsing_notes
+            )
 
         except AggregateNotFoundError:
             # Re-raise store not found errors so API can return 404

@@ -29,14 +29,14 @@
 ## 2. Technical Approach & Design Decisions
 
 ### High-Level Strategy
-Introduce a StoreCreationOrchestrator Application Service to coordinate store creation and inventory upload as a unified operation, with enhanced API endpoint and simplified event model.
+Enhance StoreService with unified creation flow to coordinate store creation and inventory upload as a single operation, with enhanced API endpoint and simplified event model.
 
 ### Key Design Decisions
 | Decision | Alternatives Considered | Rationale |
 |----------|------------------------|--------------|
 | Single Enhanced API Endpoint | New /stores/with-inventory endpoint | Simplifies client code; single request reduces network overhead |
 | Batch LLM Processing | Progressive streaming with updates | User feedback indicates "super quick" processing doesn't need progress tracking |
-| Application Service Orchestration | Extended domain aggregate | Keeps domain pure; orchestration belongs at application layer |
+| Enhanced StoreService | Separate orchestration service | Simplifies architecture; unified creation fits within existing service responsibilities |
 | Single Completion Event | Multiple progress events | Reduces WebSocket complexity; aligns with simplified UX requirement |
 
 ### Pattern Applications
@@ -58,12 +58,12 @@ Introduce a StoreCreationOrchestrator Application Service to coordinate store cr
 ## 3. Implementation Architecture
 
 ### Bounded Context Impacts
-- **Inventory Context**: New StoreCreationOrchestrator application service; enhanced StoreService capabilities; new StoreCreatedWithInventory event
+- **Inventory Context**: Enhanced StoreService with unified creation capabilities; new StoreCreatedWithInventory event
 - **Interface Layer**: Enhanced POST /stores endpoint; updated WebSocket event catalog; modified frontend components
 
 ### Event Flow Design
 ```
-[User Action: Submit unified form] → [StoreCreationOrchestrator.CreateStoreWithInventory] → [StoreCreated + InventoryItemAdded events] → [StoreCreatedWithInventory event] → [Frontend UI update + WebSocket notification]
+[User Action: Submit unified form] → [StoreService.create_store_with_inventory] → [StoreCreated + InventoryItemAdded events] → [StoreCreatedWithInventory event] → [Frontend UI update + WebSocket notification]
 ```
 - **New Events**: StoreCreatedWithInventory with payload `{storeId, successfulItems, errorMessage?}` (simplified)
 - **Event Consumers**: WebSocket subscribers, projection handlers for StoreView updates
@@ -86,7 +86,7 @@ Introduce a StoreCreationOrchestrator Application Service to coordinate store cr
 ## 4. Testing & Quality Strategy
 
 ### Testing Levels
-- **Unit Tests**: StoreCreationOrchestrator operations, enhanced StoreService methods, orchestration error handling
+- **Unit Tests**: Enhanced StoreService methods, unified creation operations, error handling
 - **Integration Tests**: Complete create-with-inventory flow, WebSocket event propagation, projection consistency
 - **E2E Tests**: Dashboard inline creation workflow, partial success scenarios, error display and recovery
 
@@ -106,18 +106,18 @@ Introduce a StoreCreationOrchestrator Application Service to coordinate store cr
 ## 5. Implementation Sequencing
 
 ### Dependencies & Critical Path
-1. **Foundation Work**: StoreCreationOrchestrator service, enhanced API endpoint signature
-2. **Core Implementation**: Orchestration logic, error handling, event generation
+1. **Foundation Work**: Enhanced StoreService methods, updated API endpoint signature
+2. **Core Implementation**: Unified creation logic, error handling, event generation
 3. **Integration Work**: WebSocket event broadcasting, frontend form enhancement
 4. **Polish & Optimization**: Loading states, error display, inline form UX refinements
 
 ### Risk-First Approach
 - **Highest Risk First**: API breaking change coordination (deploy backend changes before frontend updates)
-- **Proof of Concept**: Test orchestration service with realistic inventory sizes to validate flow
+- **Proof of Concept**: Test unified creation service with realistic inventory sizes to validate flow
 - **Fallback Options**: Temporary API compatibility layer if deployment coordination becomes complex
 
 ### Incremental Value Delivery
-- **Phase 1**: Working orchestration service with API endpoint (backend functionality complete)
+- **Phase 1**: Working unified creation service with API endpoint (backend functionality complete)
 - **Phase 2**: Basic inline form without progressive enhancement (functional but not optimal UX)
 - **Phase 3**: Full progressive enhancement with WebSocket updates and error handling
 
@@ -131,8 +131,8 @@ Introduce a StoreCreationOrchestrator Application Service to coordinate store cr
 ## 6. Task Breakdown Preview
 
 ### Major Work Streams
-1. **Backend Orchestration Service** (S)
-   - Create StoreCreationOrchestrator application service
+1. **Backend StoreService Enhancement** (S)
+   - Add unified creation method to existing StoreService
    - Implement unified creation flow with error handling
    - Add StoreCreatedWithInventory event and projection handlers
 
@@ -148,7 +148,7 @@ Introduce a StoreCreationOrchestrator Application Service to coordinate store cr
 
 ### Cross-Stream Dependencies
 - **Backend → Frontend**: API changes must be deployed before frontend can consume new interface
-- **Orchestration → API**: Service implementation required before endpoint can orchestrate operations
+- **StoreService → API**: Service implementation required before endpoint can coordinate unified operations
 
 ### Total Effort Estimate
 **Overall Size**: S
@@ -175,12 +175,12 @@ Introduce a StoreCreationOrchestrator Application Service to coordinate store cr
 
 ## Next Steps
 
-1. **Review & Align**: Confirm orchestration service pattern aligns with domain boundaries
+1. **Review & Align**: Confirm enhanced StoreService pattern aligns with domain boundaries
 2. **Task Generation**: Ready to break down into detailed implementation tasks with clear acceptance criteria
 3. **Deployment Strategy**: Plan coordinated backend/frontend deployment to handle API changes
 
 ---
 
 *TIP Created*: 2025-08-23
-*Last Updated*: 2025-08-23
-*Status*: Draft
+*Last Updated*: 2025-08-24
+*Status*: Updated (Simplified Architecture)

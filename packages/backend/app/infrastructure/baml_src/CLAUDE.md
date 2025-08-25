@@ -141,13 +141,108 @@ uv run baml-cli generate
 
 ## Testing
 
-To run tests defined in BAML, you can run the following command in the directory containing baml_src:
+### Running Tests
 
-```
-uv run baml-cli test
+BAML tests validate function behavior with real LLM calls. **Important**: Tests are stochastic and incur API costs.
+
+#### Basic Test Commands
+
+```bash
+# Run all tests from backend root
+uv run baml-cli test --from app/infrastructure/baml_src
+
+# Run all tests from infrastructure directory  
+cd app/infrastructure && uv run baml-cli test
+
+# List available tests without running them
+uv run baml-cli test --list
 ```
 
-Note that these can be stochastic and running them incurs costs.
+#### Targeted Testing
+
+Use `-i` (include) and `-x` (exclude) for precise test control:
+
+```bash
+# Run specific function tests
+uv run baml-cli test -i "ExtractIngredients::"
+
+# Run specific test case
+uv run baml-cli test -i "ExtractIngredients::with_problematic_items"
+
+# Run multiple specific tests
+uv run baml-cli test -i "ExtractIngredients::carrots_single_ingredient" -i "ExtractIngredients::empty_input"
+
+# Use wildcards for pattern matching
+uv run baml-cli test -i "Extract*::*problematic*"
+
+# Exclude expensive or flaky tests
+uv run baml-cli test -x "ExpensiveFunction::" -x "::flaky_test"
+```
+
+#### Testing Best Practices
+
+1. **Cost Management**: Use targeted testing during development
+   ```bash
+   # Test only what you're working on
+   uv run baml-cli test -i "MyNewFunction::"
+   ```
+
+2. **Parallel Testing**: Adjust parallelism for speed vs. rate limits
+   ```bash
+   # Reduce parallelism for rate-limited APIs
+   uv run baml-cli test --parallel 3
+   ```
+
+3. **Development Workflow**:
+   ```bash
+   # 1. Test specific function during development
+   uv run baml-cli test -i "ExtractIngredients::carrots_single_ingredient"
+   
+   # 2. Test all variants of your function
+   uv run baml-cli test -i "ExtractIngredients::"
+   
+   # 3. Run full test suite before committing
+   uv run baml-cli test
+   ```
+
+4. **Environment Variables**: Tests respect `.env` files for API keys
+   ```bash
+   # Tests automatically load environment variables
+   # Make sure OPENAI_API_KEY or ANTHROPIC_API_KEY are set
+   ```
+
+#### Test Design Guidelines
+
+- **Deterministic Assertions**: Test structure and key content, not exact text
+- **Multiple Examples**: Include edge cases (empty input, malformed data)
+- **Error Cases**: Test how functions handle problematic input
+- **Cost-Effective**: Use cheaper models (`gpt-4o-mini`) for simple validation
+
+#### Common Test Patterns
+
+```baml
+// Basic structure validation
+test basic_functionality {
+    functions [MyFunction]
+    args { input "test data" }
+    @@assert({{this.field != null}})
+    @@assert({{this.items|length > 0}})
+}
+
+// Edge case handling
+test empty_input {
+    functions [MyFunction]  
+    args { input "" }
+    @@assert({{this.items|length == 0}})
+}
+
+// Error handling validation
+test problematic_input {
+    functions [MyFunction]
+    args { input "invalid data here" }
+    @@assert({{this.error_notes != null}})
+}
+```
 
 ## Usage in Generated Code
 

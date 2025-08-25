@@ -1,10 +1,12 @@
 """Service interface protocols."""
 
-from typing import Any, Dict, List, Protocol
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol
 from uuid import UUID
 
 from ..services.store_service import InventoryUploadResult
 
+if TYPE_CHECKING:
+    from ..services.store_service import UnifiedCreationResult
 
 class StoreServiceProtocol(Protocol):
     """Protocol for store service operations."""
@@ -61,3 +63,24 @@ class StoreServiceProtocol(Protocol):
             List of inventory item data dictionaries
         """
         ...
+
+    def create_store_with_inventory(
+        self,
+        name: str,
+        description: str,
+        infinite_supply: bool,
+        inventory_text: Optional[str],
+    ) -> "UnifiedCreationResult":
+        """Create store and optionally process inventory in unified operation.
+        
+        Args:
+            name: Store name
+            description: Store description  
+            infinite_supply: Whether store has infinite supply
+            inventory_text: Optional inventory text to process
+            
+        Returns:
+            Unified creation result with store_id, successful_items, and error_message
+        """
+        ...
+

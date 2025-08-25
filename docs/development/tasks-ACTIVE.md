@@ -21,23 +21,32 @@
 
 ---
 
-## Task 2: Backend Orchestration Service (TIP Section 3: Bounded Context Impacts)
-**Goal**: Implement StoreCreationOrchestrator application service with unified creation flow
+## Task 2: StoreService Enhancement (TIP Section 3: Bounded Context Impacts)
+**Goal**: Enhance StoreService with unified creation flow and eliminate unnecessary orchestrator complexity
 
-### 2.1 Orchestrator Service Structure - **SETUP ONLY**
-- [ ] **Create StoreCreationOrchestrator class** - New file `app/services/store_creation_orchestrator.py` with constructor taking required dependencies
-- [ ] **Add method signature** - `create_store_with_inventory(name, description, infinite_supply, inventory_text)` returning orchestration result
-- [ ] **Add orchestrator to dependency injection** - Include in `app/dependencies.py` factory functions
+### 2.1 Remove StoreCreationOrchestrator - **REFACTOR**
+- [x] **Migrate orchestrator tests to StoreService tests** - Move test cases from `test_store_creation_orchestrator.py` to `test_store_service.py`
+- [x] **Update API endpoint imports** - Remove orchestrator imports from `api.py` and `dependencies.py`
+- [x] **Delete orchestrator files** - Remove `app/services/store_creation_orchestrator.py` and `tests/test_store_creation_orchestrator.py`
+- [x] **Clean up dependency injection** - Remove orchestrator factory functions from `app/dependencies.py`
 
-### 2.2 Unified Creation Logic - **NEW BEHAVIOR**
-- [ ] **Implement store creation step** - Call existing StoreService.create_store and capture store_id
-- [ ] **Implement conditional inventory processing** - When inventory_text provided, parse and add items using existing StoreService.upload_inventory
-- [ ] **Implement result aggregation** - Count successful items and capture simple error message if processing fails
-- [ ] **Implement StoreCreatedWithInventory event emission** - Generate event with complete operation results and publish via event bus
+### 2.2 Unified Creation Logic in StoreService - **NEW BEHAVIOR**  
+- [x] **Add create_store_with_inventory method** - New method on StoreService with signature matching former orchestrator
+- [x] **Implement conditional inventory processing** - When inventory_text provided, call existing upload_inventory method
+- [x] **Implement result aggregation** - Count successful items and capture error message from upload results
+- [x] **Implement StoreCreatedWithInventory event emission** - Generate event with complete operation results and publish via event bus
 
-### 2.3 Simple Error Handling - **NEW BEHAVIOR**
-- [ ] **Handle store creation failures** - Return error result when store creation fails, don't proceed to inventory
-- [ ] **Handle inventory processing failures** - Store still created successfully, return success with simple error message (defer complex partial success handling)
+### 2.3 Enhanced StoreService for Partial Success - **NEW BEHAVIOR**
+- [x] **Enhance InventoryUploadResult** - Add `parsing_notes: Optional[str]` field to capture LLM error messages
+- [x] **Update StoreService.upload_inventory** - Modify to use enhanced parsing that reports partial success
+- [x] **Remove fail-fast behavior** - Process all successfully parsed items instead of stopping on first error
+- [x] **Return comprehensive results** - Include both successful item count and parsing notes in result
+
+### 2.4 Enhanced Inventory Parsing with LLM Error Reporting - **NEW BEHAVIOR**
+- [x] **Update BAML schema for error message field** - Added InventoryParsingResult class with parsing_notes field to BAML response schema
+- [x] **Enhance BAML prompt engineering** - Updated ExtractIngredientsWithNotes function with prompts to flag problematic items with natural language explanations (e.g., "Volvos" not a food item, "3 gazillion eggs" unclear quantity)  
+- [x] **Update BamlInventoryParserClient** - Modified client to return enhanced parsing results with LLM-generated error messages via parse_inventory_with_notes method
+- [x] **Add BAML integration tests** - Added integration tests for real LLM behavior with various partial success scenarios (skipped in unit tests, run with ENABLE_BAML=true)
 
 ---
 
@@ -46,8 +55,8 @@
 
 ### 3.1 Enhanced Endpoint Logic - **NEW BEHAVIOR**
 - [ ] **Update create_store endpoint implementation** - Check for optional inventory_text field in request
-- [ ] **Implement conditional orchestration** - Route to StoreCreationOrchestrator when inventory_text present, otherwise use existing StoreService flow
-- [ ] **Update response construction** - Include orchestration results (successful_items, error_message) in response when applicable
+- [ ] **Implement conditional unified creation** - Route to StoreService.create_store_with_inventory when inventory_text present, otherwise use existing create_store flow
+- [ ] **Update response construction** - Include unified creation results (successful_items, error_message) in response when applicable
 
 ### 3.2 WebSocket Event Broadcasting - **NEW BEHAVIOR**
 - [ ] **Add StoreCreatedWithInventory event handler** - Create handler in `app/projections/handlers.py` to broadcast new event type
@@ -97,7 +106,7 @@
 **Goal**: Ensure complete workflow functions correctly end-to-end
 
 ### 7.1 Backend Integration Tests - **NEW BEHAVIOR**
-- [ ] **Test complete orchestration flow** - Verify store creation with inventory succeeds and generates correct events
+- [ ] **Test complete unified creation flow** - Verify store creation with inventory succeeds and generates correct events
 - [ ] **Test simple error scenarios** - Verify store created successfully even when inventory processing fails (simple error message)
 - [ ] **Test WebSocket event propagation** - Ensure StoreCreatedWithInventory events broadcast correctly
 
