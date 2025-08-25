@@ -137,7 +137,8 @@ class TestStoreCreation:
     ) -> None:
         """Test that create_store returns UUID and persists StoreCreated event."""
         # Act
-        store_id = store_service.create_store("CSA Box", "Weekly vegetable box")
+        result = store_service.create_store_with_inventory("CSA Box", "Weekly vegetable box", False, None)
+        store_id = result.store_id
 
         # Assert
         assert isinstance(store_id, type(uuid4()))
@@ -170,9 +171,10 @@ class TestStoreCreation:
     ) -> None:
         """Test that create_store with infinite_supply=True sets flag correctly."""
         # Act
-        store_id = store_service.create_store(
-            "Pantry", "Long-term storage", infinite_supply=True
+        result = store_service.create_store_with_inventory(
+            "Pantry", "Long-term storage", infinite_supply=True, inventory_text=None
         )
+        store_id = result.store_id
 
         # Assert
         store_events = get_typed_events(event_store, f"store-{store_id}", StoreCreated)
@@ -185,10 +187,12 @@ class TestStoreCreation:
     ) -> None:
         """Test that create_store with duplicate name succeeds."""
         # Arrange - create first store
-        first_store_id = store_service.create_store("CSA Box", "First box")
+        first_result = store_service.create_store_with_inventory("CSA Box", "First box", False, None)
+        first_store_id = first_result.store_id
 
         # Act - create second store with same name
-        second_store_id = store_service.create_store("CSA Box", "Second box")
+        second_result = store_service.create_store_with_inventory("CSA Box", "Second box", False, None)
+        second_store_id = second_result.store_id
 
         # Assert - both stores should exist with different IDs
         assert first_store_id != second_store_id
@@ -221,19 +225,20 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory parses text and creates new Ingredient."""
         # Arrange
-        store_id = store_service.create_store("CSA Box")
+        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        store_id = result.store_id
 
         # Configure parser to return parsed item
         parsed_item = ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound")
         inventory_parser.mock_results = [parsed_item]
 
         # Act
-        result = store_service.upload_inventory(store_id, "2 lbs carrots")
+        upload_result = store_service.upload_inventory(store_id, "2 lbs carrots")
 
         # Assert - successful upload
-        assert result.success is True
-        assert result.items_added == 1
-        assert result.errors == []
+        assert upload_result.success is True
+        assert upload_result.items_added == 1
+        assert upload_result.errors == []
 
         # Check that InventoryItemAdded event was persisted
         inventory_events = get_typed_events(
@@ -281,7 +286,8 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory creates InventoryItem linking to ingredient."""
         # Arrange
-        store_id = store_service.create_store("CSA Box")
+        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        store_id = result.store_id
         parsed_item = ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch")
         inventory_parser.mock_results = [parsed_item]
 
@@ -313,7 +319,8 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory returns InventoryUploadResult with count."""
         # Arrange
-        store_id = store_service.create_store("CSA Box")
+        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        store_id = result.store_id
         parsed_items = [
             ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
             ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
@@ -321,13 +328,13 @@ class TestInventoryUpload:
         inventory_parser.mock_results = parsed_items
 
         # Act
-        result = store_service.upload_inventory(store_id, "2 lbs carrots\n1 bunch kale")
+        upload_result = store_service.upload_inventory(store_id, "2 lbs carrots\n1 bunch kale")
 
         # Assert
-        assert isinstance(result, InventoryUploadResult)
-        assert result.success is True
-        assert result.items_added == 2
-        assert result.errors == []
+        assert isinstance(upload_result, InventoryUploadResult)
+        assert upload_result.success is True
+        assert upload_result.items_added == 2
+        assert upload_result.errors == []
 
     def test_upload_inventory_handles_parsing_errors(
         self,
@@ -336,7 +343,8 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory handles LLM parsing errors."""
         # Arrange
-        store_id = store_service.create_store("CSA Box")
+        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        store_id = result.store_id
 
         # Configure parser to trigger an exception through parse_inventory call
         # by using a mock that raises an exception when called
@@ -349,13 +357,13 @@ class TestInventoryUpload:
         store_service.inventory_parser = failing_parser
 
         # Act
-        result = store_service.upload_inventory(store_id, "invalid text")
+        upload_result = store_service.upload_inventory(store_id, "invalid text")
 
         # Assert
-        assert result.success is False
-        assert result.items_added == 0
-        assert len(result.errors) == 1
-        assert "Failed to parse inventory text" in result.errors[0]
+        assert upload_result.success is False
+        assert upload_result.items_added == 0
+        assert len(upload_result.errors) == 1
+        assert "Failed to parse inventory text" in upload_result.errors[0]
 
     def test_upload_inventory_with_empty_parsing_result(
         self,
@@ -364,7 +372,8 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory handles empty parsing results correctly."""
         # Arrange
-        store_id = store_service.create_store("CSA Box")
+        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        store_id = result.store_id
 
         # Configure parser to return empty list (parsing succeeds but finds nothing)
         class EmptyResultMockParser(MockInventoryParserClient):
@@ -377,12 +386,12 @@ class TestInventoryUpload:
         store_service.inventory_parser = empty_parser
 
         # Act
-        result = store_service.upload_inventory(store_id, "some text that parses to nothing")
+        upload_result = store_service.upload_inventory(store_id, "some text that parses to nothing")
 
         # Assert
-        assert result.success is True  # Parsing succeeded, just found no items
-        assert result.items_added == 0
-        assert result.errors == []
+        assert upload_result.success is True  # Parsing succeeded, just found no items
+        assert upload_result.items_added == 0
+        assert upload_result.errors == []
 
     def test_get_store_inventory_returns_current_inventory_with_ingredient_names(
         self,
@@ -391,7 +400,8 @@ class TestInventoryUpload:
     ) -> None:
         """Test that get_store_inventory returns current inventory with names."""
         # Arrange
-        store_id = store_service.create_store("CSA Box")
+        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        store_id = result.store_id
         parsed_items = [
             ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
             ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
@@ -564,7 +574,8 @@ class TestEnhancedPartialSuccess:
     ) -> None:
         """Test that upload_inventory processes all successfully parsed items instead of stopping on first error."""
         # Arrange
-        store_id = store_service.create_store("Test Store")
+        result = store_service.create_store_with_inventory("Test Store", "", False, None)
+        store_id = result.store_id
         
         # Create a failing service that will fail on specific ingredient name
         class PartiallyFailingService(StoreService):
@@ -592,20 +603,21 @@ class TestEnhancedPartialSuccess:
         inventory_parser.mock_results = parsed_items
         
         # Act - currently this will fail fast when ingredient creation fails
-        result = failing_service.upload_inventory(store_id, "2 lbs valid_item_1\n1 problematic_item\n3 bunches valid_item_2")
+        upload_result = failing_service.upload_inventory(store_id, "2 lbs valid_item_1\n1 problematic_item\n3 bunches valid_item_2")
         
         # Assert - should process valid items despite invalid ones  
-        assert result.items_added == 2  # Should add both valid items
-        assert result.success is True  # Partial success is still success
-        assert len(result.errors) == 1  # Should capture the invalid item error
-        assert "problematic_item" in str(result.errors[0])
+        assert upload_result.items_added == 2  # Should add both valid items
+        assert upload_result.success is True  # Partial success is still success
+        assert len(upload_result.errors) == 1  # Should capture the invalid item error
+        assert "problematic_item" in str(upload_result.errors[0])
 
     def test_upload_inventory_returns_comprehensive_results_with_parsing_notes(
         self, store_service: StoreService, inventory_parser: MockInventoryParserClient
     ) -> None:
         """Test that upload_inventory returns comprehensive results including both successful item count and parsing notes."""
         # Arrange
-        store_id = store_service.create_store("Test Store")
+        result = store_service.create_store_with_inventory("Test Store", "", False, None)
+        store_id = result.store_id
         
         # Configure parser to return items with parsing notes
         parsed_items = [
@@ -616,12 +628,12 @@ class TestEnhancedPartialSuccess:
         inventory_parser.mock_parsing_notes = "LLM noted: 'eggs' quantity unclear, processed as 2 count"
         
         # Act  
-        result = store_service.upload_inventory(store_id, "2 apples and some eggs")
+        upload_result = store_service.upload_inventory(store_id, "2 apples and some eggs")
         
         # Assert
-        assert result.items_added == 1
-        assert result.success is True
-        assert result.parsing_notes == "LLM noted: 'eggs' quantity unclear, processed as 2 count"
+        assert upload_result.items_added == 1
+        assert upload_result.success is True
+        assert upload_result.parsing_notes == "LLM noted: 'eggs' quantity unclear, processed as 2 count"
 
 
 class TestBamlIntegrationErrorReporting:

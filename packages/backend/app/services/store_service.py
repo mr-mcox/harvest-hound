@@ -74,27 +74,6 @@ class StoreService:
         self.event_store = event_store
         self.event_publisher = event_publisher
 
-    def create_store(
-        self,
-        name: str,
-        description: str = "",
-        infinite_supply: bool = False,
-    ) -> UUID:
-        """Create a new inventory store."""
-        store_id = uuid4()
-
-        # Create store using domain model
-        store, events = InventoryStore.create(
-            store_id=store_id,
-            name=name,
-            description=description,
-            infinite_supply=infinite_supply,
-        )
-
-        # Persist events through repository
-        self.store_repository.save(store, events)
-
-        return store_id
 
     def create_store_with_inventory(
         self,
@@ -104,12 +83,19 @@ class StoreService:
         inventory_text: Optional[str],
     ) -> UnifiedCreationResult:
         """Create store and optionally process inventory in unified operation."""
-        # Step 1: Create store using existing create_store method
-        store_id = self.create_store(
+        # Step 1: Create store directly (inlined from old create_store method)
+        store_id = uuid4()
+        
+        # Create store using domain model
+        store, events = InventoryStore.create(
+            store_id=store_id,
             name=name,
             description=description,
             infinite_supply=infinite_supply,
         )
+        
+        # Persist events through repository
+        self.store_repository.save(store, events)
         
         successful_items = 0
         error_message = None

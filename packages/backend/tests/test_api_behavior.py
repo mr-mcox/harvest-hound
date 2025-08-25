@@ -212,8 +212,8 @@ class TestStoreCreation:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    def test_create_store_without_inventory_text_returns_201_with_no_unified_results(self, client: TestClient) -> None:
-        """Test that POST /stores without inventory_text returns 201 with no unified results (backward compatibility)."""
+    def test_create_store_without_inventory_text_returns_201_with_unified_results(self, client: TestClient) -> None:
+        """Test that POST /stores without inventory_text returns 201 with unified results showing no inventory processed."""
         # Given
         store_data = {"name": "CSA Box"}
 
@@ -231,8 +231,8 @@ class TestStoreCreation:
         assert response_data["description"] == ""
         assert response_data["infinite_supply"] is False
         
-        # Should NOT include unified creation results when no inventory provided
-        assert response_data["successful_items"] is None
+        # Should always include unified creation results (even when no inventory processed)
+        assert response_data["successful_items"] == 0  # No inventory provided, so 0 items processed
         assert response_data["error_message"] is None
 
 
