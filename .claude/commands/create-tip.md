@@ -2,10 +2,12 @@
 
 Generate a Technical Implementation Plan (TIP) for: $ARGUMENTS
 
-This command creates a detailed implementation plan with phased approach, test strategy, and effort estimates. Use this when:
+This command creates a strategic implementation plan focused on sequencing, integration, and risk management. Use this when:
 - Domain model is clear (or you have a domain design proposal)
-- You need to plan the implementation sequencing
-- You want to identify risks and dependencies before coding
+- You need to align on the implementation approach and sequencing
+- You want to identify risks and dependencies before detailed task planning
+
+**Purpose**: Establish strategic direction for implementation. The TIP provides high-level phases and integration awareness - detailed file changes and specific tests come later in `plan-tasks`.
 
 ---
 
@@ -68,7 +70,7 @@ If context builder suggests deeper analysis:
 Based on my research:
 
 **Domain Context** (from architecture-context-builder):
-- Key concepts: [list with file:line refs]
+- Key concepts: [list concepts, reference docs with file:line]
 - Relevant behaviors: [specific aspects]
 - Constraints: [specific rules to respect]
 
@@ -114,130 +116,179 @@ Then WAIT for user responses before proceeding.
 
 ### Step 7: After User Responses
 
-Thank you. Based on your input and the architectural context, I'll create the implementation plan.
+Thank you. Based on your input and the architectural context, I'll create the strategic implementation plan.
 
-### Step 8: Generate Implementation Plan
+### Step 8: Generate Strategic Implementation Plan
 
-Create a comprehensive TIP following the template at `docs/templates/technical-implementation-plan.md`.
+Create a TIP at `docs/development/tips/tip-[feature-name].md`.
 
-The plan should include:
+**IMPORTANT - What belongs in the TIP**:
+- ✅ Strategic phase groupings ("Refactor domain model", "Update event sourcing")
+- ✅ Sequencing rationale (why this order, dependencies)
+- ✅ Integration points awareness (what systems are affected)
+- ✅ Risk assessment and mitigation strategies
+- ✅ High-level test strategy direction
+- ✅ Effort estimates per phase
+
+**What does NOT belong in the TIP** (plan-tasks will add these):
+- ❌ Specific file:line references for code changes
+- ❌ Specific test names or test case details
+- ❌ Detailed code modification lists
+- ❌ Granular success criteria checklists
+- ❌ Step-by-step implementation instructions
+
+The TIP should include:
+
+**Metadata**:
+```yaml
+---
+date: YYYY-MM-DD
+feature: [feature-name]
+status: draft
+related_domain_design: [path if exists]
+estimated_effort: [XS/S/M/L/XL]
+confidence: [High/Medium/Low]
+tags: [relevant, tags]
+---
+```
 
 **Domain Context Section**:
-- List relevant domain-model/ docs with specific sections
+- List relevant domain-model/ docs
 - Summarize key concepts (reference, don't reproduce)
 - Note domain changes if from a domain design
+- **Keep references at doc level, not file:line level**
 
-**Implementation Phases** (3-6 phases typically):
+**Implementation Phases** (Use as many as needed - could be 2, could be 10):
 For each phase:
-- **Purpose**: What this phase accomplishes and why it's sequenced here
-- **Code Changes**: Specific files and modifications with file:line refs
-- **Test Strategy**: Unit tests, integration tests, specific test cases
-- **Success Criteria**: Testable outcomes, commands to verify
-- **Dependencies**: What must complete first
-- **Estimated Effort**: XS/S/M/L t-shirt size
+```markdown
+### Phase N: [Descriptive Name]
+
+**Purpose**: [What this accomplishes and why it's sequenced here]
+
+**Scope**: [High-level areas of work - domain model, events, API, etc.]
+
+**Key Considerations**:
+- [Important design decision or constraint]
+- [Integration point to be aware of]
+- [Technical challenge to address]
+
+**Dependencies**: [What must complete first, if any]
+
+**Complexity**: [XS/S/M/L]
+```
 
 **Sequencing Logic**:
 - Why this order minimizes risk
 - Where parallel work is possible
 - Where dependencies constrain sequencing
+- How phases build on each other
 
-**Key Test Scenarios** (3-5 scenarios):
-- Happy path validation
-- Key edge cases
-- Error handling
-- What each scenario proves
+**High-Level Test Strategy** (Direction, not specifics):
+- What kinds of tests are needed (unit, integration, e2e)
+- Key scenarios to validate (happy path, edge cases, error handling)
+- Testing approach per phase
+- **Do NOT specify exact test names or assertions**
 
 **Integration Points**:
-- Backend APIs, database, events
-- Frontend components, state
-- External services, LLMs
+- Backend: [General areas - API, domain model, events, persistence]
+- Frontend: [General areas - components, state, UI flows]
+- External: [Services, LLMs, etc.]
+- **Identify WHAT will be affected, not HOW to change it**
 
 **Library Research** (only if needed):
 - What needs investigation
-- Specific APIs or patterns to explore
-- Alternative libraries being considered
+- Why investigation is needed
+- Decision criteria
 
 **Risk Assessment**:
 - High risks with mitigation strategies
 - Medium risks to watch
-- Contingency plans
+- Contingency plans if risks materialize
+- **Steering likelihood**: Areas that may need human decisions or course correction
 
 **Implementation Notes**:
-- Architectural patterns to follow (with refs from context builder)
-- Code conventions (with file:line examples)
+- Architectural patterns to follow (reference docs)
+- Key principles to maintain
 - Quality gates
+- **General guidance, not specific code examples**
 
-**Total Effort Estimate**:
-- Overall t-shirt size
+**Overall Complexity Estimate**:
+- Overall t-shirt size (XS/S/M/L/XL)
 - Confidence level (High/Medium/Low)
-- Justification
+- Justification: What drives complexity (novel patterns, integration points, decision density, steering needs)
 
 ### Step 9: Present for Review
 
-I've created the initial implementation plan at:
+I've created the strategic implementation plan at:
 `docs/development/tips/tip-[feature-name].md`
 
 **Plan Overview**:
 - **Phases**: [Number] phases
-- **Effort**: [T-shirt size] ([Confidence])
+- **Complexity**: [T-shirt size] ([Confidence])
 - **Key Risks**: [1-2 main risks]
 
-**Phase Breakdown**:
-1. Phase 1: [Name] - [Effort] - [Brief purpose]
-2. Phase 2: [Name] - [Effort] - [Brief purpose]
-3. Phase 3: [Name] - [Effort] - [Brief purpose]
+**Phase Summary**:
+1. Phase 1: [Name] - [Complexity] - [Brief purpose]
+2. Phase 2: [Name] - [Complexity] - [Brief purpose]
+3. Phase 3: [Name] - [Complexity] - [Brief purpose]
 [etc.]
 
-**Context Used** (~[X] tokens):
-- Domain model: [Y] sections
-- Code patterns: [Z] examples
-- Test patterns: [N] examples
+**Strategic Direction**:
+- Sequencing rationale: [Why this order]
+- Key integration points: [What systems affected]
+- Risk mitigation: [Main strategy]
 
 Please review the plan and let me know:
-- Are the phases properly scoped and sequenced?
-- Are the success criteria specific enough?
-- Any technical details that need adjustment?
-- Missing edge cases or considerations?
-- Is the effort estimate realistic?
+- Does the phasing make strategic sense?
+- Are the integration points correctly identified?
+- Do the risks and mitigations look right?
+- Is the complexity estimate realistic?
+- Should any phases be combined or split?
 
 Then WAIT for user feedback and approval.
 
 ### Step 10: After Approval
 
-Great! The TIP is approved and ready for task breakdown.
+Great! The strategic plan is approved and ready for detailed task breakdown.
 
 **Next steps**:
-- Use `plan-tasks "docs/development/tips/tip-[feature-name].md"` to create detailed task breakdown
-- Then use `implement-tasks` to start implementation
-
-The TIP will remain in `docs/development/tips/` during implementation and can be archived after completion.
+- Use `plan-tasks "docs/development/tips/tip-[feature-name].md"` to add detailed task breakdown
+- `plan-tasks` will interpret this strategic direction and add specific file changes, test cases, and deliverables
+- The TIP will be updated in place with the tactical details
 
 ---
 
 ## Quality Guidelines
 
-**Good TIPs**:
-- Phases are independently testable and deliverable
-- Success criteria are specific and verifiable
-- Test strategy follows established patterns (from context)
-- Sequencing minimizes risk and rework
-- Effort estimates are realistic with stated confidence
-- Integration points are clearly identified
-- Risks have mitigation strategies
+**Good TIPs Focus On**:
+- Strategic sequencing (why this order)
+- Integration awareness (what's affected)
+- Risk management (what could go wrong)
+- Test strategy direction (what needs testing)
+- Effort estimates (how much work)
+
+**Good TIPs Avoid**:
+- Specific file paths and line numbers
+- Exact test names and assertions
+- Detailed code modification instructions
+- Step-by-step implementation guides
+- Granular checklists (those come in plan-tasks)
+
+**Phase Scoping**:
+- Use as many phases as needed - no magic number
+- Small feature: might be 2-3 phases
+- Complex feature: might be 7-10 phases
+- Each phase should:
+  - Have clear purpose
+  - Enable subsequent phases
+  - Be independently valuable where possible
+  - Minimize coordination overhead
 
 **Context Efficiency**:
 - Use architecture-context-builder first - it's designed for this
 - Only use specific locators/analyzers if you need to go deeper
 - Don't gather context you won't use in the plan
 - Quality over quantity - focused context beats comprehensive
-
-**Phasing Principles**:
-- Early phases enable later phases
-- Each phase has clear value on its own
-- Phases minimize dependencies and coordination
-- Test incrementally as you go
-- Database/schema changes come early
-- Integration points identified per phase
 
 **Agent Usage Tips**:
 - Architecture-context-builder is your primary tool - trust it
@@ -246,13 +297,49 @@ The TIP will remain in `docs/development/tips/` during implementation and can be
 - Domain-analyzer if domain model sections need deeper synthesis
 - Thoughts-locator rarely needed (usually for brownfield projects)
 
-**Estimate Guidance**:
-- XS: 1-2 hours
-- S: 2-4 hours
-- M: 4-8 hours (half day to full day)
-- L: 1-2 days
-- XL: 2-5 days
+**Complexity Estimate Guidance**:
+
+*Note: This is spec-based development where Claude implements with human oversight. Estimates reflect cognitive complexity, decision density, and steering needs - not raw coding time.*
+
+- **XS (Trivial)**: Clear pattern to follow, minimal decisions, Claude executes independently
+  - Example: Add field to existing model following established pattern
+
+- **S (Simple)**: Established patterns, few decision points, occasional steering
+  - Example: Create new endpoint using existing endpoint as template
+
+- **M (Moderate)**: Some novel patterns, multiple integration points, regular oversight needed
+  - Example: Add event sourcing to new domain concept with multiple projections
+
+- **L (Complex)**: Novel approach, many architectural decisions, frequent steering required
+  - Example: Implement new bounded context with custom patterns
+
+- **XL (Very Complex)**: Unclear patterns, extensive decision-making, continuous collaboration
+  - Example: Major refactor affecting multiple systems with new architectural patterns
+
+**Complexity Factors**:
+- Pattern novelty: Can Claude follow existing examples or forge new ground?
+- Decision density: How many judgment calls required?
+- Context coordination: How much context must be held across files/systems?
+- Integration points: How many systems must coordinate?
+- Steering likelihood: How much human course-correction expected?
+
+Complexity is per-phase; overall complexity considers how phases build on each other.
 
 ---
 
-Remember: The TIP is about implementation sequencing and risk management. The domain model already defines WHAT to build - the TIP defines HOW to build it incrementally and safely.
+## Remember: Strategic Direction, Not Tactical Details
+
+**The TIP answers**:
+- WHAT phases of work are needed
+- WHY they're sequenced this way
+- WHERE integration points exist
+- WHAT risks need mitigation
+- HOW MUCH effort is involved
+
+**The TIP does NOT answer** (plan-tasks handles these):
+- WHICH specific files to modify
+- EXACTLY what tests to write
+- HOW to implement specific features
+- WHAT specific code changes to make
+
+Trust `plan-tasks` to interpret your strategic direction and make it concrete with file paths, test names, and specific deliverables.
