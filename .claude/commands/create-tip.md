@@ -29,13 +29,23 @@ This command creates a strategic implementation plan focused on sequencing, inte
 
 I'll help you create an implementation plan for: [topic from $ARGUMENTS]
 
-Let me start by gathering the minimal architectural context needed for this implementation.
+Let me start by reading any related design decision documents to understand the full scope.
 
 Then continue immediately...
 
-### Step 2: Build Focused Context
+### Step 2: Read Design Decision First
 
-Use `architecture-context-builder` to gather focused context:
+**If design decision exists**:
+- Read `docs/development/design-decisions/decision-[name].md` fully
+- Extract: design decision, domain changes, integration points, pain points to monitor
+- Use this to inform targeted context gathering
+
+**If no design decision exists**:
+- Proceed directly to Step 3
+
+### Step 3: Build Focused Context
+
+Use `architecture-context-builder` to gather focused context (informed by design decision if available):
 
 The context builder will spawn locators in parallel to find:
 - Essential domain model sections (minimal, focused)
@@ -46,7 +56,7 @@ The context builder will spawn locators in parallel to find:
 
 Wait for context builder to complete.
 
-### Step 3: Optional Deep Dives
+### Step 4: Optional Deep Dives
 
 [Only if architecture-context-builder flags areas needing deeper understanding]
 
@@ -55,17 +65,13 @@ If context builder suggests deeper analysis:
 - Use `code-analyzer` on [specific files] to understand [specific implementation]
 - Use `thoughts-locator` for [specific historical context]
 
-### Step 4: Read Related Artifacts
-
-**If design decision exists**:
-- Read `docs/development/design-decisions/decision-[name].md` fully
-- Extract: design decision, domain changes, integration points, pain points to monitor
+### Step 5: Read Additional Artifacts
 
 **If this modifies existing features**:
 - Read relevant sections of domain-model/ (from context builder)
 - Understand: current behavior, integration points, constraints
 
-### Step 5: Synthesize Understanding
+### Step 6: Synthesize Understanding
 
 Based on my research:
 
@@ -83,14 +89,13 @@ Based on my research:
 - [Relevant decision/principle]
 - [How it constrains this work]
 
-[If design decision exists]:
-**From Design Decision** (`docs/development/design-decisions/decision-[name].md`):
+**From Design Decision** (if applicable):
 - Design decision: [brief summary of chosen approach]
 - Domain changes: [new/modified/removed concepts]
 - Integration points: [systems affected]
 - Pain points to monitor: [known complexity areas from domain design]
 
-### Step 6: Ask Clarifying Questions
+### Step 7: Ask Clarifying Questions
 
 Questions that research and context couldn't answer:
 
@@ -114,11 +119,11 @@ Only ask questions you genuinely cannot answer from the architectural context.
 
 Then WAIT for user responses before proceeding.
 
-### Step 7: After User Responses
+### Step 8: After User Responses
 
 Thank you. Based on your input and the architectural context, I'll create the strategic implementation plan.
 
-### Step 8: Generate Strategic Implementation Plan
+### Step 9: Generate Strategic Implementation Plan
 
 Create a TIP at `docs/development/tips/tip-[feature-name].md`.
 
@@ -168,6 +173,7 @@ For each phase:
 **Scope**: [High-level areas of work - domain model, events, API, etc.]
 
 **Key Considerations**:
+- TDD: Write tests for new behavior before implementation
 - [Important design decision or constraint]
 - [Integration point to be aware of]
 - [Technical challenge to address]
@@ -183,7 +189,8 @@ For each phase:
 - Where dependencies constrain sequencing
 - How phases build on each other
 
-**High-Level Test Strategy** (Direction, not specifics):
+**High-Level Test Strategy** (TDD throughout):
+- Test-driven approach with red-green-refactor cycle per phase
 - What kinds of tests are needed (unit, integration, e2e)
 - Key scenarios to validate (happy path, edge cases, error handling)
 - Testing approach per phase
@@ -207,6 +214,7 @@ For each phase:
 - **Steering likelihood**: Areas that may need human decisions or course correction
 
 **Implementation Notes**:
+- **TDD**: Test-Driven Development throughout all phases
 - Architectural patterns to follow (reference docs)
 - Key principles to maintain
 - Quality gates
@@ -217,7 +225,7 @@ For each phase:
 - Confidence level (High/Medium/Low)
 - Justification: What drives complexity (novel patterns, integration points, decision density, steering needs)
 
-### Step 9: Present for Review
+### Step 10: Present for Review
 
 I've created the strategic implementation plan at:
 `docs/development/tips/tip-[feature-name].md`
@@ -247,7 +255,7 @@ Please review the plan and let me know:
 
 Then WAIT for user feedback and approval.
 
-### Step 10: After Approval
+### Step 11: After Approval
 
 Great! The strategic plan is approved and ready for detailed task breakdown.
 
