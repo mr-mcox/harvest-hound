@@ -1,181 +1,218 @@
-# Technical Implementation Plan (TIP): [Feature Name]
+---
+date: [YYYY-MM-DD]
+feature: [feature-name]
+status: [draft | approved | in_progress | complete]
+related_domain_design: [path/to/domain-design if exists]
+estimated_effort: [XS/S/M/L/XL]
+confidence: [High/Medium/Low]
+tags: [implementation, relevant, tags]
+---
 
-**Use Case**: [Brief reference to the driving use case]  
-**Estimated Scope**: [XS/S/M/L/XL] - [Brief justification]  
-**Target Value**: [Core user/business value being delivered]
+# Technical Implementation Plan: [Feature Name]
+
+## Domain Context
+
+**Relevant Domain Model Docs**:
+- `docs/architecture/domain-model/[file].md` ([sections])
+- Key concepts: [list core domain concepts this leverages]
+
+**Domain Changes Required** *(if from domain design)*:
+- [Summary of domain model changes, link to domain design doc]
 
 ---
 
-## 1. Context & Problem Analysis
+## Implementation Phases
 
-### Current State
-- **Existing Code**: What relevant code/patterns are already in place?
-- **Current Architecture**: How does the existing system handle related concerns?
-- **Known Issues**: Any technical debt or limitations that impact this work?
+### Phase 1: [e.g., "Extend Core Domain Model"]
 
-### Problem Statement
-- **Core Challenge**: What specific problem are we solving?
-- **User Impact**: How does the current state affect users?
-- **Technical Impact**: What technical problems need resolution?
+**Purpose**: [What this phase accomplishes and why it comes first]
 
-### Architecture Fit Assessment
-- **DDD Alignment**: Which bounded contexts are involved? Do they fit cleanly?
-- **Event Sourcing**: How does this integrate with our event-driven patterns?
-- **Existing Patterns**: What established patterns (Container/Presentation, etc.) apply?
+**Code Changes**:
+- `[path/file.py]:[line]` - [Specific change]
+- `[path/file.py]` - [New file or major addition]
+- Modify: [list files]
+- Create: [list files]
 
----
+**Test Strategy**:
+- Unit tests: [What to test and where]
+  - `tests/[path]/test_[name].py` - [Specific test cases]
+- Integration tests: [If needed]
+  - [Specific integration scenarios]
 
-## 2. Technical Approach & Design Decisions
+**Success Criteria**:
+- [ ] [Specific testable outcome]
+- [ ] [Specific testable outcome]
+- [ ] Tests pass: `[command]`
 
-### High-Level Strategy
-[1-2 sentences describing the core technical approach]
+**Dependencies**: None
 
-### Key Design Decisions
-| Decision | Alternatives Considered | Rationale |
-|----------|------------------------|-----------|
-| [Decision 1] | [Alt 1, Alt 2] | [Why this choice] |
-| [Decision 2] | [Alt 1, Alt 2] | [Why this choice] |
-
-### Pattern Applications
-- **Patterns to Follow**: [Which existing patterns apply and how]
-- **Anti-Patterns to Avoid**: [What NOT to do based on project guidelines]
-- **New Patterns**: [Any new patterns being introduced]
-- **Key Library APIs**: [Important APIs and patterns from current documentation]
-
-### Research Recommendations *(Optional)*
-- **[Research Area 1]**: [Why this might be worth investigating]
-- **[Research Area 2]**: [Specific questions or patterns to explore]
-- **[Research Area 3]**: [Performance or implementation details to research]
-
-### Risk Assessment
-- **High Risk**: [Items that could cause significant problems]
-- **Medium Risk**: [Items that need careful attention]
-- **Mitigation Strategies**: [How to reduce identified risks]
+**Estimated Effort**: [XS/S/M/L]
 
 ---
 
-## 3. Implementation Architecture
+### Phase 2: [e.g., "Update API Layer"]
 
-### Bounded Context Impacts
-- **[Context Name]**: [What changes, what's added, what's affected]
-- **[Context Name]**: [What changes, what's added, what's affected]
+**Purpose**: [What this phase accomplishes]
 
-### Event Flow Design
-```
-[User Action] → [Domain Event] → [Projection/Handler] → [Updated State]
-```
-- **New Events**: [Events being added]
-- **Event Consumers**: [What responds to these events]
-- **Event Schema**: [Key event structure decisions]
+**Code Changes**:
+- [Specific file:line changes]
 
-### Data Flow
-- **Input Sources**: [Where data enters the system]
-- **Processing Steps**: [How data flows through the system]
-- **Output Destinations**: [Where processed data goes]
+**Test Strategy**:
+- [Specific testing approach]
 
-### Integration Points
-- **REST Endpoints**: [New/modified API endpoints]
-- **WebSocket Events**: [Real-time communication changes]
-- **Database Schema**: [Schema changes or new tables]
-- **LLM Integration**: [AI/LLM touchpoints]
-- **Frontend Components**: [UI integration requirements]
+**Success Criteria**:
+- [ ] [Specific testable outcome]
+
+**Dependencies**: Phase 1 complete
+
+**Estimated Effort**: [XS/S/M/L]
 
 ---
 
-## 4. Testing & Quality Strategy
+### Phase 3: [e.g., "Frontend Integration"]
 
-### Testing Levels
-- **Unit Tests**: [What domain logic needs isolated testing]
-- **Integration Tests**: [What cross-service integration needs testing]
-- **E2E Tests**: [What user journeys need end-to-end validation]
+**Purpose**: [What this phase accomplishes]
 
-### TDD Strategy
-- **Behaviors Requiring Tests**: [Specific behaviors that need test-driven development]
-- **Setup-Only Work**: [Infrastructure/scaffolding that doesn't need tests]
-- **Test Data Strategy**: [How to handle test data and fixtures]
+**Code Changes**:
+- [Specific file:line changes]
 
-### Quality Gates
-- **Performance**: [Specific performance requirements]
-- **User Experience**: [UX standards that must be met]
-- **Data Integrity**: [Data consistency/safety requirements]
-- **Integration Reliability**: [Cross-service reliability standards]
+**Test Strategy**:
+- [Specific testing approach]
 
----
+**Success Criteria**:
+- [ ] [Specific testable outcome]
 
-## 5. Implementation Sequencing
+**Dependencies**: Phase 2 complete
 
-### Dependencies & Critical Path
-1. **Foundation Work**: [What must be built first]
-2. **Core Implementation**: [Main feature development order]  
-3. **Integration Work**: [How pieces connect together]
-4. **Polish & Optimization**: [Final refinements]
-
-### Risk-First Approach
-- **Highest Risk First**: [Tackle uncertain/difficult items early]
-- **Proof of Concept**: [Any prototyping needed to validate approach]
-- **Fallback Options**: [What to do if high-risk items fail]
-
-### Incremental Value Delivery
-- **Phase 1**: [Minimal viable implementation]
-- **Phase 2**: [Enhanced functionality]
-- **Phase 3**: [Full feature completion]
-
-### Rollback Considerations *(Optional)*
-- **Database Changes**: [How to undo schema/data changes if needed]
-- **Event Schema**: [How to handle event format changes]
-- **Breaking Changes**: [How to safely revert API/interface changes]
+**Estimated Effort**: [XS/S/M/L]
 
 ---
 
-## 6. Task Breakdown Preview
+## Library Research Needed
 
-### Major Work Streams
-1. **[Stream 1 Name]** ([Size estimate])
-   - [High-level description]
-   - [Key deliverables]
+[Only if specific library investigation required for implementation]
 
-2. **[Stream 2 Name]** ([Size estimate])
-   - [High-level description]  
-   - [Key deliverables]
-
-3. **[Stream 3 Name]** ([Size estimate])
-   - [High-level description]
-   - [Key deliverables]
-
-### Cross-Stream Dependencies
-- **[Stream A] → [Stream B]**: [What dependency exists]
-- **[Stream B] → [Stream C]**: [What dependency exists]
-
-### Total Effort Estimate
-**Overall Size**: [XS/S/M/L/XL]  
-**Confidence**: [High/Medium/Low] - [Brief explanation]  
-**Timeline Estimate**: [Rough development time estimate]
+### [Library Name]
+- **Need**: [What we need to figure out]
+- **Focus Areas**: [Specific APIs or patterns to research]
+- **Alternatives**: [If exploring multiple options]
 
 ---
 
-## 7. Success Criteria
+## Key Test Scenarios
 
-### Definition of Done
-- [ ] [Specific technical milestone]
-- [ ] [User-facing capability]
-- [ ] [Quality/performance threshold]
-- [ ] [Integration requirement]
+[High-level test cases that give confidence the implementation is correct]
 
-### Validation Approach
-- **Technical Validation**: [How to verify the solution works correctly]
-- **User Validation**: [How to confirm user value is delivered]
-- **Performance Validation**: [How to verify performance requirements]
+### Scenario 1: [Happy Path]
+**Given**: [Initial state]
+**When**: [Action taken]
+**Then**: [Expected outcome]
+**Validates**: [What this proves]
+
+### Scenario 2: [Edge Case]
+**Given**: [Initial state]
+**When**: [Action taken]
+**Then**: [Expected outcome]
+**Validates**: [What this proves]
+
+### Scenario 3: [Error Handling]
+**Given**: [Initial state]
+**When**: [Action taken]
+**Then**: [Expected outcome]
+**Validates**: [What this proves]
 
 ---
 
-## Next Steps
+## Integration Points
 
-1. **Review & Align**: [Any areas needing clarification or discussion]
-2. **Risk Validation**: [Any high-risk items that need early validation]
-3. **Task Generation**: [Ready to break down into detailed implementation tasks]
+**Backend**:
+- [API endpoints affected]
+- [Database changes]
+- [Event types]
+
+**Frontend**:
+- [Components affected]
+- [New UI elements]
+- [State management changes]
+
+**External**:
+- [Third-party services]
+- [LLM integration points]
 
 ---
 
-*TIP Created*: [Date]  
-*Last Updated*: [Date]  
-*Status*: [Draft/Approved/In Progress/Complete]
+## Data Migration
+
+[Only if changing existing data structures]
+
+**Migration Strategy**:
+- [How to handle existing data]
+
+**Rollback Plan**:
+- [How to revert if needed]
+
+**Testing Migration**:
+- [ ] [Specific validation steps]
+
+---
+
+## Performance Considerations
+
+[Only if performance is a concern]
+
+**Expected Impact**:
+- [Specific performance implications]
+
+**Optimization Strategy**:
+- [If needed, how to address]
+
+**Monitoring**:
+- [What to track]
+
+---
+
+## Risk Assessment
+
+### High Risk
+- **Risk**: [Description]
+- **Mitigation**: [How to address]
+- **Contingency**: [Backup plan]
+
+### Medium Risk
+- **Risk**: [Description]
+- **Mitigation**: [How to address]
+
+---
+
+## Implementation Notes
+
+**Architectural Patterns to Follow**:
+- [Specific patterns from architecture docs with refs]
+- Example: Event sourcing pattern from `docs/architecture/[file].md`
+
+**Code Conventions**:
+- [Testing patterns to follow with file:line refs]
+- [Error handling patterns]
+
+**Quality Gates**:
+- [ ] All tests pass
+- [ ] No linting errors
+- [ ] [Specific performance requirement met]
+- [ ] [Specific behavior validated]
+
+---
+
+## Total Effort Estimate
+
+**Total**: [XS/S/M/L/XL]
+
+**Confidence**: [High/Medium/Low]
+
+**Justification**: [Why this estimate and confidence level]
+
+---
+
+## References
+- Domain design: [link if exists]
+- Related TIPs: [links]
+- Similar implementations: [file:line refs]
