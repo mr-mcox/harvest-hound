@@ -7,6 +7,8 @@ This command helps explore how the domain model should evolve to enable new capa
 - You need to design how domain concepts should change
 - Multiple solution approaches are possible and need exploration
 
+**Purpose**: Drive alignment on domain design decisions through exploration of alternatives. The output is ephemeral - used for discussion, then discarded after domain model is updated.
+
 ---
 
 ## Available Agents
@@ -94,51 +96,52 @@ Then WAIT for user responses before proceeding.
 
 Thank you. Based on your answers, I'll now explore design alternatives.
 
-[If user provided a problem brief or opportunity doc, acknowledge and reference it]
+### Step 6: Generate Design Proposal (Ephemeral Discussion Document)
 
-### Step 6: Generate Design Proposal
+Create a design proposal for discussion. This is **NOT committed** - it's ephemeral scaffolding for alignment.
 
-Create a comprehensive domain design proposal following the template at `docs/templates/domain-design-proposal.md`.
+**Save to**: `.scratch/domain-design-[feature-name].md` (git-ignored)
 
 The proposal should include:
 
 **Problem Context Section**:
 - What's not working (synthesized from research and user input)
 - Current domain limitations with specific file:line references
-- User impact
+- User impact (why this matters)
 
 **Design Alternatives** (2-3 distinct approaches):
 For each alternative:
-- Core idea and domain changes required
-- **Supple design analysis** - what becomes easier/harder
-- Domain concepts affected with references to current domain-model/
-- Integration points and implementation complexity
-- Risks and concerns
+- **Core idea**: High-level conceptual approach
+- **Domain changes**: New concepts, modified responsibilities, changed relationships
+- **Supple design analysis**: What becomes easier/harder, more/less flexible
+- **Light code sketch** (if helpful): Class signatures, key method names, polymorphic relationships
+  - Example: "Abstract base class X with polymorphic method Y()"
+  - NOT: Full method implementations, test code, migration scripts
+- **Tradeoffs**: Honest assessment of complexity vs flexibility gains
+- **Integration implications**: How this affects IngredientBroker, RecipePlanner, etc.
 
 **Recommended Approach**:
 - Which alternative and why
 - Clear rationale based on flexibility, clarity, and pragmatism
 - Borrowed elements from other alternatives if combining ideas
-
-**Detailed Domain Model Changes**:
-- Specific modifications to specific domain-model/ files
-- Diff previews showing proposed changes
+- Key design principles that guided the decision
 
 **Use Cases Validated**:
-- Existing use cases that must still work
-- New use cases enabled by this design
-- Edge cases with defined behavior
+- Existing use cases that must still work (behavior preservation)
+- New use cases enabled by this design (new capabilities)
+- Edge cases with defined behavior (clarity on boundaries)
 
-**Implementation Implications**:
-- High-level phases
-- Code areas affected
-- Testing strategy
-- Effort estimate (t-shirt size)
+**Pain Points to Monitor**:
+- Known complexity areas (e.g., "event sourcing with subclasses")
+- Aspects that may need revision during implementation
+- Alternative approaches to consider if pain points become blockers
 
 ### Step 7: Present for Review
 
-I've created a domain design proposal at:
-`docs/development/domain-designs/domain-[feature-name].md`
+I've created a design proposal for discussion at:
+`.scratch/domain-design-[feature-name].md`
+
+**Note**: This is an ephemeral discussion document - it will be deleted after we update the domain model.
 
 The proposal explores [X] design alternatives for [problem]:
 - **Alternative A**: [Brief description]
@@ -151,8 +154,6 @@ The proposal explores [X] design alternatives for [problem]:
 - [Specific high-level change]
 - [Specific high-level change]
 
-**Estimated Implementation**: [T-shirt size]
-
 Please review the proposal and let me know:
 - Does the recommended approach feel right?
 - Are there design aspects that need more exploration?
@@ -162,31 +163,172 @@ Then WAIT for user feedback.
 
 ### Step 8: After User Approval
 
-Based on your approval, I'll now update the domain model files:
+Based on your approval, I'll now:
+
+1. **Update domain model documentation**: `docs/architecture/domain-model.md`
+2. **Create design decision document**: `docs/development/design-decisions/decision-[feature-name].md` (for TIP handoff)
+3. **Delete ephemeral proposal**: Remove `.scratch/domain-design-[feature-name].md`
+
+### Step 8a: Update Domain Model Files
+
+Update `docs/architecture/domain-model.md` with the approved design changes:
 
 **Files to Update**:
-- `docs/architecture/domain-model/[file].md` - [What sections]
+- `docs/architecture/domain-model.md` - [What sections being changed]
 
-[Make the specific changes to domain-model/ files as outlined in the proposal]
+[Make the specific changes to domain model as outlined in the approved alternative]
 
-Domain model updated! The design proposal will remain in `docs/development/domain-designs/` until after implementation, then can be archived.
+### Step 8b: Create Design Decision Document (TIP Handoff)
+
+Create a focused design decision at `docs/development/design-decisions/decision-[feature-name].md`:
+
+```markdown
+# Design Decision: [Feature Name]
+
+**Purpose**: [One sentence - what problem does this solve]
+
+**Status**: Approved - Ready for Implementation
+
+**Cleanup After Implementation**:
+- Verify: [Key classes/files that should exist after implementation]
+- Verify: Domain model updated in `docs/architecture/domain-model.md` [specific sections]
+- Delete: This file after implementation complete
+
+---
+
+## Design Decision
+
+**Chosen Approach**: [Name of selected alternative]
+
+**Core Concept**: [2-3 sentences explaining the fundamental design idea]
+
+**Why This Approach**: [Brief rationale - key factors that drove the decision]
+
+---
+
+## Domain Model Changes
+
+**Affected Sections**: `docs/architecture/domain-model.md` [specific sections]
+
+**New Concepts**:
+- [ConceptName]: [Brief description of new domain concept]
+- [ConceptName]: [Brief description]
+
+**Modified Concepts**:
+- [ConceptName]: [What changed and why]
+
+**Removed Concepts**:
+- [ConceptName]: [What was removed and why]
+
+---
+
+## Key Relationships & Behaviors
+
+**[Concept A] ↔ [Concept B]**:
+- [How they interact]
+- [Key polymorphic or delegation patterns]
+
+**[Concept C] Responsibilities**:
+- [What this concept is responsible for]
+- [What it explicitly is NOT responsible for]
+
+---
+
+## Use Cases Enabled
+
+**New Capabilities**:
+1. [Use case name]: [What users can now do]
+2. [Use case name]: [What users can now do]
+
+**Preserved Behaviors**:
+1. [Existing use case]: [Still works as before]
+2. [Existing use case]: [Still works as before]
+
+---
+
+## Implementation Considerations
+
+**Integration Points**:
+- [System/Service]: [How this domain change affects it]
+- [System/Service]: [How this domain change affects it]
+
+**Pain Points to Monitor**:
+- [Known complexity]: [What to watch for during implementation]
+- [Potential friction]: [Alternative approach if this becomes blocker]
+
+**Event Sourcing Notes** (if applicable):
+- [Any event sourcing patterns or constraints]
+
+---
+
+## Light Code Sketch (Conceptual)
+
+[Only if helpful for understanding the design]
+
+```python
+# Abstract concepts - NOT detailed implementation
+class ConceptA(ABC):
+    @abstractmethod
+    def key_behavior(self) -> Result:
+        """Polymorphic behavior that varies by subclass"""
+        pass
+
+class ConceptB(ConceptA):
+    # Specific field semantics for this variant
+    field_for_llm: str  # LLM-facing instructions
+
+class ConceptC(ConceptA):
+    # Different field semantics for this variant
+    field_for_humans: str  # Human-readable notes
+```
+
+---
+
+**Next Step**: Use `create-tip "[feature-name]"` to plan implementation.
+
+This design decision provides the domain context that `create-tip` will use to generate the Technical Implementation Plan (TIP).
+```
+
+### Step 8c: Clean Up Ephemeral Files
+
+Delete the discussion proposal: `.scratch/domain-design-[feature-name].md`
+
+### Step 9: Present Completion
+
+Domain model updated! Here's what was created:
+
+**Committed Files**:
+- ✅ Updated: `docs/architecture/domain-model.md` - [sections changed]
+- ✅ Created: `docs/development/design-decisions/decision-[feature-name].md` - TIP handoff document
+
+**Deleted Files** (ephemeral):
+- 🗑️ Removed: `.scratch/domain-design-[feature-name].md` - Discussion proposal no longer needed
 
 **Next steps**:
-- Use `create-tip "[feature]"` when ready to plan implementation
-- Or continue exploring design questions
+Run `create-tip "[feature-name]"` when ready to plan implementation. The TIP will use `decision-[feature-name].md` for domain context.
+
+**Note**: The design decision file is scaffolding - it should be deleted after implementation is complete and the code becomes the authoritative source of truth.
 
 ---
 
 ## Quality Guidelines
 
-**Good Domain Design Proposals**:
-- Address real friction or limitations with evidence
+**Good Design Exploration**:
+- Focus on WHAT and WHY, not HOW
 - Explore meaningfully different alternatives (not just variations)
 - Honest supple design analysis - what flexibility is gained/lost
 - Clear about invariants and use cases that must be preserved
 - Specific file:line references to current domain model
 - Concrete domain changes, not vague aspirations
-- Realistic effort estimates
+
+**Code Sketches (When Helpful)**:
+- ✅ Class signatures and inheritance hierarchies
+- ✅ Key method names and polymorphic relationships
+- ✅ Field semantics and their purposes
+- ❌ Full method implementations
+- ❌ Test code and test strategies
+- ❌ Migration scripts or database schemas
+- ❌ API endpoints or frontend components
 
 **Supple Design Focus**:
 Ask yourself for each alternative:
@@ -205,4 +347,13 @@ Ask yourself for each alternative:
 
 ---
 
-Remember: You're exploring design space to make an informed decision, not just documenting what to build. The goal is clarity about the domain model evolution before implementation.
+## Remember
+
+**This command is about design alignment, not implementation planning**:
+- Explore alternatives to make informed decisions
+- Create ephemeral discussion documents (not committed)
+- Update permanent domain model documentation
+- Produce focused handoff summary for TIP creation
+- Delete discussion scaffolding after completion
+
+The goal is clarity about domain model evolution before implementation, not exhaustive implementation documentation.

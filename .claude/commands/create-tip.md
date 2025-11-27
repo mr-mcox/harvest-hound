@@ -55,9 +55,9 @@ If context builder suggests deeper analysis:
 
 ### Step 4: Read Related Artifacts
 
-**If domain design exists**:
-- Read `docs/development/domain-designs/domain-[name].md` fully
-- Extract: recommended approach, domain changes, implementation implications
+**If design decision exists**:
+- Read `docs/development/design-decisions/decision-[name].md` fully
+- Extract: design decision, domain changes, integration points, pain points to monitor
 
 **If this modifies existing features**:
 - Read relevant sections of domain-model/ (from context builder)
@@ -81,11 +81,12 @@ Based on my research:
 - [Relevant decision/principle]
 - [How it constrains this work]
 
-[If domain design exists]:
-**From Domain Design** (`docs/development/domain-designs/domain-[name].md`):
-- Recommended approach: [brief summary]
-- Domain changes needed: [high-level list]
-- Implementation complexity: [assessment from design]
+[If design decision exists]:
+**From Design Decision** (`docs/development/design-decisions/decision-[name].md`):
+- Design decision: [brief summary of chosen approach]
+- Domain changes: [new/modified/removed concepts]
+- Integration points: [systems affected]
+- Pain points to monitor: [known complexity areas from domain design]
 
 ### Step 6: Ask Clarifying Questions
 
