@@ -140,7 +140,7 @@ Load related data on-demand through repository injection.
 
 **Decision**: Use flat, denormalized view models rather than nested object hierarchies.
 
-**Rationale**: 
+**Rationale**:
 - **UI Ergonomics**: Templates can access `item.ingredient_name` directly instead of `item.ingredient.name`
 - **Serialization Efficiency**: Smaller JSON payloads without nested objects
 - **Query Optimization**: Easier to sort/filter by denormalized fields
@@ -175,17 +175,17 @@ class InventoryItemView(BaseModel):
     # Core identifiers
     store_id: UUID
     ingredient_id: UUID
-    
+
     # Denormalized for UI convenience (no deep hierarchies)
     ingredient_name: str
     store_name: str
-    
+
     # Inventory data
     quantity: float
     unit: str
     notes: Optional[str] = None
     added_at: datetime
-    
+
     # Computed fields for common UI patterns
     @property
     def display_name(self) -> str:
@@ -199,12 +199,12 @@ class InventoryItemView(BaseModel):
 class IngredientRepository:
     def __init__(self, session: Session):
         self.session = session
-    
+
     def save(self, ingredient: Ingredient):
         # Pure SQL with Core - maintains persistence ignorance
         stmt = insert(ingredients).values(**ingredient.model_dump())
         self.session.execute(stmt)
-    
+
     def get_by_id(self, ingredient_id: UUID) -> Optional[Ingredient]:
         stmt = select(ingredients).where(ingredients.c.ingredient_id == ingredient_id)
         result = self.session.execute(stmt).fetchone()
@@ -220,7 +220,7 @@ class InventoryProjectionHandler:
         # Fetch related data for denormalization
         ingredient = self.ingredient_repo.get_by_id(event.ingredient_id)
         store = self.store_repo.get_by_id(event.store_id)
-        
+
         # Create flat view model with denormalized fields
         view = InventoryItemView(
             store_id=event.store_id,
@@ -232,9 +232,9 @@ class InventoryProjectionHandler:
             notes=event.notes,
             added_at=event.added_at
         )
-        
+
         self.view_store.save_inventory_item_view(view)
-    
+
     def handle_ingredient_name_updated(self, event: IngredientNameUpdated):
         # Update all inventory views when ingredient name changes
         views = self.view_store.get_by_ingredient_id(event.ingredient_id)
@@ -255,7 +255,7 @@ class InventoryViewStore:
 # Option 2: SQLAlchemy ORM (acceptable for read models)
 class InventoryItemViewTable(Base):
     __tablename__ = "inventory_item_views"
-    
+
     store_id: Mapped[UUID] = mapped_column(UUID, primary_key=True)
     ingredient_id: Mapped[UUID] = mapped_column(UUID, primary_key=True)
     ingredient_name: Mapped[str] = mapped_column(String)

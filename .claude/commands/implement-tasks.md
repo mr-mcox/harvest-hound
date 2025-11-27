@@ -105,6 +105,46 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 2. Break complex behaviors into smaller pieces
 3. Ask user if sub-task needs to be split
 
+## Implementation Complete - Cleanup Scaffolding
+
+**When ALL tasks in tasks-ACTIVE.md are complete:**
+
+1. **Run final verification**:
+   - All tests passing
+   - Pre-commit checks clean
+   - Code matches domain model documentation
+
+2. **Prompt user for scaffolding cleanup**:
+
+```
+✅ All tasks implemented and tested!
+
+Implementation is complete. Time to clean up scaffolding documents.
+
+**Verify implementation matches design**:
+- [ ] Check implementation files exist as specified in design decision
+- [ ] Verify domain model (`docs/architecture/domain-model.md`) reflects actual implementation
+- [ ] Confirm all tests pass and behavior matches design
+
+**Clean up scaffolding** (delete after verification):
+- [ ] `docs/development/design-decisions/decision-[name].md`
+- [ ] `docs/development/tips/tip-[name].md`
+- [ ] `docs/development/tasks-ACTIVE.md`
+
+The code is now the authoritative source of truth. Scaffolding served its purpose and can be deleted.
+
+Would you like me to delete these scaffolding files now, or would you prefer to review first?
+```
+
+3. **If user approves deletion**:
+   - Delete the design decision file
+   - Delete the TIP file
+   - Delete tasks-ACTIVE.md
+   - Confirm: "Scaffolding cleaned up. Implementation complete!"
+
+4. **If user wants to review**:
+   - Wait for user confirmation before deleting
+
 ## Important Rules
 
 - **NEVER** add business logic to SETUP ONLY sub-tasks
@@ -113,5 +153,6 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 - **ALWAYS** run tests before completing each sub-task
 - **ALWAYS** run pre-commit and fix any non-auto-fixed issues before completing each sub-task
 - **ALWAYS** pause for user feedback after each completed sub-task
+- **ALWAYS** prompt for scaffolding cleanup when all tasks complete
 
 Following these workflows ensures clean implementation with appropriate testing coverage and minimal course correction.

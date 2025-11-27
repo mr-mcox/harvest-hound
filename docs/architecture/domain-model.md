@@ -48,41 +48,82 @@ Therefore:
 
 ## 4. InventoryStore Hierarchy
 
-### 4.1 Aggregate Root & Sub‑Entities
+### 4.1 Aggregate Root (Abstract Base Class)
 
-```mermaid
-classDiagram
-    class InventoryStore {
-        +StoreId
-        +StoreType
-        +Priority
-        +Inventory: Map<IngredientId, Lot[]>
-        +claim(cmd)
-        +release(cmd)
-    }
-    InventoryStore <|-- PerishableStore
-    InventoryStore <|-- FrozenStore
-    InventoryStore <|-- PantryStore
-    InventoryStore <|-- GroceryStore
-```
+**`InventoryStore`** – Abstract base class for all inventory store types.
 
-- **Invariant** – Quantity of any lot can never fall below zero.
+**Common Properties** (all store types):
+- `StoreId` – Unique identifier
+- `Name` – Human-readable store name (e.g., "CSA Box", "Pantry", "Cub Foods")
+- `Priority` – Integer (higher = check this store first during claiming)
+- `CreatedAt` – Timestamp
 
-### 4.2 Value Objects
+**Common Behaviors** (polymorphic):
+- `check_availability(ingredient_id, ingredient_name) -> AvailabilityResult` – Check if ingredient is available
+- `can_claim(ingredient_id, quantity) -> bool` – Check if ingredient quantity can be claimed
 
-| VO           | Fields                                          | Purpose                                |
-| ------------ | ----------------------------------------------- | -------------------------------------- |
-| **Lot**      | `ingredientId`, `qty`, `bestBefore?`, `batchId` | Fine‑grained tracking & FIFO depletion |
-| **Quantity** | `amount`, `unit`                                | Enforces unit consistency & arithmetic |
+### 4.2 Concrete Subclasses
 
-### 4.3 Domain Events (Inventory Context)
+#### ExplicitInventoryStore
+**Purpose**: Store with enumerated inventory items and tracked quantities
 
-- `IngredientAddedToStore`
-- `IngredientRemovedFromStore`
-- `IngredientClaimed`
-- `IngredientClaimReleased`
+**Additional Properties**:
+- `Description` – Optional human-readable note (e.g., "premade sauces we have lying around")
+- `Inventory` – List of `InventoryItem` with tracked quantities
 
-*Stores apply commands → record events → rebuild current state from event stream.*
+**Additional Behaviors**:
+- `add_inventory_item(ingredient_id, quantity, unit, notes)` – Add item to inventory
+- `remove_inventory_item(ingredient_id, quantity)` – Remove/decrement item
+- Claiming decrements quantities (reserve behavior)
+
+**Examples**: Refrigerator (CSA box contents), Freezer (frozen meat), Specific pantry items
+
+---
+
+#### DefinitionBasedStore
+**Purpose**: Store with LLM-inferred availability based on natural language definition
+
+**Additional Properties**:
+- `Definition` – LLM-facing natural language instructions describing what's available
+  - Example: "Cub Foods on Lake St in Minneapolis. Strong Somali community influence means excellent selection in global foods aisle including East African spices, teff flour, injera ingredients, halal meats"
+  - Can be multi-paragraph with rich context
+- NO `Inventory` field (not applicable)
+
+**Additional Behaviors**:
+- NO `add_inventory_item()` method (not applicable)
+- `check_availability()` delegates to LLM with definition context
+- Claiming generates shopping lists or verification prompts (no inventory change)
+
+**Examples**: "Typical urban grocery store", "Well-stocked pantry for Italian and Indian cooking", "Specialty Asian market"
+
+---
+
+**Common Store Patterns**:
+- **Refrigerator/CSA Box**: `ExplicitInventoryStore`, high priority (e.g., 10), tracked perishable quantities
+- **Freezer**: `ExplicitInventoryStore`, medium priority (e.g., 7), tracked frozen quantities
+- **Generic Pantry**: `DefinitionBasedStore`, low priority (e.g., 5), definition="Well-stocked with common staples, baking ingredients, spices"
+- **Grocery Store**: `DefinitionBasedStore`, lowest priority (e.g., 1), definition="Full-service urban grocery store"
+
+### 4.3 Value Objects (Future Enhancement)
+
+| VO           | Fields                                          | Purpose                                | Status          |
+| ------------ | ----------------------------------------------- | -------------------------------------- | --------------- |
+| **Lot**      | `ingredientId`, `qty`, `bestBefore?`, `batchId` | Fine‑grained tracking & FIFO depletion | Not implemented |
+| **Quantity** | `amount`, `unit`                                | Enforces unit consistency & arithmetic | Not implemented |
+
+*Current MVP uses simple float + string for quantities. Lot-based tracking deferred.*
+
+### 4.4 Domain Events (Inventory Context)
+
+- `StoreCreated(store_id, name, store_type, description?, definition?, priority)` – Store created with discriminator
+- `InventoryItemAdded(store_id, ingredient_id, quantity, unit, notes)` – Item added to ExplicitInventoryStore
+- `InventoryItemRemoved` – (Future) Item removed from store
+- `IngredientClaimed` – (Future) Ingredient reserved for meal plan
+- `IngredientClaimReleased` – (Future) Claim released back to availability
+
+*Stores apply commands → record events → rebuild current state from event stream via discriminator routing.*
+
+**⚠️ Event Sourcing Note**: Subclass-based aggregates require discriminator field in events to route to correct subclass during reconstruction. Monitor complexity during implementation.
 
 ---
 
@@ -271,8 +312,8 @@ Event-driven projection handlers maintain read model consistency:
 class InventoryProjectionHandler:
     def handle_inventory_item_added(self, event: InventoryItemAdded):
         # Update denormalized view with ingredient and store names
-        
-class StoreProjectionHandler:  
+
+class StoreProjectionHandler:
     def handle_store_created(self, event: StoreCreated):
         # Create store view entry
     def handle_inventory_item_added(self, event: InventoryItemAdded):
