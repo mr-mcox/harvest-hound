@@ -11,7 +11,7 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 4. **After completing each sub-task:**
    - Mark all checkboxes as ✓ completed
    - Run appropriate tests to ensure no regressions
-   - Commit the progress: "Complete [sub-task name]"
+   - Run pre-commit checks and fix any issues not auto-fixed
    - **PAUSE** and ask for user review/feedback
 
 ## 🏗️ SETUP ONLY Workflow
@@ -28,7 +28,7 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 2. For class methods: `raise NotImplementedError("TODO: implement in NEW BEHAVIOR task")`
 3. For schemas: Include only field definitions, no computed properties or validators
 4. For routes: Basic signature with `raise NotImplementedError("TODO: implement endpoint logic")`
-5. Commit immediately: "SETUP: Add [component] scaffolding"
+5. Run pre-commit to verify code quality
 
 **Red Flags - Stop and Re-categorize if:**
 - You're writing business rules or domain logic
@@ -43,18 +43,18 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 - Test should fail for the right reason (not syntax errors)
 - Use the specific test case from the task description
 - Run tests to confirm failure
-- Commit failing tests: "RED: Add test for [specific behavior]"
+- Run pre-commit to ensure test code quality
 
 **GREEN Phase**: Write minimal implementation to make test pass
 - Focus on making tests pass, not perfect code
 - Use existing SETUP scaffolding where possible
 - Run tests to confirm they pass
-- Commit passing implementation: "GREEN: Implement [specific behavior]"
+- Run pre-commit to ensure implementation code quality
 
 **REFACTOR Phase** (if needed): Clean up code while keeping tests green
 - Extract methods, improve names, remove duplication
 - Run tests after each change to ensure they stay green
-- Commit refactoring: "REFACTOR: Clean up [component]"
+- Run pre-commit to ensure refactored code quality
 
 ## 🔄 REFACTOR Workflow
 
@@ -69,8 +69,8 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 1. Run existing tests to establish baseline (must be green)
 2. Make small improvement while preserving behavior
 3. Run tests to ensure no regressions
-4. If tests pass, commit: "REFACTOR: [specific improvement]"
-5. If tests fail, revert and try smaller change
+4. Run pre-commit to ensure code quality
+5. If tests or pre-commit fail, revert and try smaller change
 
 **Safe Refactoring Patterns:**
 - Extract method/function from larger code block
@@ -80,11 +80,11 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 
 ## Sub-Task Categories Quick Reference
 
-| Category | Tests | Implementation | Commit Pattern |
-|----------|-------|----------------|----------------|
-| **SETUP ONLY** | None needed | Stubs + NotImplementedError | "SETUP: Complete [sub-task name]" |
-| **NEW BEHAVIOR** | TDD (RED/GREEN) | Full implementation | "Complete [sub-task name] with tests" |
-| **REFACTOR** | Keep existing green | Preserve behavior | "REFACTOR: Complete [sub-task name]" |
+| Category | Tests | Implementation | Quality Check |
+|----------|-------|----------------|---------------|
+| **SETUP ONLY** | None needed | Stubs + NotImplementedError | Run pre-commit |
+| **NEW BEHAVIOR** | TDD (RED/GREEN) | Full implementation | Run pre-commit after GREEN |
+| **REFACTOR** | Keep existing green | Preserve behavior | Run pre-commit after changes |
 
 ## Quality Gates
 
@@ -110,7 +110,8 @@ You are implementing tasks from the implementation plan  @docs/development/tasks
 - **NEVER** add business logic to SETUP ONLY sub-tasks
 - **NEVER** skip tests for NEW BEHAVIOR sub-tasks
 - **NEVER** change test behavior during REFACTOR sub-tasks
-- **ALWAYS** run tests before committing each sub-task
+- **ALWAYS** run tests before completing each sub-task
+- **ALWAYS** run pre-commit and fix any non-auto-fixed issues before completing each sub-task
 - **ALWAYS** pause for user feedback after each completed sub-task
 
 Following these workflows ensures clean implementation with appropriate testing coverage and minimal course correction.
