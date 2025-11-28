@@ -44,7 +44,8 @@ app.add_middleware(
 class CreateStoreRequest(BaseModel):
     name: str
     description: Optional[str] = ""
-    infinite_supply: Optional[bool] = False
+    store_type: str = "explicit"  # "explicit" or "definition"
+    definition: Optional[str] = None  # Required for definition-based stores
     inventory_text: Optional[str] = None
 
 
@@ -52,7 +53,7 @@ class CreateStoreResponse(BaseModel):
     store_id: UUID
     name: str
     description: str
-    infinite_supply: bool
+    store_type: str
     successful_items: Optional[int] = None
     error_message: Optional[str] = None
 
@@ -61,6 +62,7 @@ class StoreListItem(BaseModel):
     store_id: UUID
     name: str
     description: str
+    store_type: str
     item_count: int
 
 
@@ -162,15 +164,16 @@ async def create_store(
     result = store_service.create_store_with_inventory(
         name=request.name,
         description=request.description or "",
-        infinite_supply=request.infinite_supply or False,
+        store_type=request.store_type,
         inventory_text=request.inventory_text,  # Can be None
+        definition=request.definition,  # Can be None
     )
 
     return CreateStoreResponse(
         store_id=result.store_id,
         name=request.name,
         description=request.description or "",
-        infinite_supply=request.infinite_supply or False,
+        store_type=request.store_type,
         successful_items=result.successful_items,
         error_message=result.error_message,
     )
@@ -187,6 +190,7 @@ async def get_stores(
             store_id=UUID(store["store_id"]),
             name=store["name"],
             description=store["description"],
+            store_type=store["store_type"],
             item_count=store["item_count"],
         )
         for store in stores_data

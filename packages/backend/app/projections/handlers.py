@@ -119,7 +119,7 @@ class StoreProjectionHandler:
             store_id=event.store_id,
             name=event.name,
             description=event.description,
-            infinite_supply=event.infinite_supply,
+            store_type=event.store_type,
             item_count=0,  # New store starts with 0 items
             created_at=event.created_at,
         )

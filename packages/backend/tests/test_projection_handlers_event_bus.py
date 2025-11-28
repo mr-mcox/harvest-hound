@@ -50,7 +50,7 @@ class TestProjectionHandlersEventBusIntegration:
             store_id=store_id,
             name="Test Store",
             description="Test description",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 
@@ -66,7 +66,7 @@ class TestProjectionHandlersEventBusIntegration:
         assert created_view.store_id == store_id
         assert created_view.name == "Test Store"
         assert created_view.description == "Test description"
-        assert created_view.infinite_supply is False
+        assert created_view.store_type == "explicit"
         assert created_view.item_count == 0
 
     @pytest.mark.asyncio
@@ -89,7 +89,7 @@ class TestProjectionHandlersEventBusIntegration:
             store_id=store_id,
             name="Test Store",
             description="Test description",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 

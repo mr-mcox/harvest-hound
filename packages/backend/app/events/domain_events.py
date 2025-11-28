@@ -15,7 +15,8 @@ class StoreCreated(DomainEvent):
     store_id: UUID
     name: str
     description: str
-    infinite_supply: bool
+    store_type: str  # Discriminator: "explicit" or "definition"
+    definition: Optional[str] = None  # Required for definition-based stores
     created_at: datetime
 
 

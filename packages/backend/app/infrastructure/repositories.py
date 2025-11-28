@@ -8,7 +8,12 @@ from ..events.domain_events import (
     StoreCreated,
 )
 from ..models.ingredient import Ingredient
-from ..models.inventory_store import InventoryStore
+from ..models.inventory_store import (
+    DefinitionBasedStore,
+    ExplicitInventoryStore,
+    InventoryStore,
+    inventory_store_from_events,
+)
 from .event_publisher import EventPublisher
 from .event_store import EventStore
 
@@ -83,8 +88,10 @@ class StoreRepository:
             if self.event_publisher:
                 self.event_publisher.publish_sync(event)
 
-    def load(self, store_id: UUID) -> InventoryStore:
-        """Load store from its event stream."""
+    def load(
+        self, store_id: UUID
+    ) -> Union[ExplicitInventoryStore, DefinitionBasedStore]:
+        """Load store from its event stream using polymorphic factory."""
         stream_id = f"store-{store_id}"
         event_dicts = self.event_store.load_events(stream_id)
 
@@ -103,4 +110,5 @@ class StoreRepository:
             else:
                 raise ValueError(f"Unknown event type: {event_dict['event_type']}")
 
-        return InventoryStore.from_events(events)
+        # Use polymorphic factory to create correct store type
+        return inventory_store_from_events(events)

@@ -94,7 +94,7 @@ class TestStoreView:
             store_id=store_id,
             name="CSA Box",
             description="Weekly vegetable delivery",
-            infinite_supply=False,
+            store_type="explicit",
             item_count=5,
             created_at=created_at,
         )
@@ -103,7 +103,7 @@ class TestStoreView:
         assert view.store_id == store_id
         assert view.name == "CSA Box"
         assert view.description == "Weekly vegetable delivery"
-        assert view.infinite_supply is False
+        assert view.store_type == "explicit"
         assert view.item_count == 5
         assert view.created_at == created_at
 
@@ -114,12 +114,12 @@ class TestStoreView:
             store_id=uuid4(),
             name="Pantry",
             description="",
-            infinite_supply=True,
+            store_type="explicit",
             item_count=0,
             created_at=datetime.now(),
         )
 
         # Assert
         assert view.description == ""
-        assert view.infinite_supply is True
+        assert view.store_type == "explicit"
         assert view.item_count == 0

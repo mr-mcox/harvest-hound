@@ -50,6 +50,6 @@ class StoreView(BaseModel):
     store_id: UUID
     name: str
     description: str = ""
-    infinite_supply: bool = False
+    store_type: str  # "explicit" or "definition"
     item_count: int = 0
     created_at: datetime

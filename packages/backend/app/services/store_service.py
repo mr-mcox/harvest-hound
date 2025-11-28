@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
 from ..events.domain_events import StoreCreatedWithInventory
@@ -17,7 +17,7 @@ from ..interfaces.view_store import (
     StoreViewStoreProtocol,
 )
 from ..models.ingredient import Ingredient
-from ..models.inventory_store import InventoryStore
+from ..models.inventory_store import DefinitionBasedStore, ExplicitInventoryStore
 from ..models.parsed_inventory import ParsedInventoryItem
 
 logger = logging.getLogger(__name__)
@@ -88,20 +88,33 @@ class StoreService:
         self,
         name: str,
         description: str,
-        infinite_supply: bool,
+        store_type: str,
         inventory_text: Optional[str],
+        definition: Optional[str] = None,
     ) -> UnifiedCreationResult:
         """Create store and optionally process inventory in unified operation."""
         # Step 1: Create store directly (inlined from old create_store method)
         store_id = uuid4()
 
-        # Create store using domain model
-        store, events = InventoryStore.create(
-            store_id=store_id,
-            name=name,
-            description=description,
-            infinite_supply=infinite_supply,
-        )
+        # Create store using appropriate domain model based on store_type
+        store: Union[ExplicitInventoryStore, DefinitionBasedStore]
+        if store_type == "explicit":
+            store, events = ExplicitInventoryStore.create(
+                store_id=store_id,
+                name=name,
+                description=description,
+            )
+        elif store_type == "definition":
+            if not definition:
+                raise ValueError("definition required for definition-based stores")
+            store, events = DefinitionBasedStore.create(
+                store_id=store_id,
+                name=name,
+                definition=definition,
+                description=description,
+            )
+        else:
+            raise ValueError(f"Unknown store_type: {store_type}")
 
         # Persist events through repository
         self.store_repository.save(store, events)
@@ -158,7 +171,15 @@ class StoreService:
         """Upload inventory items to a store by parsing text input."""
         try:
             # Load the store
-            store = self.store_repository.load(store_id)
+            loaded_store = self.store_repository.load(store_id)
+
+            # Only ExplicitInventoryStore supports adding inventory
+            if not isinstance(loaded_store, ExplicitInventoryStore):
+                return InventoryUploadResult.error_result(
+                    ["This store type does not support adding explicit inventory"]
+                )
+
+            store = loaded_store
 
             # Parse the inventory text using LLM (with notes)
             parsing_notes = None  # Initialize outside try block
@@ -293,7 +314,7 @@ class StoreService:
                 "store_id": str(view.store_id),
                 "name": view.name,
                 "description": view.description,
-                "infinite_supply": view.infinite_supply,
+                "store_type": view.store_type,
                 "item_count": view.item_count,
                 "created_at": view.created_at,
             }

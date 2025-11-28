@@ -40,7 +40,7 @@ class TestStoreCreation:
     ) -> None:
         """Test that POST /stores with valid data returns 201 with store details."""
         # Given
-        store_data = {"name": "CSA Box"}
+        store_data = {"name": "CSA Box", "store_type": "explicit"}
 
         # When
         response = client.post("/stores", json=store_data)
@@ -54,7 +54,7 @@ class TestStoreCreation:
         assert UUID(response_data["store_id"])  # Should be valid UUID
         assert response_data["name"] == "CSA Box"
         assert response_data["description"] == ""
-        assert response_data["infinite_supply"] is False
+        assert response_data["store_type"] == "explicit"
 
         # Store should be persisted and retrievable
         stores_response = client.get("/stores")
@@ -138,7 +138,7 @@ class TestStoreCreation:
             assert UUID(response_data["store_id"])  # Should be valid UUID
             assert response_data["name"] == "CSA Box"
             assert response_data["description"] == "Fresh vegetables"
-            assert response_data["infinite_supply"] is False
+            assert response_data["store_type"] == "explicit"
 
             # Should include unified creation results from inventory processing
             assert response_data["successful_items"] == 2  # carrots + kale
@@ -241,7 +241,7 @@ class TestStoreCreation:
         """Test that POST /stores without inventory_text returns 201 with unified
         results showing no inventory processed."""
         # Given
-        store_data = {"name": "CSA Box"}
+        store_data = {"name": "CSA Box", "store_type": "explicit"}
 
         # When
         response = client.post("/stores", json=store_data)
@@ -255,7 +255,7 @@ class TestStoreCreation:
         assert UUID(response_data["store_id"])
         assert response_data["name"] == "CSA Box"
         assert response_data["description"] == ""
-        assert response_data["infinite_supply"] is False
+        assert response_data["store_type"] == "explicit"
 
         # Should always include unified creation results (even when no inventory
         # processed)
@@ -342,7 +342,7 @@ class TestInventoryUpload:
         """Test POST /stores/{id}/inventory with valid text returns 201 with success
         structure."""
         # Given - Create a store first
-        store_data = {"name": "Test Store"}
+        store_data = {"name": "Test Store", "store_type": "explicit"}
         store_response = client.post("/stores", json=store_data)
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
@@ -379,7 +379,7 @@ class TestInventoryUpload:
         """Test POST /stores/{id}/inventory returns 400 with proper error structure
         when parsing fails."""
         # Given - Create a store first
-        store_data = {"name": "Test Store"}
+        store_data = {"name": "Test Store", "store_type": "explicit"}
         store_response = client.post("/stores", json=store_data)
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
@@ -426,7 +426,7 @@ class TestInventoryRetrieval:
     ) -> None:
         """Test GET /stores/{id}/inventory returns 200 with proper JSON structure."""
         # Given - Create a store and add minimal inventory for testing structure
-        store_data = {"name": "Test Store"}
+        store_data = {"name": "Test Store", "store_type": "explicit"}
         store_response = client.post("/stores", json=store_data)
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]

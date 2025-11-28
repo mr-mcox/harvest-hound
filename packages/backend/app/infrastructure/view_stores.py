@@ -134,7 +134,7 @@ class StoreViewStore:
             store_id=str(view.store_id),
             name=view.name,
             description=view.description,
-            infinite_supply=view.infinite_supply,
+            store_type=view.store_type,
             item_count=view.item_count,
             created_at=view.created_at.isoformat(),
         )
@@ -145,7 +145,7 @@ class StoreViewStore:
             set_=dict(
                 name=stmt.excluded.name,
                 description=stmt.excluded.description,
-                infinite_supply=stmt.excluded.infinite_supply,
+                store_type=stmt.excluded.store_type,
                 item_count=stmt.excluded.item_count,
                 created_at=stmt.excluded.created_at,
             ),
@@ -168,7 +168,7 @@ class StoreViewStore:
             store_id=UUID(row.store_id),
             name=row.name,
             description=row.description,
-            infinite_supply=bool(row.infinite_supply),
+            store_type=row.store_type,
             item_count=row.item_count,
             created_at=row.created_at,
         )
@@ -185,7 +185,7 @@ class StoreViewStore:
                 store_id=UUID(row.store_id),
                 name=row.name,
                 description=row.description,
-                infinite_supply=bool(row.infinite_supply),
+                store_type=row.store_type,
                 item_count=row.item_count,
                 created_at=row.created_at,
             )

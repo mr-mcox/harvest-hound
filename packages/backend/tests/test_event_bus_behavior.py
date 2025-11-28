@@ -23,7 +23,7 @@ class TestInMemoryEventBusPublish:
             store_id=uuid4(),
             name="Test Store",
             description="Test",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 
@@ -44,7 +44,7 @@ class TestInMemoryEventBusPublish:
             store_id=uuid4(),
             name="Test Store",
             description="Test",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 
@@ -66,7 +66,7 @@ class TestInMemoryEventBusPublish:
             store_id=uuid4(),
             name="Test Store",
             description="Test",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 
@@ -88,7 +88,7 @@ class TestInMemoryEventBusPublish:
             store_id=uuid4(),
             name="Test Store",
             description="Test",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 

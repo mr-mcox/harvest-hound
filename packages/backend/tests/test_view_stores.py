@@ -250,7 +250,7 @@ class TestStoreViewStore:
             store_id=uuid4(),
             name="CSA Box",
             description="Weekly vegetable delivery",
-            infinite_supply=False,
+            store_type="explicit",
             item_count=5,
             created_at=datetime(2024, 1, 15, 10, 0),
         )
@@ -264,7 +264,7 @@ class TestStoreViewStore:
         assert retrieved.store_id == view.store_id
         assert retrieved.name == view.name
         assert retrieved.description == view.description
-        assert retrieved.infinite_supply == view.infinite_supply
+        assert retrieved.store_type == view.store_type
         assert retrieved.item_count == view.item_count
 
     def test_get_all_stores(self, session: Session) -> None:
@@ -276,7 +276,7 @@ class TestStoreViewStore:
             store_id=uuid4(),
             name="CSA Box",
             description="Weekly delivery",
-            infinite_supply=False,
+            store_type="explicit",
             item_count=5,
             created_at=datetime(2024, 1, 15, 10, 0),
         )
@@ -285,7 +285,7 @@ class TestStoreViewStore:
             store_id=uuid4(),
             name="Pantry",
             description="",
-            infinite_supply=True,
+            store_type="explicit",
             item_count=10,
             created_at=datetime(2024, 1, 10, 9, 0),
         )
@@ -325,7 +325,7 @@ class TestStoreViewStore:
             store_id=store_id,
             name="CSA Box",
             description="Weekly vegetable delivery",
-            infinite_supply=False,
+            store_type="explicit",
             item_count=0,  # Starts empty
             created_at=datetime(2024, 1, 15, 10, 0),
         )
@@ -339,14 +339,14 @@ class TestStoreViewStore:
         assert retrieved.store_id == store_id
         assert retrieved.name == "CSA Box"
         assert retrieved.item_count == 0
-        assert retrieved.infinite_supply is False
+        assert retrieved.store_type == "explicit"
 
         # Simulate item count updates through multiple saves (upsert behavior)
         updated_view1 = StoreView(
             store_id=store_id,
             name="CSA Box",
             description="Weekly vegetable delivery",
-            infinite_supply=False,
+            store_type="explicit",
             item_count=2,  # Items added
             created_at=datetime(2024, 1, 15, 10, 0),
         )
@@ -355,7 +355,7 @@ class TestStoreViewStore:
             store_id=store_id,
             name="CSA Box",
             description="Weekly vegetable delivery",
-            infinite_supply=False,
+            store_type="explicit",
             item_count=5,  # More items added
             created_at=datetime(2024, 1, 15, 10, 0),
         )
@@ -377,20 +377,20 @@ class TestStoreViewStore:
         assert len(matching_stores) == 1
         assert matching_stores[0].item_count == 5
 
-        # Test infinite supply toggle
-        infinite_supply_view = StoreView(
+        # Test store_type persistence
+        definition_view = StoreView(
             store_id=store_id,
             name="CSA Box",
             description="Weekly vegetable delivery",
-            infinite_supply=True,  # Changed to infinite
+            store_type="definition",  # Changed to definition-based
             item_count=5,
             created_at=datetime(2024, 1, 15, 10, 0),
         )
 
-        store.save_store_view(infinite_supply_view)
+        store.save_store_view(definition_view)
         final_view = store.get_by_store_id(store_id)
         assert final_view is not None
-        assert final_view.infinite_supply is True
+        assert final_view.store_type == "definition"
         assert final_view.item_count == 5
 
     def test_store_view_query_operations_comprehensive(self, session: Session) -> None:
@@ -400,19 +400,19 @@ class TestStoreViewStore:
 
         # Create multiple stores with different characteristics
         stores_data = [
-            ("CSA Box", "Fresh weekly delivery", False, 5),
-            ("Pantry", "Long-term storage", True, 15),
-            ("Freezer", "Frozen goods storage", True, 8),
-            ("Emergency Supply", "Emergency backup", False, 0),
+            ("CSA Box", "Fresh weekly delivery", "explicit", 5),
+            ("Pantry", "Long-term storage", "definition", 15),
+            ("Freezer", "Frozen goods storage", "explicit", 8),
+            ("Emergency Supply", "Emergency backup", "explicit", 0),
         ]
 
         store_views = []
-        for i, (name, desc, infinite, count) in enumerate(stores_data):
+        for i, (name, desc, store_type, count) in enumerate(stores_data):
             view = StoreView(
                 store_id=uuid4(),
                 name=name,
                 description=desc,
-                infinite_supply=infinite,
+                store_type=store_type,
                 item_count=count,
                 created_at=datetime(2024, 1, 15 + i, 10, 0),  # Different dates
             )
@@ -434,7 +434,7 @@ class TestStoreViewStore:
             assert retrieved is not None
             assert retrieved.name == view.name
             assert retrieved.item_count == view.item_count
-            assert retrieved.infinite_supply == view.infinite_supply
+            assert retrieved.store_type == view.store_type
 
         # Test non-existent store
         fake_id = uuid4()

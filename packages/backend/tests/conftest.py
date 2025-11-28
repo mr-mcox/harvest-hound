@@ -65,7 +65,7 @@ def sample_store_data() -> Dict[str, Any]:
     return {
         "name": "Test CSA Box",
         "description": "Test store for integration testing",
-        "infinite_supply": False,
+        "store_type": "explicit",
     }
 
 

@@ -21,7 +21,7 @@ class TestWebSocketEventBroadcasting:
             store_data = {
                 "name": "Test Store",
                 "description": "A test store",
-                "infinite_supply": False,
+                "store_type": "explicit",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
@@ -38,7 +38,7 @@ class TestWebSocketEventBroadcasting:
             event_data = ws_message["data"]
             assert event_data["name"] == "Test Store"
             assert event_data["description"] == "A test store"
-            assert event_data["infinite_supply"] is False
+            assert event_data["store_type"] == "explicit"
             assert "store_id" in event_data
             assert "created_at" in event_data
 
@@ -86,7 +86,7 @@ class TestWebSocketEventBroadcasting:
                 store_data = {
                     "name": "Multi-Client Test Store",
                     "description": "Testing multiple clients",
-                    "infinite_supply": False,
+                    "store_type": "explicit",
                 }
                 response = test_client_with_mocks.post("/stores", json=store_data)
                 assert response.status_code == 201
@@ -108,7 +108,7 @@ class TestWebSocketEventBroadcasting:
             store_data = {
                 "name": "Schema Test Store",
                 "description": "Testing message schema",
-                "infinite_supply": True,
+                "store_type": "explicit",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
@@ -138,7 +138,7 @@ class TestWebSocketEventBroadcasting:
             store_data = {
                 "name": "Test Store with Inventory",
                 "description": "A test store created with inventory",
-                "infinite_supply": False,
+                "store_type": "explicit",
                 "inventory_text": "2 lbs carrots, 1 bunch kale",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)

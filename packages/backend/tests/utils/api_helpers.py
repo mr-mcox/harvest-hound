@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 
 def create_store(
-    client: TestClient, name: str, description: str = "", infinite_supply: bool = False
+    client: TestClient, name: str, description: str = "", store_type: str = "explicit"
 ) -> Dict[str, Any]:
     """Create a store via API and return response data.
 
@@ -15,7 +15,7 @@ def create_store(
         client: Test client
         name: Store name
         description: Store description
-        infinite_supply: Whether store has infinite supply
+        store_type: Type of store ("explicit" or "definition")
 
     Returns:
         Store creation response data
@@ -28,7 +28,7 @@ def create_store(
         json={
             "name": name,
             "description": description,
-            "infinite_supply": infinite_supply,
+            "store_type": store_type,
         },
     )
     assert response.status_code == 201, f"Failed to create store: {response.text}"

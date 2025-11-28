@@ -51,16 +51,18 @@ class StoreServiceProtocol(Protocol):
         self,
         name: str,
         description: str,
-        infinite_supply: bool,
+        store_type: str,
         inventory_text: Optional[str],
+        definition: Optional[str] = None,
     ) -> "UnifiedCreationResult":
         """Create store and optionally process inventory in unified operation.
 
         Args:
             name: Store name
             description: Store description
-            infinite_supply: Whether store has infinite supply
+            store_type: Type of store ("explicit" or "definition")
             inventory_text: Optional inventory text to process
+            definition: Required for definition-based stores
 
         Returns:
             Unified creation result with store_id, successful_items, and error_message

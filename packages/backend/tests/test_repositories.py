@@ -13,7 +13,10 @@ from app.infrastructure.repositories import (
     StoreRepository,
 )
 from app.models.ingredient import Ingredient
-from app.models.inventory_store import InventoryStore
+from app.models.inventory_store import (
+    DefinitionBasedStore,
+    ExplicitInventoryStore,
+)
 
 
 @pytest.fixture
@@ -72,11 +75,14 @@ class TestIngredientRepository:
         assert str(nonexistent_id) in str(exc_info.value)
 
 
-class TestStoreRepository:
-    """Test StoreRepository can save and reload InventoryStores from events."""
+class TestStoreRepositoryPolymorphic:
+    """Test StoreRepository with polymorphic InventoryStores."""
 
-    def test_save_and_reload_store_from_events(self, db_session: Session) -> None:
-        """StoreRepository should save InventoryStore and reload from events."""
+    def test_save_and_reload_explicit_store_from_events(
+        self, db_session: Session
+    ) -> None:
+        """StoreRepository should save ExplicitInventoryStore."""
+
         # Setup
         event_store = EventStore(session=db_session)
         repository = StoreRepository(event_store)
@@ -84,11 +90,10 @@ class TestStoreRepository:
         ingredient_id = uuid4()
 
         # Create store
-        store, create_events = InventoryStore.create(
+        store, create_events = ExplicitInventoryStore.create(
             store_id=store_id,
             name="CSA Box",
             description="Weekly CSA delivery",
-            infinite_supply=False,
         )
 
         # Add inventory item
@@ -107,10 +112,10 @@ class TestStoreRepository:
         loaded_store = repository.load(store_id)
 
         # Verify the loaded store matches the original
+        assert isinstance(loaded_store, ExplicitInventoryStore)
         assert loaded_store.store_id == updated_store.store_id
         assert loaded_store.name == updated_store.name
         assert loaded_store.description == updated_store.description
-        assert loaded_store.infinite_supply == updated_store.infinite_supply
         assert len(loaded_store.inventory_items) == len(updated_store.inventory_items)
 
         # Verify inventory item details
@@ -121,6 +126,37 @@ class TestStoreRepository:
         assert loaded_item.quantity == original_item.quantity
         assert loaded_item.unit == original_item.unit
         assert loaded_item.notes == original_item.notes
+
+    def test_save_and_reload_definition_store_from_events(
+        self, db_session: Session
+    ) -> None:
+        """StoreRepository should save DefinitionBasedStore."""
+
+        # Setup
+        event_store = EventStore(session=db_session)
+        repository = StoreRepository(event_store)
+        store_id = uuid4()
+
+        # Create definition-based store
+        store, create_events = DefinitionBasedStore.create(
+            store_id=store_id,
+            name="Pantry",
+            definition="Basic pantry staples like flour, sugar, salt",
+            description="My pantry",
+        )
+
+        # Save store
+        repository.save(store, create_events)
+
+        # Reload store
+        loaded_store = repository.load(store_id)
+
+        # Verify the loaded store matches the original
+        assert isinstance(loaded_store, DefinitionBasedStore)
+        assert loaded_store.store_id == store.store_id
+        assert loaded_store.name == store.name
+        assert loaded_store.description == store.description
+        assert loaded_store.definition == store.definition
 
     def test_load_nonexistent_store_raises_error(self, db_session: Session) -> None:
         """StoreRepository should raise AggregateNotFoundError for nonexistent store."""

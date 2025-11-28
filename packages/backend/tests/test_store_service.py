@@ -165,7 +165,7 @@ class TestStoreCreation:
         """Test that create_store returns UUID and persists StoreCreated event."""
         # Act
         result = store_service.create_store_with_inventory(
-            "CSA Box", "Weekly vegetable box", False, None
+            "CSA Box", "Weekly vegetable box", "explicit", None
         )
         store_id = result.store_id
 
@@ -182,7 +182,7 @@ class TestStoreCreation:
                 "store_id": store_id,
                 "name": "CSA Box",
                 "description": "Weekly vegetable box",
-                "infinite_supply": False,
+                "store_type": "explicit",
             },
         )
 
@@ -192,16 +192,16 @@ class TestStoreCreation:
         assert store_view.store_id == store_id
         assert store_view.name == "CSA Box"
         assert store_view.description == "Weekly vegetable box"
-        assert store_view.infinite_supply is False
+        assert store_view.store_type == "explicit"
         assert store_view.item_count == 0  # New store starts with 0 items
 
-    def test_create_store_with_infinite_supply_true_sets_flag_correctly(
+    def test_create_explicit_store_sets_type_correctly(
         self, store_service: StoreService, event_store: EventStore
     ) -> None:
-        """Test that create_store with infinite_supply=True sets flag correctly."""
+        """Test that create_store with store_type="explicit" sets type correctly."""
         # Act
         result = store_service.create_store_with_inventory(
-            "Pantry", "Long-term storage", infinite_supply=True, inventory_text=None
+            "Pantry", "Long-term storage", store_type="explicit", inventory_text=None
         )
         store_id = result.store_id
 
@@ -209,7 +209,7 @@ class TestStoreCreation:
         store_events = get_typed_events(event_store, f"store-{store_id}", StoreCreated)
 
         assert len(store_events) == 1
-        assert_event_matches(store_events[0], {"infinite_supply": True})
+        assert_event_matches(store_events[0], {"store_type": "explicit"})
 
     def test_create_store_with_duplicate_name_succeeds(
         self, store_service: StoreService, event_store: EventStore
@@ -217,13 +217,13 @@ class TestStoreCreation:
         """Test that create_store with duplicate name succeeds."""
         # Arrange - create first store
         first_result = store_service.create_store_with_inventory(
-            "CSA Box", "First box", False, None
+            "CSA Box", "First box", "explicit", None
         )
         first_store_id = first_result.store_id
 
         # Act - create second store with same name
         second_result = store_service.create_store_with_inventory(
-            "CSA Box", "Second box", False, None
+            "CSA Box", "Second box", "explicit", None
         )
         second_store_id = second_result.store_id
 
@@ -258,7 +258,9 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory parses text and creates new Ingredient."""
         # Arrange
-        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        result = store_service.create_store_with_inventory(
+            "CSA Box", "", "explicit", None
+        )
         store_id = result.store_id
 
         # Configure parser to return parsed item
@@ -319,7 +321,9 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory creates InventoryItem linking to ingredient."""
         # Arrange
-        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        result = store_service.create_store_with_inventory(
+            "CSA Box", "", "explicit", None
+        )
         store_id = result.store_id
         parsed_item = ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch")
         inventory_parser.mock_results = [parsed_item]
@@ -352,7 +356,9 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory returns InventoryUploadResult with count."""
         # Arrange
-        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        result = store_service.create_store_with_inventory(
+            "CSA Box", "", "explicit", None
+        )
         store_id = result.store_id
         parsed_items = [
             ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
@@ -378,7 +384,9 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory handles LLM parsing errors."""
         # Arrange
-        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        result = store_service.create_store_with_inventory(
+            "CSA Box", "", "explicit", None
+        )
         store_id = result.store_id
 
         # Configure parser to trigger an exception through parse_inventory call
@@ -407,7 +415,9 @@ class TestInventoryUpload:
     ) -> None:
         """Test that upload_inventory handles empty parsing results correctly."""
         # Arrange
-        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        result = store_service.create_store_with_inventory(
+            "CSA Box", "", "explicit", None
+        )
         store_id = result.store_id
 
         # Configure parser to return empty list (parsing succeeds but finds nothing)
@@ -437,7 +447,9 @@ class TestInventoryUpload:
     ) -> None:
         """Test that get_store_inventory returns current inventory with names."""
         # Arrange
-        result = store_service.create_store_with_inventory("CSA Box", "", False, None)
+        result = store_service.create_store_with_inventory(
+            "CSA Box", "", "explicit", None
+        )
         store_id = result.store_id
         parsed_items = [
             ParsedInventoryItem(name="carrots", quantity=2.0, unit="pound"),
@@ -484,7 +496,7 @@ class TestUnifiedCreationLogic:
         result = store_service.create_store_with_inventory(
             name="CSA Box",
             description="Weekly vegetable box",
-            infinite_supply=False,
+            store_type="explicit",
             inventory_text=None,
         )
 
@@ -509,7 +521,7 @@ class TestUnifiedCreationLogic:
                 "store_id": result.store_id,
                 "name": "CSA Box",
                 "description": "Weekly vegetable box",
-                "infinite_supply": False,
+                "store_type": "explicit",
             },
         )
 
@@ -532,7 +544,7 @@ class TestUnifiedCreationLogic:
         result = store_service.create_store_with_inventory(
             name="CSA Box",
             description="Weekly vegetable box",
-            infinite_supply=False,
+            store_type="explicit",
             inventory_text="2 apples\n3 bananas",
         )
 
@@ -584,7 +596,7 @@ class TestUnifiedCreationLogic:
         result = failing_service.create_store_with_inventory(
             name="CSA Box",
             description="Weekly vegetable box",
-            infinite_supply=False,
+            store_type="explicit",
             inventory_text="some inventory text",
         )
 
@@ -635,7 +647,7 @@ class TestEnhancedPartialSuccess:
         stopping on first error."""
         # Arrange
         result = store_service.create_store_with_inventory(
-            "Test Store", "", False, None
+            "Test Store", "", "explicit", None
         )
         store_id = result.store_id
 
@@ -684,7 +696,7 @@ class TestEnhancedPartialSuccess:
         successful item count and parsing notes."""
         # Arrange
         result = store_service.create_store_with_inventory(
-            "Test Store", "", False, None
+            "Test Store", "", "explicit", None
         )
         store_id = result.store_id
 

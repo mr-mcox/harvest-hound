@@ -8,7 +8,6 @@ Uses SQLAlchemy Core for persistence ignorance and database independence.
 from typing import Union
 
 from sqlalchemy import (
-    Boolean,
     Column,
     Float,
     Index,
@@ -48,7 +47,7 @@ store_views = Table(
     Column("store_id", String, primary_key=True),
     Column("name", String, nullable=False),
     Column("description", String, nullable=False, default=""),
-    Column("infinite_supply", Boolean, nullable=False, default=False),
+    Column("store_type", String, nullable=False),
     Column("item_count", Integer, nullable=False, default=0),
     Column("created_at", String, nullable=False),
     # Index for common query patterns

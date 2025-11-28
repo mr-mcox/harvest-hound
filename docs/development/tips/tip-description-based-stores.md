@@ -222,28 +222,28 @@ Each phase follows Test-Driven Development with a clean break from old implement
 **TIP Context**: Phase 1 - establishes foundation for all subsequent work
 
 ### 1.1 Abstract Base Class Creation - **SETUP ONLY**
-- [ ] **Create abstract InventoryStore base class** - Add ABC import and @abstractmethod decorators in `app/models/inventory_store.py:11`
-- [ ] **Move shared fields to base class** - `store_id`, `name`, `description` remain as common interface
-- [ ] **Define abstract method signatures** - `@abstractmethod def check_availability()` and `@abstractmethod def supports_inventory_addition()`
+- [x] **Create abstract InventoryStore base class** - Add ABC import and @abstractmethod decorators in `app/models/inventory_store.py:11`
+- [x] **Move shared fields to base class** - `store_id`, `name`, `description` remain as common interface
+- [x] **Define abstract method signatures** - `@abstractmethod def check_availability()` (Pythonic approach: no permission method)
 
 ### 1.2 ExplicitInventoryStore Implementation - **NEW BEHAVIOR**
-- [ ] **Create ExplicitInventoryStore subclass** - Inherit from InventoryStore, include `inventory_items` field in `app/models/inventory_store.py:35`
-- [ ] **Remove infinite_supply field** - No longer needed with polymorphic design (explicit vs definition-based stores)
-- [ ] **Implement concrete methods** - `check_availability()` returns inventory lookup, `supports_inventory_addition()` returns True
-- [ ] **Write test_explicit_store_creation()** - Verify ExplicitInventoryStore can be instantiated with inventory_items field
+- [x] **Create ExplicitInventoryStore subclass** - Inherit from InventoryStore, include `inventory_items` field in `app/models/inventory_store.py:35`
+- [x] **Remove infinite_supply field** - No longer needed with polymorphic design (explicit vs definition-based stores)
+- [x] **Implement concrete methods** - `check_availability()` returns inventory lookup, `add_inventory_item()` works normally
+- [x] **Write test_explicit_store_creation()** - Verify ExplicitInventoryStore can be instantiated with inventory_items field
 
 ### 1.3 DefinitionBasedStore Implementation - **NEW BEHAVIOR**
-- [ ] **Create DefinitionBasedStore subclass** - Include `definition` field (required), no inventory_items in `app/models/inventory_store.py:55`
-- [ ] **Implement concrete methods** - `check_availability()` returns stubbed LLM call, `supports_inventory_addition()` returns False
-- [ ] **Write test_definition_store_creation()** - Verify DefinitionBasedStore requires definition field and rejects inventory operations
+- [x] **Create DefinitionBasedStore subclass** - Include `definition` field (required), no inventory_items in `app/models/inventory_store.py:55`
+- [x] **Implement concrete methods** - `check_availability()` returns stubbed LLM call, `add_inventory_item()` not available (duck typing)
+- [x] **Write test_definition_store_creation()** - Verify DefinitionBasedStore requires definition field and rejects inventory operations
 
 ### 1.4 Event Structure Updates - **SETUP ONLY**
-- [ ] **Add store_type discriminator to StoreCreated event** - Add `store_type: str` field in `app/events/domain_events.py:15`
-- [ ] **Remove infinite_supply from StoreCreated event** - Field is obsolete with polymorphic design
-- [ ] **Update StoreView read model** - Remove `infinite_supply` field from `app/models/read_models.py`
-- [ ] **Update database schema** - Remove `infinite_supply` column from store_views table in `app/infrastructure/database.py`
-- [ ] **Update create() factory methods** - Each subclass emits StoreCreated with appropriate store_type value
-- [ ] **Remove old tests** - Delete existing InventoryStore tests in `tests/test_inventory_store.py` (entire file)
+- [x] **Add store_type discriminator to StoreCreated event** - Add `store_type: str` field in `app/events/domain_events.py:15`
+- [x] **Remove infinite_supply from StoreCreated event** - Field is obsolete with polymorphic design
+- [x] **Update StoreView read model** - Remove `infinite_supply` field from `app/models/read_models.py`
+- [x] **Update database schema** - Remove `infinite_supply` column from store_views table in `app/infrastructure/database.py`
+- [x] **Update create() factory methods** - Each subclass emits StoreCreated with appropriate store_type value
+- [x] **Remove old tests** - Delete existing InventoryStore tests in `tests/test_domain_behavior.py` (old tests removed)
 
 ---
 

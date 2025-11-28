@@ -43,7 +43,7 @@ class TestEventStoreAppendEvent:
             store_id=store_id,
             name="Test Store",
             description="A test store",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 
@@ -60,7 +60,7 @@ class TestEventStoreAppendEvent:
                 "store_id": store_id,
                 "name": "Test Store",
                 "description": "A test store",
-                "infinite_supply": False,
+                "store_type": "explicit",
             },
         )
 
@@ -82,7 +82,7 @@ class TestEventStoreLoadEvents:
             store_id=store_id,
             name="Test Store",
             description="A test store",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 
@@ -174,7 +174,7 @@ class TestEventStoreConcurrentWrites:
                     store_id=store_id,
                     name=f"Store-{thread_id}-{i}",
                     description=f"Store from batch {thread_id}, iteration {i}",
-                    infinite_supply=False,
+                    store_type="explicit",
                     created_at=datetime.now(),
                 )
                 events_to_create.append((stream_id, event))

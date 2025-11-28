@@ -45,7 +45,7 @@ class TestProjectionRegistry:
             store_id=uuid4(),
             name="CSA Box",
             description="Weekly delivery",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime(2024, 1, 15, 10, 0),
         )
 
@@ -122,7 +122,7 @@ class TestProjectionRegistry:
             store_id=uuid4(),
             name="Test Store",
             description="Test",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=datetime.now(),
         )
 

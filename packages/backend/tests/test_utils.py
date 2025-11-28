@@ -42,7 +42,7 @@ def assert_event_matches(
     Example:
         assert_event_matches(store_event, {
             "name": "CSA Box",
-            "infinite_supply": False
+            "store_type": "explicit"
         })
     """
     exclude_fields = exclude_fields or ["created_at", "added_at"]

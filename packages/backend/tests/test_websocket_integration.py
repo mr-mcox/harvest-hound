@@ -21,7 +21,7 @@ class TestWebSocketIntegration:
             store_data = {
                 "name": "Real-time CSA Box",
                 "description": "Testing real-time updates",
-                "infinite_supply": False,
+                "store_type": "explicit",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
@@ -83,7 +83,7 @@ class TestWebSocketIntegration:
                 store_data = {
                     "name": "Multi-client Test Store",
                     "description": "Testing multi-client event broadcasting",
-                    "infinite_supply": False,
+                    "store_type": "explicit",
                 }
                 response = test_client_with_mocks.post("/stores", json=store_data)
                 assert response.status_code == 201
@@ -112,7 +112,7 @@ class TestWebSocketIntegration:
             store_data = {
                 "name": "REST API Test Store",
                 "description": "Testing REST to WebSocket flow",
-                "infinite_supply": False,
+                "store_type": "explicit",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
@@ -163,7 +163,7 @@ class TestWebSocketIntegration:
             store_data = {
                 "name": "Connection Test Store",
                 "description": "Testing connection lifecycle",
-                "infinite_supply": False,
+                "store_type": "explicit",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
@@ -190,7 +190,7 @@ class TestWebSocketIntegration:
             store_data = {
                 "name": "Reconnected Store",
                 "description": "Testing reconnection functionality",
-                "infinite_supply": False,
+                "store_type": "explicit",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
@@ -229,7 +229,7 @@ class TestWebSocketIntegration:
                     store_data = {
                         "name": name,
                         "description": f"Rapid creation test - {name}",
-                        "infinite_supply": False,
+                        "store_type": "explicit",
                     }
                     response = test_client_with_mocks.post("/stores", json=store_data)
                     assert response.status_code == 201

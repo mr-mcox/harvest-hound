@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.events.domain_events import IngredientCreated, InventoryItemAdded, StoreCreated
 from app.infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
-from app.models import Ingredient, InventoryStore
+from app.models import Ingredient
+from app.models.inventory_store import ExplicitInventoryStore
 from app.models.read_models import InventoryItemView, StoreView
 from app.projections.handlers import InventoryProjectionHandler, StoreProjectionHandler
 
@@ -42,13 +43,13 @@ class MockStoreRepository:
     """Mock store repository for testing."""
 
     def __init__(self) -> None:
-        self._stores: Dict[UUID, InventoryStore] = {}
+        self._stores: Dict[UUID, ExplicitInventoryStore] = {}
 
-    def add_store(self, store: InventoryStore) -> None:
+    def add_store(self, store: ExplicitInventoryStore) -> None:
         """Add store to mock store."""
         self._stores[store.store_id] = store
 
-    def load(self, store_id: UUID) -> InventoryStore:
+    def load(self, store_id: UUID) -> ExplicitInventoryStore:
         """Load store by ID."""
         store = self._stores.get(store_id)
         if store is None:
@@ -117,11 +118,11 @@ class TestInventoryProjectionHandler:
             default_unit="lbs",
             created_at=datetime(2024, 1, 1),
         )
-        store = InventoryStore(
+
+        store = ExplicitInventoryStore(
             store_id=store_id,
             name="CSA Box",
             description="Weekly delivery",
-            infinite_supply=False,
             inventory_items=[],
         )
 
@@ -234,7 +235,7 @@ class TestStoreProjectionHandler:
             store_id=store_id,
             name="CSA Box",
             description="Weekly vegetable delivery",
-            infinite_supply=False,
+            store_type="explicit",
             created_at=created_at,
         )
 
@@ -247,7 +248,7 @@ class TestStoreProjectionHandler:
         assert view.store_id == store_id
         assert view.name == "CSA Box"
         assert view.description == "Weekly vegetable delivery"
-        assert view.infinite_supply is False
+        assert view.store_type == "explicit"
         assert view.item_count == 0  # New store starts with 0 items
 
     @pytest.mark.asyncio
@@ -264,7 +265,7 @@ class TestStoreProjectionHandler:
             store_id=store_id,
             name="CSA Box",
             description="Weekly delivery",
-            infinite_supply=False,
+            store_type="explicit",
             item_count=2,
             created_at=datetime(2024, 1, 15, 10, 0),
         )

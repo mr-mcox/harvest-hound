@@ -159,32 +159,28 @@ class TestHappyPathWorkflows:
         assert csa_store["item_count"] == 2
         assert pantry_store["item_count"] == 1
 
-    def test_infinite_supply_store_preserves_setting(
+    def test_explicit_store_type_preserves_setting(
         self, test_client_with_mocks: TestClient
     ) -> None:
-        """Test that infinite supply setting is preserved correctly."""
-        # Create infinite supply store
+        """Test that explicit store type setting is preserved correctly."""
+        # Create explicit store
         store_data = create_store(
             test_client_with_mocks,
-            "Infinite Store",
-            "Test infinite supply",
-            infinite_supply=True,
+            "Explicit Store",
+            "Test explicit store",
+            store_type="explicit",
         )
-        store_id = UUID(store_data["store_id"])
 
-        # Verify the store was created with infinite supply
-        assert store_data["infinite_supply"] is True
-
-        # Add inventory
-        upload_inventory(test_client_with_mocks, store_id, "1 apple")
+        # Verify the store was created with explicit type
+        assert store_data["store_type"] == "explicit"
 
         # Verify store list preserves the setting
         stores = get_all_stores(test_client_with_mocks)
-        infinite_store = next(
-            (s for s in stores if s["name"] == "Infinite Store"), None
+        explicit_store = next(
+            (s for s in stores if s["name"] == "Explicit Store"), None
         )
-        assert infinite_store is not None
-        # Note: infinite_supply not returned in current API, but store creation worked
+        assert explicit_store is not None
+        assert explicit_store["store_type"] == "explicit"
 
 
 class TestErrorHandlingScenarios:
@@ -530,7 +526,7 @@ class TestUnifiedStoreCreationIntegration:
         store_data = {
             "name": "Test Unified Store",
             "description": "Store created with unified flow",
-            "infinite_supply": False,
+            "store_type": "explicit",
             "inventory_text": "2 lbs carrots, 1 bunch kale",
         }
 
@@ -599,7 +595,7 @@ class TestUnifiedStoreCreationIntegration:
             store_data = {
                 "name": "Store with Parsing Issues",
                 "description": "Store with mixed valid/invalid inventory",
-                "infinite_supply": False,
+                "store_type": "explicit",
                 "inventory_text": "2 lbs carrots, 1 Volvo car, 1 bunch kale",
                 # Mix of food and non-food
             }
@@ -656,7 +652,7 @@ class TestUnifiedStoreCreationIntegration:
             store_data = {
                 "name": "WebSocket Test Store",
                 "description": "Testing unified creation WebSocket events",
-                "infinite_supply": False,
+                "store_type": "explicit",
                 "inventory_text": "2 lbs carrots, 1 bunch kale",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
