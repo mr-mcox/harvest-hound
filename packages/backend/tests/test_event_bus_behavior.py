@@ -24,13 +24,13 @@ class TestInMemoryEventBusPublish:
             name="Test Store",
             description="Test",
             infinite_supply=False,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
-        
+
         # When
         await event_bus.subscribe(StoreCreated, handler)
         await event_bus.publish(event)
-        
+
         # Then
         handler.assert_called_once_with(event)
 
@@ -45,13 +45,13 @@ class TestInMemoryEventBusPublish:
             name="Test Store",
             description="Test",
             infinite_supply=False,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
-        
+
         # When
         await event_bus.subscribe(StoreCreated, handler)
         await event_bus.publish(event)
-        
+
         # Then
         handler.assert_called_once_with(event)
 
@@ -67,14 +67,14 @@ class TestInMemoryEventBusPublish:
             name="Test Store",
             description="Test",
             infinite_supply=False,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
-        
+
         # When
         await event_bus.subscribe(StoreCreated, handler1)
         await event_bus.subscribe(StoreCreated, handler2)
         await event_bus.publish(event)
-        
+
         # Then
         handler1.assert_called_once_with(event)
         handler2.assert_called_once_with(event)
@@ -89,9 +89,9 @@ class TestInMemoryEventBusPublish:
             name="Test Store",
             description="Test",
             infinite_supply=False,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
-        
+
         # When / Then - should not raise
         await event_bus.publish(event)
 
@@ -105,10 +105,10 @@ class TestInMemoryEventBusSubscribe:
         # Given
         event_bus = InMemoryEventBus()
         handler = Mock()
-        
+
         # When
         await event_bus.subscribe(StoreCreated, handler)
-        
+
         # Then - handler should be in subscribers
         assert handler in event_bus._subscribers[StoreCreated]
 
@@ -118,11 +118,11 @@ class TestInMemoryEventBusSubscribe:
         # Given
         event_bus = InMemoryEventBus()
         handler = Mock()
-        
+
         # When
         await event_bus.subscribe(StoreCreated, handler)
         await event_bus.subscribe(StoreCreated, handler)
-        
+
         # Then - handler should only appear once
         assert event_bus._subscribers[StoreCreated].count(handler) == 1
 
@@ -137,10 +137,10 @@ class TestInMemoryEventBusUnsubscribe:
         event_bus = InMemoryEventBus()
         handler = Mock()
         await event_bus.subscribe(StoreCreated, handler)
-        
+
         # When
         await event_bus.unsubscribe(StoreCreated, handler)
-        
+
         # Then - handler should be removed
         assert handler not in event_bus._subscribers[StoreCreated]
 
@@ -150,6 +150,6 @@ class TestInMemoryEventBusUnsubscribe:
         # Given
         event_bus = InMemoryEventBus()
         handler = Mock()
-        
+
         # When / Then - should not raise
         await event_bus.unsubscribe(StoreCreated, handler)

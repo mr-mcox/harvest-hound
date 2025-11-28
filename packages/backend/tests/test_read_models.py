@@ -4,6 +4,7 @@ Test read model classes for denormalized views.
 Testing read models to ensure they provide flat, denormalized data
 structures optimized for UI consumption as per ADR-005.
 """
+
 from datetime import datetime
 from uuid import uuid4
 
@@ -14,7 +15,9 @@ class TestInventoryItemView:
     """Test InventoryItemView read model."""
 
     def test_inventory_item_view_has_denormalized_fields(self) -> None:
-        """InventoryItemView should include denormalized ingredient_name and store_name."""
+        """InventoryItemView should include denormalized ingredient_name and
+        store_name.
+        """
         # Arrange
         store_id = uuid4()
         ingredient_id = uuid4()

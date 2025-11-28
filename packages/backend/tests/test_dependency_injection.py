@@ -21,20 +21,22 @@ class TestTypedDependencyInjection:
     @pytest.fixture
     def client_with_custom_parser(self) -> Generator[TestClient, None, None]:
         """Client with custom parser configuration - no @patch needed."""
-        
+
         # Create custom parser
-        custom_parser = MockInventoryParser({
-            "test input": [
-                ParsedInventoryItem(name="test_item", quantity=1.0, unit="piece")
-            ]
-        })
-        
+        custom_parser = MockInventoryParser(
+            {
+                "test input": [
+                    ParsedInventoryItem(name="test_item", quantity=1.0, unit="piece")
+                ]
+            }
+        )
+
         # Override dependency using FastAPI's built-in mechanism
         app.dependency_overrides[get_inventory_parser] = lambda: custom_parser
-        
+
         client = TestClient(app)
         yield client
-        
+
         # Clean up
         app.dependency_overrides.clear()
 
@@ -44,18 +46,16 @@ class TestTypedDependencyInjection:
         """Test that dependency injection works without any @patch decorators."""
         # Create store
         store_response = client_with_custom_parser.post(
-            "/stores",
-            json={"name": "DI Test Store"}
+            "/stores", json={"name": "DI Test Store"}
         )
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
 
         # Upload inventory using custom parser
         upload_response = client_with_custom_parser.post(
-            f"/stores/{store_id}/inventory",
-            json={"inventory_text": "test input"}
+            f"/stores/{store_id}/inventory", json={"inventory_text": "test input"}
         )
-        
+
         # Should succeed with our custom parser
         assert upload_response.status_code == 201
         upload_data = upload_response.json()
@@ -65,14 +65,14 @@ class TestTypedDependencyInjection:
     @pytest.fixture
     def client_with_failing_parser(self) -> Generator[TestClient, None, None]:
         """Client with parser that simulates failures - no @patch needed."""
-        
+
         failing_parser = FailingMockInventoryParser(error_type="timeout")
-        
+
         app.dependency_overrides[get_inventory_parser] = lambda: failing_parser
-        
+
         client = TestClient(app)
         yield client
-        
+
         app.dependency_overrides.clear()
 
     def test_error_handling_without_patches(
@@ -81,18 +81,16 @@ class TestTypedDependencyInjection:
         """Test error handling without @patch decorators."""
         # Create store
         store_response = client_with_failing_parser.post(
-            "/stores",
-            json={"name": "Error Test Store"}
+            "/stores", json={"name": "Error Test Store"}
         )
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
 
         # Try to upload - should fail with timeout
         upload_response = client_with_failing_parser.post(
-            f"/stores/{store_id}/inventory",
-            json={"inventory_text": "any text"}
+            f"/stores/{store_id}/inventory", json={"inventory_text": "any text"}
         )
-        
+
         assert upload_response.status_code == 400
         error_data = upload_response.json()
         assert "timeout" in str(error_data["detail"]["errors"]).lower()
@@ -100,18 +98,18 @@ class TestTypedDependencyInjection:
     @pytest.fixture
     def client_with_configurable_parser(self) -> Generator[TestClient, None, None]:
         """Client with runtime configurable parser - no @patch needed."""
-        
+
         configurable_parser = ConfigurableMockInventoryParser()
         configurable_parser.set_response(
             "dynamic input",
-            [ParsedInventoryItem(name="dynamic_item", quantity=5.0, unit="grams")]
+            [ParsedInventoryItem(name="dynamic_item", quantity=5.0, unit="grams")],
         )
-        
+
         app.dependency_overrides[get_inventory_parser] = lambda: configurable_parser
-        
+
         client = TestClient(app)
         yield client
-        
+
         app.dependency_overrides.clear()
 
     def test_configurable_mock_without_patches(
@@ -120,18 +118,16 @@ class TestTypedDependencyInjection:
         """Test configurable mocks without @patch decorators."""
         # Create store
         store_response = client_with_configurable_parser.post(
-            "/stores",
-            json={"name": "Config Test Store"}
+            "/stores", json={"name": "Config Test Store"}
         )
         assert store_response.status_code == 201
         store_id = store_response.json()["store_id"]
 
         # Upload with configured input
         upload_response = client_with_configurable_parser.post(
-            f"/stores/{store_id}/inventory",
-            json={"inventory_text": "dynamic input"}
+            f"/stores/{store_id}/inventory", json={"inventory_text": "dynamic input"}
         )
-        
+
         assert upload_response.status_code == 201
         upload_data = upload_response.json()
         assert upload_data["success"] is True
@@ -147,9 +143,9 @@ class TestTypingCompliance:
         parser = MockInventoryParser()
         result = parser.parse_inventory("test")
         assert isinstance(result, list)
-        
+
         failing_parser = FailingMockInventoryParser()
-        
+
         try:
             failing_parser.parse_inventory("test")
             assert False, "Should have raised an exception"
@@ -165,14 +161,14 @@ class TestTypingCompliance:
         """Verify dependency injection maintains type safety."""
         # This would fail mypy if types were wrong
         parser = get_inventory_parser()
-        
+
         # Configure the mock parser to return expected results
-        if hasattr(parser, 'mock_results'):
+        if hasattr(parser, "mock_results"):
             parser.mock_results = [
                 ParsedInventoryItem(name="carrot", quantity=2.0, unit="pound"),
                 ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
             ]
-        
+
         # Use a recognized fixture input
         result = parser.parse_inventory("2 lbs carrots, 1 bunch kale")
         assert isinstance(result, list)

@@ -23,9 +23,9 @@ def db_session() -> Generator[Session, None, None]:
     metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
-    
+
     yield session
-    
+
     session.close()
 
 
@@ -56,7 +56,9 @@ class TestIngredientRepository:
         assert loaded_ingredient.default_unit == ingredient.default_unit
         assert loaded_ingredient.created_at == ingredient.created_at
 
-    def test_load_nonexistent_ingredient_raises_error(self, db_session: Session) -> None:
+    def test_load_nonexistent_ingredient_raises_error(
+        self, db_session: Session
+    ) -> None:
         """IngredientRepository should raise error for nonexistent ingredient."""
         # Setup
         event_store = EventStore(session=db_session)
@@ -109,9 +111,7 @@ class TestStoreRepository:
         assert loaded_store.name == updated_store.name
         assert loaded_store.description == updated_store.description
         assert loaded_store.infinite_supply == updated_store.infinite_supply
-        assert len(loaded_store.inventory_items) == len(
-            updated_store.inventory_items
-        )
+        assert len(loaded_store.inventory_items) == len(updated_store.inventory_items)
 
         # Verify inventory item details
         loaded_item = loaded_store.inventory_items[0]

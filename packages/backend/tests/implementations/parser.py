@@ -9,9 +9,11 @@ from app.models.parsed_inventory import ParsedInventoryItem
 class MockInventoryParser:
     """Mock inventory parser with configurable responses."""
 
-    def __init__(self, responses: Optional[Dict[str, List[ParsedInventoryItem]]] = None) -> None:
+    def __init__(
+        self, responses: Optional[Dict[str, List[ParsedInventoryItem]]] = None
+    ) -> None:
         """Initialize with optional response map.
-        
+
         Args:
             responses: Map of input text to expected parsed items
         """
@@ -21,14 +23,14 @@ class MockInventoryParser:
     def parse_inventory(self, inventory_text: str) -> List[ParsedInventoryItem]:
         """Parse inventory text using pre-configured responses."""
         self._call_count += 1
-        
+
         if not inventory_text.strip():
             return []
-            
+
         # Return configured response if available
         if inventory_text in self.responses:
             return self.responses[inventory_text]
-            
+
         # Default fixture-based responses for common test cases
         default_fixtures = {
             "2 lbs carrots, 1 bunch kale": [
@@ -44,7 +46,7 @@ class MockInventoryParser:
                 ParsedInventoryItem(name="apple", quantity=1.0, unit="piece"),
             ],
         }
-        
+
         return default_fixtures.get(inventory_text, [])
 
     def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
@@ -63,7 +65,7 @@ class FailingMockInventoryParser:
 
     def __init__(self, error_type: str = "parsing") -> None:
         """Initialize with error type.
-        
+
         Args:
             error_type: Type of error to simulate ("parsing", "timeout", "network")
         """
@@ -95,9 +97,11 @@ class ConfigurableMockInventoryParser:
         self._should_fail = False
         self._failure_error: Optional[Exception] = None
 
-    def set_response(self, input_text: str, parsed_items: List[ParsedInventoryItem]) -> None:
+    def set_response(
+        self, input_text: str, parsed_items: List[ParsedInventoryItem]
+    ) -> None:
         """Configure response for specific input.
-        
+
         Args:
             input_text: Input text to match
             parsed_items: Items to return for this input
@@ -106,7 +110,7 @@ class ConfigurableMockInventoryParser:
 
     def set_failure(self, error: Exception) -> None:
         """Configure parser to fail with specific error.
-        
+
         Args:
             error: Exception to raise on next call
         """
@@ -122,13 +126,15 @@ class ConfigurableMockInventoryParser:
         """Parse inventory using configured responses or failures."""
         if self._should_fail and self._failure_error:
             raise self._failure_error
-            
+
         if not inventory_text.strip():
             return []
-            
+
         return self._responses.get(inventory_text, [])
 
     def parse_inventory_with_notes(self, inventory_text: str) -> ParsedInventoryResult:
         """Parse inventory with notes using configured responses or failures."""
-        items = self.parse_inventory(inventory_text)  # This will handle failures and responses
+        items = self.parse_inventory(
+            inventory_text
+        )  # This will handle failures and responses
         return ParsedInventoryResult(items=items, parsing_notes=None)

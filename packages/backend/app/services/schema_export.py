@@ -21,7 +21,7 @@ from ..models.read_models import InventoryItemView, StoreView
 
 class SchemaExportService:
     """Service for exporting Pydantic models to JSON Schema."""
-    
+
     def __init__(self) -> None:
         """Initialize the schema export service."""
         self._models_to_export = [
@@ -39,8 +39,10 @@ class SchemaExportService:
             # WebSocket messaging
             ("WebSocketMessage", WebSocketMessage),
         ]
-    
-    def export_model_schema(self, model_class: Union[Type[BaseModel], Any], title: str | None = None) -> Dict[str, Any]:
+
+    def export_model_schema(
+        self, model_class: Union[Type[BaseModel], Any], title: str | None = None
+    ) -> Dict[str, Any]:
         """Export a Pydantic model to JSON Schema."""
         # Generate schema with mode that avoids complex types
         schema = model_class.model_json_schema(mode="serialization")
@@ -56,17 +58,19 @@ class SchemaExportService:
         schema = self._simplify_schema(schema)
 
         return schema  # type: ignore[no-any-return]
-    
+
     def export_all_schemas(self) -> Dict[str, Dict[str, Any]]:
         """Export all registered models to JSON Schema format."""
         schemas = {}
-        
+
         for name, model_class in self._models_to_export:
             schemas[name] = self.export_model_schema(model_class)
-        
+
         return schemas
-    
-    def create_combined_schema(self, schemas: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+
+    def create_combined_schema(
+        self, schemas: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Create a combined JSON Schema with all model definitions."""
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",
@@ -74,42 +78,44 @@ class SchemaExportService:
             "type": "object",
             "definitions": schemas,
         }
-    
+
     def write_schema_file(self, schema: Dict[str, Any], output_path: Path) -> None:
         """Write schema to file with proper formatting."""
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Write schema file
         with open(output_path, "w") as f:
             json.dump(schema, f, indent=2, default=str)
-    
+
     def export_to_file(self, output_path: Path) -> List[str]:
         """
         Export all schemas to a JSON file and return list of exported model names.
-        
+
         Returns:
             List of exported model names for reporting
         """
         schemas = self.export_all_schemas()
         combined_schema = self.create_combined_schema(schemas)
         self.write_schema_file(combined_schema, output_path)
-        
+
         return list(schemas.keys())
-    
+
     def _simplify_schema(self, obj: Any, is_root: bool = True) -> Any:
         """Simplify schema by removing titles that create unnecessary type aliases."""
         if isinstance(obj, dict):
             # Create a copy to avoid modifying the original
             result = {}
             for k, v in obj.items():
-                # Skip titles for simple types and anyOf patterns to prevent type aliases
+                # Skip titles for simple types and anyOf patterns
+                # to prevent type aliases
                 if k == "title":
-                    # Always skip titles for simple primitive types to avoid type aliases
+                    # Always skip titles for simple primitive types
+                    # to avoid type aliases
                     if isinstance(obj.get("type"), str) and obj.get("type") in [
                         "string",
                         "number",
-                        "integer", 
+                        "integer",
                         "boolean",
                         "array",
                     ]:
@@ -134,7 +140,9 @@ class SchemaExportService:
                 ref_path = obj["$ref"]
                 if ref_path.startswith("#"):
                     # Extract the definition name
-                    ref_name = ref_path.split("/")[-1] if "/" in ref_path else ref_path[1:]
+                    ref_name = (
+                        ref_path.split("/")[-1] if "/" in ref_path else ref_path[1:]
+                    )
                     if ref_name in defs:
                         # Recursively inline the referenced definition
                         return self._inline_refs(defs[ref_name], defs)

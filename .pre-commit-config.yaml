@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -8,18 +8,32 @@ repos:
       - id: check-yaml
         args: ["--allow-multiple-documents"]
       - id: check-added-large-files
+
+  # Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.2
+    rev: v0.14.6
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
         exclude: "app/infrastructure/baml_client/"
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
+
+  # Frontend linting and formatting
+  - repo: local
     hooks:
-      - id: black
-        exclude: "app/infrastructure/baml_client/"
+      - id: frontend-eslint
+        name: eslint
+        entry: sh -c 'cd packages/frontend && pnpm eslint --fix'
+        language: system
+        files: packages/frontend/.*\.(js|jsx|ts|tsx|svelte)$
+        pass_filenames: false
+
+      - id: frontend-prettier
+        name: prettier
+        entry: sh -c 'cd packages/frontend && pnpm prettier --write .'
+        language: system
+        files: packages/frontend/.*\.(js|jsx|ts|tsx|svelte|css|json)$
+        pass_filenames: false
 
   - repo: local
     hooks:

@@ -44,44 +44,44 @@ test.describe('Real LLM Integration Tests', () => {
   test('should upload and parse inventory with real LLM', async ({ page }) => {
     // Navigate to app
     await page.goto('http://localhost:3000');
-    
+
     // Create a new store
     await page.click('[data-testid="create-store-button"]');
     await page.fill('[data-testid="store-name-input"]', 'Test CSA Box');
     await page.fill('[data-testid="store-description-input"]', 'Integration test store');
     await page.click('[data-testid="create-store-submit"]');
-    
+
     // Navigate to inventory upload
     await page.click('[data-testid="upload-inventory-button"]');
-    
+
     // Upload inventory text
     const inventoryText = '2 lbs carrots, 1 bunch kale, 3 tomatoes';
     await page.fill('[data-testid="inventory-text-input"]', inventoryText);
     await page.click('[data-testid="upload-submit-button"]');
-    
+
     // Verify success message
     await expect(page.locator('[data-testid="upload-success"]')).toContainText('Successfully added');
     await expect(page.locator('[data-testid="upload-success"]')).not.toContainText('0 items');
-    
+
     // Verify inventory items appear
     await expect(page.locator('[data-testid="inventory-item"]')).toHaveCount.greaterThan(0);
-    
+
     // Check specific items were parsed correctly
     await expect(page.locator('[data-testid="inventory-item"]')).toContainText('carrots');
     await expect(page.locator('[data-testid="inventory-item"]')).toContainText('kale');
     await expect(page.locator('[data-testid="inventory-item"]')).toContainText('tomatoes');
-    
+
     // Verify real-time updates work
     await expect(page.locator('[data-testid="connection-status"]')).toContainText('Connected');
   });
-  
+
   test('should handle parsing errors gracefully', async ({ page }) => {
     // Similar setup...
-    
+
     // Try to upload malformed inventory
     await page.fill('[data-testid="inventory-text-input"]', 'invalid nonsense text');
     await page.click('[data-testid="upload-submit-button"]');
-    
+
     // Should show helpful error message, not generic HTTP error
     await expect(page.locator('[data-testid="upload-error"]')).toContainText('Failed to parse inventory text');
     await expect(page.locator('[data-testid="upload-error"]')).not.toContainText('HTTP error! status: 400');

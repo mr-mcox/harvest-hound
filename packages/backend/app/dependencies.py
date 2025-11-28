@@ -19,8 +19,8 @@ from .infrastructure.event_publisher import EventPublisher
 from .infrastructure.event_store import EventStore
 from .infrastructure.repositories import IngredientRepository, StoreRepository
 from .infrastructure.view_stores import InventoryItemViewStore, StoreViewStore
-from .infrastructure.websocket_manager import ConnectionManager
 from .infrastructure.websocket_event_subscriber import WebSocketEventSubscriber
+from .infrastructure.websocket_manager import ConnectionManager
 from .interfaces.parser import InventoryParserProtocol
 from .interfaces.repository import IngredientRepositoryProtocol, StoreRepositoryProtocol
 from .interfaces.service import StoreServiceProtocol
@@ -58,18 +58,19 @@ def get_db_session() -> Generator[Session, None, None]:
 def get_inventory_parser() -> InventoryParserProtocol:
     """Provide inventory parser implementation."""
     from .services.inventory_parser import create_inventory_parser_client
+
     return create_inventory_parser_client()
 
 
 def get_store_view_store(
-    session: Annotated[Session, Depends(get_db_session)]
+    session: Annotated[Session, Depends(get_db_session)],
 ) -> StoreViewStoreProtocol:
     """Provide store view store implementation."""
     return StoreViewStore(session)
 
 
 def get_inventory_item_view_store(
-    session: Annotated[Session, Depends(get_db_session)]
+    session: Annotated[Session, Depends(get_db_session)],
 ) -> InventoryItemViewStoreProtocol:
     """Provide inventory item view store implementation."""
     return InventoryItemViewStore(session)
@@ -90,9 +91,7 @@ def get_connection_manager(request: Request) -> ConnectionManager:
     return request.app.state.connection_manager  # type: ignore[no-any-return]
 
 
-def get_event_store(
-    session: Annotated[Session, Depends(get_db_session)]
-) -> EventStore:
+def get_event_store(session: Annotated[Session, Depends(get_db_session)]) -> EventStore:
     """Provide event store implementation."""
     return EventStore(session=session)
 
@@ -105,7 +104,7 @@ def get_event_publisher(request: Request) -> EventPublisher:
 
 def get_store_repository(
     event_store: Annotated[EventStore, Depends(get_event_store)],
-    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)]
+    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)],
 ) -> StoreRepositoryProtocol:
     """Provide store repository implementation."""
     return StoreRepository(event_store, event_publisher)
@@ -113,7 +112,7 @@ def get_store_repository(
 
 def get_ingredient_repository(
     event_store: Annotated[EventStore, Depends(get_event_store)],
-    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)]
+    event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)],
 ) -> IngredientRepositoryProtocol:
     """Provide ingredient repository implementation."""
     return IngredientRepository(event_store, event_publisher)
@@ -127,26 +126,28 @@ def create_projection_registry(
 ) -> ProjectionRegistry:
     """Create and configure projection registry with handlers."""
     registry = ProjectionRegistry()
-    
+
     # Create handlers
     store_projection_handler = StoreProjectionHandler(store_view_store)
     inventory_projection_handler = InventoryProjectionHandler(
-        ingredient_repository,
-        store_repository,
-        inventory_item_view_store
+        ingredient_repository, store_repository, inventory_item_view_store
     )
-    
-    
+
     # Register specific event handlers
     registry.register(StoreCreated, store_projection_handler.handle_store_created)
-    registry.register(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
-    registry.register(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
-    registry.register(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
-    # TODO: Add StoreCreatedWithInventory event handler registration in NEW BEHAVIOR task
-    
+    registry.register(
+        InventoryItemAdded, store_projection_handler.handle_inventory_item_added
+    )
+    registry.register(
+        InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added
+    )
+    registry.register(
+        IngredientCreated, inventory_projection_handler.handle_ingredient_created
+    )
+    # TODO: Add StoreCreatedWithInventory event handler registration
+    # in NEW BEHAVIOR task
+
     return registry
-
-
 
 
 async def setup_event_bus_subscribers(
@@ -159,36 +160,53 @@ async def setup_event_bus_subscribers(
 ) -> None:
     """Subscribe projection handlers and WebSocket event subscriber to event bus."""
     event_bus = event_bus_manager.event_bus
-    
+
     # Create handlers
     store_projection_handler = StoreProjectionHandler(store_view_store)
     inventory_projection_handler = InventoryProjectionHandler(
-        ingredient_repository,
-        store_repository,
-        inventory_item_view_store
+        ingredient_repository, store_repository, inventory_item_view_store
     )
-    
+
     # Create WebSocket event subscriber
     websocket_event_subscriber = WebSocketEventSubscriber(connection_manager)
-    
+
     # Subscribe handlers to event bus
-    await event_bus.subscribe(StoreCreated, store_projection_handler.handle_store_created)
-    await event_bus.subscribe(InventoryItemAdded, store_projection_handler.handle_inventory_item_added)
-    await event_bus.subscribe(InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added)
-    await event_bus.subscribe(IngredientCreated, inventory_projection_handler.handle_ingredient_created)
-    
+    await event_bus.subscribe(
+        StoreCreated, store_projection_handler.handle_store_created
+    )
+    await event_bus.subscribe(
+        InventoryItemAdded, store_projection_handler.handle_inventory_item_added
+    )
+    await event_bus.subscribe(
+        InventoryItemAdded, inventory_projection_handler.handle_inventory_item_added
+    )
+    await event_bus.subscribe(
+        IngredientCreated, inventory_projection_handler.handle_ingredient_created
+    )
+
     # Subscribe WebSocket event subscriber to domain events
-    await event_bus.subscribe(StoreCreated, websocket_event_subscriber.handle_store_created)
-    await event_bus.subscribe(InventoryItemAdded, websocket_event_subscriber.handle_inventory_item_added)
-    await event_bus.subscribe(StoreCreatedWithInventory, websocket_event_subscriber.handle_store_created_with_inventory)
+    await event_bus.subscribe(
+        StoreCreated, websocket_event_subscriber.handle_store_created
+    )
+    await event_bus.subscribe(
+        InventoryItemAdded, websocket_event_subscriber.handle_inventory_item_added
+    )
+    await event_bus.subscribe(
+        StoreCreatedWithInventory,
+        websocket_event_subscriber.handle_store_created_with_inventory,
+    )
 
 
 def get_store_service(
     store_repository: Annotated[StoreRepositoryProtocol, Depends(get_store_repository)],
-    ingredient_repository: Annotated[IngredientRepositoryProtocol, Depends(get_ingredient_repository)],
+    ingredient_repository: Annotated[
+        IngredientRepositoryProtocol, Depends(get_ingredient_repository)
+    ],
     inventory_parser: Annotated[InventoryParserProtocol, Depends(get_inventory_parser)],
     store_view_store: Annotated[StoreViewStoreProtocol, Depends(get_store_view_store)],
-    inventory_item_view_store: Annotated[InventoryItemViewStoreProtocol, Depends(get_inventory_item_view_store)],
+    inventory_item_view_store: Annotated[
+        InventoryItemViewStoreProtocol, Depends(get_inventory_item_view_store)
+    ],
     event_store: Annotated[EventStore, Depends(get_event_store)],
     event_publisher: Annotated[EventPublisher, Depends(get_event_publisher)],
 ) -> StoreServiceProtocol:
@@ -202,5 +220,3 @@ def get_store_service(
         event_store,
         event_publisher,
     )
-
-

@@ -162,7 +162,7 @@ GET /stores/{store_id}/inventory
 → [
     {
       "store_id": "uuid",
-      "ingredient_id": "uuid1", 
+      "ingredient_id": "uuid1",
       "ingredient_name": "carrots",    // Denormalized from ingredient
       "store_name": "CSA Box",         // Denormalized from store
       "quantity": 2.0,
@@ -174,7 +174,7 @@ GET /stores/{store_id}/inventory
       "store_id": "uuid",
       "ingredient_id": "uuid2",
       "ingredient_name": "kale",
-      "store_name": "CSA Box", 
+      "store_name": "CSA Box",
       "quantity": 1.0,
       "unit": "bunch",
       "notes": "",

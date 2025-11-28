@@ -8,7 +8,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Backend Python type checking  
+# Backend Python type checking
 cd ../backend && uv run mypy .
 if [ $? -ne 0 ]; then
   echo "❌ Backend type checking failed"

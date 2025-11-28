@@ -38,19 +38,22 @@ class EventStore:
 
     def load_events(self, stream_id: str) -> List[Dict[str, Any]]:
         """Load all events for a stream in chronological order."""
-        stmt = select(events.c.event_type, events.c.event_data, events.c.timestamp).where(
-            events.c.stream_id == stream_id
-        ).order_by(events.c.timestamp)
-        
+        stmt = (
+            select(events.c.event_type, events.c.event_data, events.c.timestamp)
+            .where(events.c.stream_id == stream_id)
+            .order_by(events.c.timestamp)
+        )
+
         result = self.session.execute(stmt)
-        
+
         event_list: List[Dict[str, Any]] = []
         for row in result:
-            event_list.append({
-                "event_type": row.event_type,
-                "event_data": json.loads(row.event_data),
-                "timestamp": row.timestamp,
-            })
+            event_list.append(
+                {
+                    "event_type": row.event_type,
+                    "event_data": json.loads(row.event_data),
+                    "timestamp": row.timestamp,
+                }
+            )
 
         return event_list
-

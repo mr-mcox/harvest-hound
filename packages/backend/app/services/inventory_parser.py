@@ -54,8 +54,7 @@ class BamlInventoryParserClient(InventoryParserClient):
         ]
 
         return ParsedInventoryResult(
-            items=items, 
-            parsing_notes=baml_result.parsing_notes
+            items=items, parsing_notes=baml_result.parsing_notes
         )
 
 
