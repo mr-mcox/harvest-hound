@@ -12,7 +12,11 @@ tags: [domain-model, event-sourcing, polymorphism, stores]
 
 ## Domain Context
 
-This implementation transforms the inventory store model from a single concrete class with an `infinite_supply` flag to a polymorphic hierarchy with abstract base class and two concrete implementations. This enables natural language store definitions that can be interpreted by LLMs for ingredient availability.
+This implementation transforms the inventory store model from a single concrete class to a polymorphic hierarchy with abstract base class and two concrete implementations. This enables natural language store definitions that can be interpreted by LLMs for ingredient availability.
+
+**Key Design Decision**: The existing `infinite_supply` boolean field is removed as part of this refactoring. The concept of "infinite availability" is now implicit in the polymorphic design:
+- `ExplicitInventoryStore`: finite, enumerated inventory
+- `DefinitionBasedStore`: LLM-inferred availability (can represent infinite-like behavior through description)
 
 **Relevant Domain Model Documentation**:
 - docs/architecture/domain-model.md (Section 4: InventoryStore Hierarchy)
@@ -224,6 +228,7 @@ Each phase follows Test-Driven Development with a clean break from old implement
 
 ### 1.2 ExplicitInventoryStore Implementation - **NEW BEHAVIOR**
 - [ ] **Create ExplicitInventoryStore subclass** - Inherit from InventoryStore, include `inventory_items` field in `app/models/inventory_store.py:35`
+- [ ] **Remove infinite_supply field** - No longer needed with polymorphic design (explicit vs definition-based stores)
 - [ ] **Implement concrete methods** - `check_availability()` returns inventory lookup, `supports_inventory_addition()` returns True
 - [ ] **Write test_explicit_store_creation()** - Verify ExplicitInventoryStore can be instantiated with inventory_items field
 
@@ -234,6 +239,9 @@ Each phase follows Test-Driven Development with a clean break from old implement
 
 ### 1.4 Event Structure Updates - **SETUP ONLY**
 - [ ] **Add store_type discriminator to StoreCreated event** - Add `store_type: str` field in `app/events/domain_events.py:15`
+- [ ] **Remove infinite_supply from StoreCreated event** - Field is obsolete with polymorphic design
+- [ ] **Update StoreView read model** - Remove `infinite_supply` field from `app/models/read_models.py`
+- [ ] **Update database schema** - Remove `infinite_supply` column from store_views table in `app/infrastructure/database.py`
 - [ ] **Update create() factory methods** - Each subclass emits StoreCreated with appropriate store_type value
 - [ ] **Remove old tests** - Delete existing InventoryStore tests in `tests/test_inventory_store.py` (entire file)
 
@@ -261,11 +269,13 @@ Each phase follows Test-Driven Development with a clean break from old implement
 
 ### 3.1 Service Layer Polymorphic Creation - **NEW BEHAVIOR**
 - [ ] **Update StoreService.create_store method** - Accept store_type parameter and route to correct subclass in `app/services/store_service.py:75`
+- [ ] **Remove infinite_supply parameter** - Remove from create_store_with_inventory() method signature
 - [ ] **Write test_service_creates_explicit_store()** - Verify service creates ExplicitInventoryStore when store_type="explicit"
 - [ ] **Write test_service_creates_definition_store()** - Verify service creates DefinitionBasedStore when store_type="definition"
 
 ### 3.2 API Schema Updates - **SETUP ONLY**
 - [ ] **Add store_type field to CreateStoreRequest** - Required field with Literal["explicit", "definition"] type in `api.py:44`
+- [ ] **Remove infinite_supply from API schemas** - Remove from CreateStoreRequest and CreateStoreResponse in `api.py`
 - [ ] **Add store_type to CreateStoreResponse** - Include in response for client confirmation in `api.py:51`
 - [ ] **Update API endpoint handler** - Pass store_type from request to service in `api.py:156`
 
