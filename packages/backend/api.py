@@ -96,34 +96,34 @@ async def startup_event() -> None:
     if not _startup_completed:
         # Initialize event bus manager
         app.state.event_bus_manager = EventBusManager(InMemoryEventBus())
-        
+
         # Initialize connection manager
         app.state.connection_manager = ConnectionManager()
-        
+
         # Create tables if they don't exist
         metadata.create_all(bind=engine)
-        
+
         # Create session and dependencies
         session = SessionLocal()
         try:
             # Create dependencies manually for startup
             store_view_store = StoreViewStore(session)
             inventory_item_view_store = InventoryItemViewStore(session)
-            
+
             # Create event store and publisher for repositories
             event_store = EventStore(session=session)
             event_publisher = EventPublisher(app.state.event_bus_manager.event_bus)
             store_repository = StoreRepository(event_store, event_publisher)
             ingredient_repository = IngredientRepository(event_store, event_publisher)
-            
+
             # Create and store projection registry in app state
             app.state.projection_registry = create_projection_registry(
                 store_view_store,
                 inventory_item_view_store,
                 store_repository,
-                ingredient_repository
+                ingredient_repository,
             )
-            
+
             # Subscribe projection handlers to event bus
             await setup_event_bus_subscribers(
                 app.state.event_bus_manager,
@@ -131,13 +131,13 @@ async def startup_event() -> None:
                 inventory_item_view_store,
                 store_repository,
                 ingredient_repository,
-                app.state.connection_manager
+                app.state.connection_manager,
             )
-            
+
             session.commit()
         finally:
             session.close()
-        
+
         _startup_completed = True
 
 
@@ -155,7 +155,7 @@ async def health_check() -> dict[str, str]:
 @app.post("/stores", response_model=CreateStoreResponse, status_code=201)
 async def create_store(
     request: CreateStoreRequest,
-    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)],
 ) -> CreateStoreResponse:
     """Create a new inventory store with optional inventory processing."""
     # Always use unified creation flow
@@ -165,7 +165,7 @@ async def create_store(
         infinite_supply=request.infinite_supply or False,
         inventory_text=request.inventory_text,  # Can be None
     )
-    
+
     return CreateStoreResponse(
         store_id=result.store_id,
         name=request.name,
@@ -178,7 +178,7 @@ async def create_store(
 
 @app.get("/stores", response_model=List[StoreListItem])
 async def get_stores(
-    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)],
 ) -> List[StoreListItem]:
     """Get list of all stores."""
     stores_data = store_service.get_all_stores()
@@ -201,7 +201,7 @@ async def get_stores(
 async def upload_inventory(
     store_id: UUID,
     request: InventoryUploadRequest,
-    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)],
 ) -> InventoryUploadResponse:
     """Upload inventory to a store."""
     try:
@@ -230,7 +230,7 @@ async def upload_inventory(
 @app.get("/stores/{store_id}/inventory", response_model=List[InventoryItem])
 async def get_store_inventory(
     store_id: UUID,
-    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)]
+    store_service: Annotated[StoreServiceProtocol, Depends(get_store_service)],
 ) -> List[InventoryItem]:
     """Get current inventory for a store."""
     try:
@@ -257,21 +257,17 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     """Handle WebSocket connections with default room pattern."""
     # Get connection manager from app state
     connection_manager = app.state.connection_manager
-    
+
     await connection_manager.connect(websocket)
     try:
         while True:
             # Receive message from client
             data = await websocket.receive_json()
-            
+
             # Simple echo response for now
-            response = {
-                "type": "echo",
-                "data": data.get("data", {}),
-                "room": "default"
-            }
+            response = {"type": "echo", "data": data.get("data", {}), "room": "default"}
             await websocket.send_json(response)
-            
+
     except WebSocketDisconnect:
         # Handle disconnection gracefully
         await connection_manager.disconnect(websocket)

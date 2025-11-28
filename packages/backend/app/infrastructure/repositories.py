@@ -28,7 +28,9 @@ class AggregateNotFoundError(RepositoryError):
 class IngredientRepository:
     """Repository for Ingredient aggregates using event sourcing."""
 
-    def __init__(self, event_store: EventStore, event_publisher: Optional[EventPublisher] = None):
+    def __init__(
+        self, event_store: EventStore, event_publisher: Optional[EventPublisher] = None
+    ):
         self.event_store = event_store
         self.event_publisher = event_publisher
 
@@ -66,7 +68,9 @@ class IngredientRepository:
 class StoreRepository:
     """Repository for InventoryStore aggregates using event sourcing."""
 
-    def __init__(self, event_store: EventStore, event_publisher: Optional[EventPublisher] = None):
+    def __init__(
+        self, event_store: EventStore, event_publisher: Optional[EventPublisher] = None
+    ):
         self.event_store = event_store
         self.event_publisher = event_publisher
 

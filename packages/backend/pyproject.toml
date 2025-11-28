@@ -35,9 +35,9 @@ select = ["E", "F", "I", "C90", "PLC0415"]
 "app/dependencies.py" = ["PLC0415"]
 # Allow local imports in test fixtures for async setup
 "tests/test_store_service.py" = ["PLC0415"]
-
-[tool.black]
-exclude = "app/infrastructure/baml_client/"
+"tests/test_integration_comprehensive.py" = ["PLC0415"]
+# Allow complexity in test mocks
+"tests/mocks/**/*" = ["C901"]
 
 [tool.mypy]
 python_version = "3.12"

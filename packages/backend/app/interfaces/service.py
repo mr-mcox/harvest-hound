@@ -8,9 +8,9 @@ from ..services.store_service import InventoryUploadResult
 if TYPE_CHECKING:
     from ..services.store_service import UnifiedCreationResult
 
+
 class StoreServiceProtocol(Protocol):
     """Protocol for store service operations."""
-
 
     def upload_inventory(
         self,
@@ -18,11 +18,11 @@ class StoreServiceProtocol(Protocol):
         inventory_text: str,
     ) -> InventoryUploadResult:
         """Upload inventory items to a store by parsing text input.
-        
+
         Args:
             store_id: Unique identifier for the store
             inventory_text: Raw text containing inventory items
-            
+
         Returns:
             Result indicating success/failure and items added
         """
@@ -30,7 +30,7 @@ class StoreServiceProtocol(Protocol):
 
     def get_all_stores(self) -> List[Dict[str, Any]]:
         """Get list of all stores with item counts.
-        
+
         Returns:
             List of store data dictionaries
         """
@@ -38,10 +38,10 @@ class StoreServiceProtocol(Protocol):
 
     def get_store_inventory(self, store_id: UUID) -> List[Dict[str, Any]]:
         """Get current inventory for a store with denormalized view data.
-        
+
         Args:
             store_id: Unique identifier for the store
-            
+
         Returns:
             List of inventory item data dictionaries
         """
@@ -55,15 +55,14 @@ class StoreServiceProtocol(Protocol):
         inventory_text: Optional[str],
     ) -> "UnifiedCreationResult":
         """Create store and optionally process inventory in unified operation.
-        
+
         Args:
             name: Store name
-            description: Store description  
+            description: Store description
             infinite_supply: Whether store has infinite supply
             inventory_text: Optional inventory text to process
-            
+
         Returns:
             Unified creation result with store_id, successful_items, and error_message
         """
         ...
-

@@ -36,7 +36,7 @@ This script will:
    - No console errors in browser dev tools
 
 ### Workflow 2: Connection Recovery Testing
-**Duration**: 3-4 minutes  
+**Duration**: 3-4 minutes
 **Purpose**: Verify WebSocket reconnection handles network interruptions
 
 1. **Setup**:
@@ -109,7 +109,7 @@ This script will:
 **Check**: `docker-compose -f docker-compose.dev.yml logs backend`
 **Action**: Restart services, verify containers healthy
 
-**Symptom**: Status stuck on "Reconnecting"  
+**Symptom**: Status stuck on "Reconnecting"
 **Check**: Browser console for WebSocket errors
 **Action**: Hard refresh page, check network connectivity
 
@@ -138,6 +138,6 @@ docker-compose -f docker-compose.dev.yml down
 
 Manual testing complete when:
 - [ ] All three main workflows pass consistently
-- [ ] Visual feedback meets quality standards  
+- [ ] Visual feedback meets quality standards
 - [ ] Performance perception acceptable
 - [ ] No critical issues identified in troubleshooting

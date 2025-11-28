@@ -4,6 +4,7 @@ Database schema definitions using SQLAlchemy Core.
 Defines read model tables with proper indexes as per ADR-005.
 Uses SQLAlchemy Core for persistence ignorance and database independence.
 """
+
 from typing import Union
 
 from sqlalchemy import (
@@ -62,7 +63,7 @@ events = Table(
     Column("stream_id", String, nullable=False),
     Column("event_type", String, nullable=False),
     Column("event_data", String, nullable=False),  # JSON string
-    Column("timestamp", String, nullable=False),   # ISO format string
+    Column("timestamp", String, nullable=False),  # ISO format string
     # Index for event stream queries
     Index("idx_stream_id_timestamp", "stream_id", "timestamp"),
 )

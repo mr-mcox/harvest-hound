@@ -7,8 +7,11 @@
 	}
 
 	// Base template for form component stories
-	export function createFormStory(component: any, title?: string, options: FormStoryOptions = {}) {
-		// eslint-disable-line @typescript-eslint/no-explicit-any
+	export function createFormStory(
+		component: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+		title?: string,
+		options: FormStoryOptions = {}
+	) {
 		const { Story } = defineMeta({
 			title: title || `Forms/${component.name}`,
 			component,

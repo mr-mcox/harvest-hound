@@ -60,6 +60,6 @@ def assert_event_matches(
         # Only check the fields that were specified
         for field, expected_value in expected_data.items():
             assert field in actual_data, f"Field '{field}' not found in event data"
-            assert (
-                actual_data[field] == expected_value
-            ), f"Field '{field}': expected {expected_value}, got {actual_data[field]}"
+            assert actual_data[field] == expected_value, (
+                f"Field '{field}': expected {expected_value}, got {actual_data[field]}"
+            )

@@ -91,7 +91,7 @@ services:
     environment:
       - NODE_ENV=development
     volumes:
-      # Mount only source code for hot reload, exclude node_modules  
+      # Mount only source code for hot reload, exclude node_modules
       - ./packages/frontend/src:/app/packages/frontend/src
       - ./packages/frontend/static:/app/packages/frontend/static
       - ./packages/frontend/package.json:/app/packages/frontend/package.json

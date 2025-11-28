@@ -8,11 +8,10 @@
 
 	// Base template for upload component stories
 	export function createUploadStory(
-		component: any,
+		component: any, // eslint-disable-line @typescript-eslint/no-explicit-any
 		title?: string,
 		options: UploadStoryOptions = {}
 	) {
-		// eslint-disable-line @typescript-eslint/no-explicit-any
 		const { Story } = defineMeta({
 			title: title || `Upload/${component.name}`,
 			component,

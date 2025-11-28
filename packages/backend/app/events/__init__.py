@@ -6,4 +6,10 @@ from .domain_events import (
     StoreCreatedWithInventory,
 )
 
-__all__ = ["DomainEvent", "StoreCreated", "IngredientCreated", "InventoryItemAdded", "StoreCreatedWithInventory"]
+__all__ = [
+    "DomainEvent",
+    "StoreCreated",
+    "IngredientCreated",
+    "InventoryItemAdded",
+    "StoreCreatedWithInventory",
+]

@@ -9,11 +9,10 @@
 
 	// Base template for table component stories
 	export function createTableStory(
-		component: any,
+		component: any, // eslint-disable-line @typescript-eslint/no-explicit-any
 		title?: string,
 		options: TableStoryOptions = {}
 	) {
-		// eslint-disable-line @typescript-eslint/no-explicit-any
 		const { Story } = defineMeta({
 			title: title || `Tables/${component.name}`,
 			component,

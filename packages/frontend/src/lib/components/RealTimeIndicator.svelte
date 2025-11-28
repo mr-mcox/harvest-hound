@@ -1,6 +1,6 @@
 <!--
   Real-time status indicator component
-  
+
   Shows WebSocket connection status and last update timestamp to provide
   visual feedback about real-time functionality.
 -->

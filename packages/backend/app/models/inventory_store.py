@@ -88,7 +88,9 @@ class InventoryStore(BaseModel):
         return updated_store, [event]
 
     @classmethod
-    def from_events(cls, events: Sequence[Union[StoreCreated, InventoryItemAdded]]) -> Self:
+    def from_events(
+        cls, events: Sequence[Union[StoreCreated, InventoryItemAdded]]
+    ) -> Self:
         """Rebuild InventoryStore from a sequence of events."""
         store = None
 

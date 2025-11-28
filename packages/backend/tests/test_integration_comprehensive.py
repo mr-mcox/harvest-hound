@@ -3,11 +3,12 @@ Comprehensive integration tests consolidating all integration test scenarios.
 
 Replaces the following files:
 - test_integration_mocked_llm.py
-- test_backend_integration.py  
+- test_backend_integration.py
 - test_happy_path_integration.py
 - test_error_handling_integration.py
 
-This file provides complete coverage using typed dependency injection with zero @patch decorators.
+This file provides complete coverage using typed dependency injection with zero
+@patch decorators.
 """
 
 from typing import Generator
@@ -41,9 +42,7 @@ class TestHappyPathWorkflows:
         """Test the canonical CSA Box workflow with standard inventory."""
         # Create CSA Box store
         store_data = create_store(
-            test_client_with_mocks, 
-            "CSA Box", 
-            "Weekly CSA delivery store"
+            test_client_with_mocks, "CSA Box", "Weekly CSA delivery store"
         )
         store_id = UUID(store_data["store_id"])
 
@@ -56,20 +55,21 @@ class TestHappyPathWorkflows:
         assert upload_data["success"] is True
         assert upload_data["errors"] == []
 
-        # Note: There is a known timing issue with async projection handlers in tests
-        # The inventory items are persisted correctly, but the store item_count projection
-        # may not update immediately due to TestClient event loop handling
+        # Note: There is a known timing issue with async projection handlers in
+        # tests. The inventory items are persisted correctly, but the store
+        # item_count projection may not update immediately due to TestClient
+        # event loop handling
 
         # Verify inventory retrieval
         inventory_items = get_store_inventory(test_client_with_mocks, store_id)
         assert len(inventory_items) == 2
-        
+
         # Verify carrots
         carrots = find_inventory_item_by_name(inventory_items, "carrot")
         assert carrots["quantity"] == 2.0
         assert carrots["unit"] == "pound"
         assert carrots["store_name"] == "CSA Box"
-        
+
         # Verify kale
         kale = find_inventory_item_by_name(inventory_items, "kale")
         assert kale["quantity"] == 1.0
@@ -82,12 +82,14 @@ class TestHappyPathWorkflows:
         stores = get_all_stores(test_client_with_mocks)
         csa_store = next((s for s in stores if s["name"] == "CSA Box"), None)
         assert csa_store is not None
-        # Skip description and item_count assertions due to known async timing issue in test environment
+        # Skip description and item_count assertions due to known async timing
+        # issue in test environment
 
     def test_complex_inventory_parsing(
         self, test_client_with_mocks: TestClient
     ) -> None:
-        """Test parsing complex inventory with fractional quantities and organic items."""
+        """Test parsing complex inventory with fractional quantities and organic
+        items."""
         # Create store
         store_data = create_store(test_client_with_mocks, "Complex Store")
         store_id = UUID(store_data["store_id"])
@@ -120,13 +122,15 @@ class TestHappyPathWorkflows:
         # Create CSA Box store
         csa_store_data = create_store(test_client_with_mocks, "CSA Box")
         csa_store_id = UUID(csa_store_data["store_id"])
-        
+
         # Create Pantry store
         pantry_store_data = create_store(test_client_with_mocks, "Pantry")
         pantry_store_id = UUID(pantry_store_data["store_id"])
 
         # Add different inventory to each
-        upload_inventory(test_client_with_mocks, csa_store_id, "2 lbs carrots, 1 bunch kale")
+        upload_inventory(
+            test_client_with_mocks, csa_store_id, "2 lbs carrots, 1 bunch kale"
+        )
         upload_inventory(test_client_with_mocks, pantry_store_id, "1 apple")
 
         # Verify CSA Box inventory
@@ -142,10 +146,14 @@ class TestHappyPathWorkflows:
 
         # Verify store list shows correct counts by finding specific store IDs
         stores = get_all_stores(test_client_with_mocks)
-        
-        csa_store = next((s for s in stores if s["store_id"] == str(csa_store_id)), None)
-        pantry_store = next((s for s in stores if s["store_id"] == str(pantry_store_id)), None)
-        
+
+        csa_store = next(
+            (s for s in stores if s["store_id"] == str(csa_store_id)), None
+        )
+        pantry_store = next(
+            (s for s in stores if s["store_id"] == str(pantry_store_id)), None
+        )
+
         assert csa_store is not None, f"CSA store {csa_store_id} not found"
         assert pantry_store is not None, f"Pantry store {pantry_store_id} not found"
         assert csa_store["item_count"] == 2
@@ -160,7 +168,7 @@ class TestHappyPathWorkflows:
             test_client_with_mocks,
             "Infinite Store",
             "Test infinite supply",
-            infinite_supply=True
+            infinite_supply=True,
         )
         store_id = UUID(store_data["store_id"])
 
@@ -172,7 +180,9 @@ class TestHappyPathWorkflows:
 
         # Verify store list preserves the setting
         stores = get_all_stores(test_client_with_mocks)
-        infinite_store = next((s for s in stores if s["name"] == "Infinite Store"), None)
+        infinite_store = next(
+            (s for s in stores if s["name"] == "Infinite Store"), None
+        )
         assert infinite_store is not None
         # Note: infinite_supply not returned in current API, but store creation worked
 
@@ -183,9 +193,9 @@ class TestErrorHandlingScenarios:
     @pytest.fixture
     def client_with_failing_parser(self) -> Generator[TestClient, None, None]:
         """Client with parser that simulates various failures."""
-        
+
         failing_parser = FailingMockInventoryParser(error_type="timeout")
-        
+
         app.dependency_overrides[get_inventory_parser] = lambda: failing_parser
         client = TestClient(app)
         yield client
@@ -201,8 +211,7 @@ class TestErrorHandlingScenarios:
 
         # Try to upload inventory (should fail with timeout)
         response = client_with_failing_parser.post(
-            f"/stores/{store_id}/inventory", 
-            json={"inventory_text": "2 lbs carrots"}
+            f"/stores/{store_id}/inventory", json={"inventory_text": "2 lbs carrots"}
         )
 
         # Should return 400 with timeout error
@@ -213,9 +222,9 @@ class TestErrorHandlingScenarios:
     @pytest.fixture
     def client_with_parsing_failure(self) -> Generator[TestClient, None, None]:
         """Client with parser that fails with parsing errors."""
-        
+
         failing_parser = FailingMockInventoryParser(error_type="parsing")
-        
+
         app.dependency_overrides[get_inventory_parser] = lambda: failing_parser
         client = TestClient(app)
         yield client
@@ -231,8 +240,7 @@ class TestErrorHandlingScenarios:
 
         # Try to upload unparseable text
         response = client_with_parsing_failure.post(
-            f"/stores/{store_id}/inventory",
-            json={"inventory_text": "invalid text"}
+            f"/stores/{store_id}/inventory", json={"inventory_text": "invalid text"}
         )
 
         assert response.status_code == 400
@@ -264,10 +272,9 @@ class TestErrorHandlingScenarios:
     ) -> None:
         """Test uploading to a store that doesn't exist."""
         fake_store_id = "00000000-0000-0000-0000-000000000000"
-        
+
         response = test_client_with_mocks.post(
-            f"/stores/{fake_store_id}/inventory",
-            json={"inventory_text": "1 apple"}
+            f"/stores/{fake_store_id}/inventory", json={"inventory_text": "1 apple"}
         )
 
         # Should return 404
@@ -278,8 +285,7 @@ class TestErrorHandlingScenarios:
     ) -> None:
         """Test handling when store ID format is invalid."""
         response = test_client_with_mocks.post(
-            "/stores/invalid-uuid/inventory",
-            json={"inventory_text": "1 apple"}
+            "/stores/invalid-uuid/inventory", json={"inventory_text": "1 apple"}
         )
 
         # FastAPI should return 422 for invalid UUID format
@@ -297,7 +303,7 @@ class TestErrorHandlingScenarios:
         response = test_client_with_mocks.post(
             f"/stores/{store_id}/inventory",
             content="invalid json",
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         # Should return 422 for validation error
@@ -316,7 +322,7 @@ class TestErrorHandlingScenarios:
 
         # Mock parser returns empty list for unrecognized text
         upload_data = upload_inventory(test_client_with_mocks, store_id, long_text)
-        
+
         # Mock returns 0 items for unknown input
         assert upload_data["items_added"] == 0
         assert upload_data["success"] is True
@@ -338,11 +344,7 @@ class TestPerformanceAndBatching:
         # Upload to all stores
         upload_results = []
         for store_id in store_ids:
-            upload_data = upload_inventory(
-                test_client_with_mocks,
-                store_id,
-                "1 apple"
-            )
+            upload_data = upload_inventory(test_client_with_mocks, store_id, "1 apple")
             upload_results.append(upload_data)
 
         # All should succeed
@@ -362,16 +364,16 @@ class TestConfigurableScenarios:
     @pytest.fixture
     def client_with_custom_parser(self) -> Generator[TestClient, None, None]:
         """Client with custom parser configuration."""
-        
+
         custom_parser = ConfigurableMockInventoryParser()
         custom_parser.set_response(
             "2 bunches cilantro, 3 limes",
             [
                 ParsedInventoryItem(name="cilantro", quantity=2.0, unit="bunches"),
                 ParsedInventoryItem(name="limes", quantity=3.0, unit="pieces"),
-            ]
+            ],
         )
-        
+
         app.dependency_overrides[get_inventory_parser] = lambda: custom_parser
         client = TestClient(app)
         yield client
@@ -387,9 +389,7 @@ class TestConfigurableScenarios:
 
         # Upload the configured text
         upload_data = upload_inventory(
-            client_with_custom_parser,
-            store_id,
-            "2 bunches cilantro, 3 limes"
+            client_with_custom_parser, store_id, "2 bunches cilantro, 3 limes"
         )
 
         # Verify custom parsing
@@ -398,7 +398,7 @@ class TestConfigurableScenarios:
 
         inventory_items = get_store_inventory(client_with_custom_parser, store_id)
         assert len(inventory_items) == 2
-        
+
         cilantro = find_inventory_item_by_name(inventory_items, "cilantro")
         assert cilantro["quantity"] == 2.0
         assert cilantro["unit"] == "bunches"
@@ -422,9 +422,7 @@ class TestConfigurableScenarios:
 
         # Test whitespace only
         whitespace_result = upload_inventory(
-            test_client_with_mocks, 
-            store_id, 
-            "   \n\t  "
+            test_client_with_mocks, store_id, "   \n\t  "
         )
         assert whitespace_result["items_added"] == 0
         assert whitespace_result["success"] is True
@@ -449,8 +447,7 @@ class TestServiceRobustness:
         # Even after causing errors elsewhere
         fake_store_id = "00000000-0000-0000-0000-000000000000"
         test_client_with_mocks.post(
-            f"/stores/{fake_store_id}/inventory",
-            json={"inventory_text": "1 apple"}
+            f"/stores/{fake_store_id}/inventory", json={"inventory_text": "1 apple"}
         )
 
         # Health check should still work
@@ -469,8 +466,7 @@ class TestServiceRobustness:
         # Cause some errors
         fake_store_id = "00000000-0000-0000-0000-000000000000"
         test_client_with_mocks.post(
-            f"/stores/{fake_store_id}/inventory",
-            json={"inventory_text": "1 apple"}
+            f"/stores/{fake_store_id}/inventory", json={"inventory_text": "1 apple"}
         )
 
         # Valid operations should still work
@@ -489,8 +485,7 @@ class TestServiceRobustness:
         # Make request that will fail
         fake_store_id = "00000000-0000-0000-0000-000000000000"
         response = test_client_with_mocks.post(
-            f"/stores/{fake_store_id}/inventory",
-            json={"inventory_text": "1 apple"}
+            f"/stores/{fake_store_id}/inventory", json={"inventory_text": "1 apple"}
         )
 
         # Error should be returned correctly
@@ -501,20 +496,25 @@ class TestServiceRobustness:
     def test_data_persists_across_requests_event_sourcing_verification(
         self, test_client_with_mocks: TestClient
     ) -> None:
-        """Test that data persists correctly across multiple requests (event sourcing)."""
+        """Test that data persists correctly across multiple requests
+        (event sourcing)."""
         # Create store and add inventory
         store_data = create_store(test_client_with_mocks, "Persistence Test")
         store_id = UUID(store_data["store_id"])
-        
-        upload_inventory(test_client_with_mocks, store_id, "2 lbs carrots, 1 bunch kale")
+
+        upload_inventory(
+            test_client_with_mocks, store_id, "2 lbs carrots, 1 bunch kale"
+        )
 
         # Verify data persists in multiple separate requests
         for _ in range(3):
             inventory = get_store_inventory(test_client_with_mocks, store_id)
             assert len(inventory) == 2
-            
+
             stores = get_all_stores(test_client_with_mocks)
-            test_store = next((s for s in stores if s["store_id"] == str(store_id)), None)
+            test_store = next(
+                (s for s in stores if s["store_id"] == str(store_id)), None
+            )
             assert test_store is not None
             assert test_store["item_count"] == 2
 
@@ -531,36 +531,38 @@ class TestUnifiedStoreCreationIntegration:
             "name": "Test Unified Store",
             "description": "Store created with unified flow",
             "infinite_supply": False,
-            "inventory_text": "2 lbs carrots, 1 bunch kale"
+            "inventory_text": "2 lbs carrots, 1 bunch kale",
         }
-        
+
         # When - Make unified creation request
         response = test_client_with_mocks.post("/stores", json=store_data)
-        
+
         # Then - Should succeed with unified creation response
         assert response.status_code == 201
         response_data = response.json()
-        
+
         # Verify response structure includes unified creation results
         assert "store_id" in response_data
         assert "successful_items" in response_data
         assert "error_message" in response_data
-        
+
         # Verify unified creation results
         assert response_data["successful_items"] == 2  # carrots and kale
         assert response_data["error_message"] is None
-        
+
         # Verify store was created with correct data
         store_id = UUID(response_data["store_id"])
         stores = get_all_stores(test_client_with_mocks)
-        created_store = next((s for s in stores if s["store_id"] == str(store_id)), None)
+        created_store = next(
+            (s for s in stores if s["store_id"] == str(store_id)), None
+        )
         assert created_store is not None
         assert created_store["name"] == "Test Unified Store"
-        
+
         # Verify inventory was processed
         inventory_items = get_store_inventory(test_client_with_mocks, store_id)
         assert len(inventory_items) == 2
-        
+
         # Verify specific items were created
         carrot_item = find_inventory_item_by_name(inventory_items, "carrot")
         kale_item = find_inventory_item_by_name(inventory_items, "kale")
@@ -570,66 +572,75 @@ class TestUnifiedStoreCreationIntegration:
     def test_unified_creation_with_partial_parsing_errors_still_creates_store(
         self, test_client_with_mocks: TestClient
     ) -> None:
-        """Test unified creation with parsing errors still creates store successfully."""
+        """Test unified creation with parsing errors still creates store
+        successfully."""
         # Override the inventory parser to return parsing errors
         from app.dependencies import get_inventory_parser
         from app.models.parsed_inventory import ParsedInventoryItem
         from tests.implementations.parser import MockInventoryParser
-        
+
         def override_inventory_parser() -> MockInventoryParser:
-            # Return parser that has mixed success/failure  
-            return MockInventoryParser({
-                "2 lbs carrots, 1 Volvo car, 1 bunch kale": [
-                    ParsedInventoryItem(name="carrot", quantity=2.0, unit="pound"),
-                    # Volvo car will be skipped by parser (not food)
-                    ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
-                ]
-            })
-        
+            # Return parser that has mixed success/failure
+            return MockInventoryParser(
+                {
+                    "2 lbs carrots, 1 Volvo car, 1 bunch kale": [
+                        ParsedInventoryItem(name="carrot", quantity=2.0, unit="pound"),
+                        # Volvo car will be skipped by parser (not food)
+                        ParsedInventoryItem(name="kale", quantity=1.0, unit="bunch"),
+                    ]
+                }
+            )
+
         # Apply override for this test
         app.dependency_overrides[get_inventory_parser] = override_inventory_parser
-        
+
         try:
             # Given - Create store with inventory that has parsing issues
             store_data = {
                 "name": "Store with Parsing Issues",
                 "description": "Store with mixed valid/invalid inventory",
                 "infinite_supply": False,
-                "inventory_text": "2 lbs carrots, 1 Volvo car, 1 bunch kale"  # Mix of food and non-food
+                "inventory_text": "2 lbs carrots, 1 Volvo car, 1 bunch kale",
+                # Mix of food and non-food
             }
-            
+
             # When - Make unified creation request
             response = test_client_with_mocks.post("/stores", json=store_data)
-            
+
             # Then - Should still create store successfully
             assert response.status_code == 201
             response_data = response.json()
-            
+
             # Store should be created
             assert "store_id" in response_data
             store_id = UUID(response_data["store_id"])
-            
+
             # Should have successfully processed valid items
-            assert response_data["successful_items"] == 2  # carrots and kale (Volvo filtered out)
-            
+            assert (
+                response_data["successful_items"] == 2
+            )  # carrots and kale (Volvo filtered out)
+
             # Error message may or may not be present depending on implementation
-            # The key requirement is that store creation succeeded despite parsing issues
-            
+            # The key requirement is that store creation succeeded despite
+            # parsing issues
+
             # Verify store exists
             stores = get_all_stores(test_client_with_mocks)
-            created_store = next((s for s in stores if s["store_id"] == str(store_id)), None)
+            created_store = next(
+                (s for s in stores if s["store_id"] == str(store_id)), None
+            )
             assert created_store is not None
             assert created_store["name"] == "Store with Parsing Issues"
-            
+
             # Verify valid inventory was processed
             inventory_items = get_store_inventory(test_client_with_mocks, store_id)
             assert len(inventory_items) == 2  # Only carrots and kale
-            
+
             carrot_item = find_inventory_item_by_name(inventory_items, "carrot")
             kale_item = find_inventory_item_by_name(inventory_items, "kale")
             assert carrot_item["quantity"] == 2.0
             assert kale_item["quantity"] == 1.0
-            
+
         finally:
             # Clean up override
             if get_inventory_parser in app.dependency_overrides:
@@ -646,34 +657,36 @@ class TestUnifiedStoreCreationIntegration:
                 "name": "WebSocket Test Store",
                 "description": "Testing unified creation WebSocket events",
                 "infinite_supply": False,
-                "inventory_text": "2 lbs carrots, 1 bunch kale"
+                "inventory_text": "2 lbs carrots, 1 bunch kale",
             }
             response = test_client_with_mocks.post("/stores", json=store_data)
             assert response.status_code == 201
-            
-            # Should receive multiple messages: StoreCreated, InventoryItemAdded (2x), StoreCreatedWithInventory
+
+            # Should receive multiple messages: StoreCreated,
+            # InventoryItemAdded (2x), StoreCreatedWithInventory
             messages = []
             for _ in range(4):  # Expect 4 messages from unified creation
                 ws_message = websocket.receive_json()
                 messages.append(ws_message)
-            
+
             # Verify we get all expected event types
             message_types = [msg["type"] for msg in messages]
             assert "StoreCreated" in message_types
-            assert "InventoryItemAdded" in message_types  
+            assert "InventoryItemAdded" in message_types
             assert "StoreCreatedWithInventory" in message_types
-            
+
             # Count InventoryItemAdded events (should be 2)
-            inventory_added_count = sum(1 for msg_type in message_types if msg_type == "InventoryItemAdded")
+            inventory_added_count = sum(
+                1 for msg_type in message_types if msg_type == "InventoryItemAdded"
+            )
             assert inventory_added_count == 2
-            
+
             # Find and verify StoreCreatedWithInventory event
             store_with_inventory_events = [
-                msg for msg in messages 
-                if msg["type"] == "StoreCreatedWithInventory"
+                msg for msg in messages if msg["type"] == "StoreCreatedWithInventory"
             ]
             assert len(store_with_inventory_events) == 1
-            
+
             event_data = store_with_inventory_events[0]["data"]
             assert event_data["successful_items"] == 2  # carrots and kale
             assert event_data["error_message"] is None

@@ -27,7 +27,10 @@
       "mcp__github__create_pending_pull_request_review",
       "mcp__github__submit_pending_pull_request_review",
       "Bash(pnpm build:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm prettier:*)",
+      "Bash(pnpm format:*)",
+      "Bash(npx prettier:*)"
     ],
     "deny": []
   }

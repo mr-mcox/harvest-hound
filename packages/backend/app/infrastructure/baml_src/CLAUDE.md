@@ -151,7 +151,7 @@ BAML tests validate function behavior with real LLM calls. **Important**: Tests 
 # Run all tests from backend root
 uv run baml-cli test --from app/infrastructure/baml_src
 
-# Run all tests from infrastructure directory  
+# Run all tests from infrastructure directory
 cd app/infrastructure && uv run baml-cli test
 
 # List available tests without running them
@@ -197,10 +197,10 @@ uv run baml-cli test -x "ExpensiveFunction::" -x "::flaky_test"
    ```bash
    # 1. Test specific function during development
    uv run baml-cli test -i "ExtractIngredients::carrots_single_ingredient"
-   
+
    # 2. Test all variants of your function
    uv run baml-cli test -i "ExtractIngredients::"
-   
+
    # 3. Run full test suite before committing
    uv run baml-cli test
    ```
@@ -231,7 +231,7 @@ test basic_functionality {
 
 // Edge case handling
 test empty_input {
-    functions [MyFunction]  
+    functions [MyFunction]
     args { input "" }
     @@assert({{this.items|length == 0}})
 }
