@@ -30,7 +30,10 @@
       "Bash(pnpm lint:*)",
       "Bash(pnpm prettier:*)",
       "Bash(pnpm format:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "WebSearch",
+      "Bash(uv sync:*)",
+      "Bash(uv add:*)"
     ],
     "deny": []
   }
