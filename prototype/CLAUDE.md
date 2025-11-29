@@ -77,10 +77,8 @@ Document what worked, what didn't, what we discovered
 
 ```bash
 cd prototype
-uv venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-uv pip install -r requirements.txt
-uvicorn app:app --reload
+uv sync  # Installs deps and creates venv
+uv run uvicorn app:app --reload
 ```
 
 Open http://localhost:8000 and start discovering!

@@ -3,15 +3,11 @@
 ## Quick Start
 
 ```bash
-# Create virtual environment with uv
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-uv pip install -r requirements.txt
+# Install dependencies (creates venv automatically)
+uv sync
 
 # Run the app
-uvicorn app:app --reload
+uv run uvicorn app:app --reload
 
 # Open browser to http://localhost:8000
 ```

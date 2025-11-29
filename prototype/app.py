@@ -30,30 +30,30 @@ class Store(SQLModel, table=True):
 
 class InventoryItem(SQLModel, table=True):
     """Simple inventory tracking"""
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     store_id: UUID = Field(foreign_key="store.id")
     ingredient_name: str
     quantity: float
     unit: str
     notes: str = ""
-    added_at: datetime = Field(default_factory=datetime.now)
+    added_at: Optional[datetime] = Field(default_factory=datetime.now)
 
 class Recipe(SQLModel, table=True):
     """Recipe storage - keep it simple"""
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     name: str
     ingredients_json: str  # Just store as JSON for now
     instructions: str
     source: str = "ai_generated"
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: Optional[datetime] = Field(default_factory=datetime.now)
 
 class MealPlan(SQLModel, table=True):
     """Weekly meal planning"""
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     week_of: datetime
     recipes_json: str  # List of recipe IDs as JSON
     status: str = "draft"  # draft, accepted, completed
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: Optional[datetime] = Field(default_factory=datetime.now)
 
 # Create tables
 SQLModel.metadata.create_all(engine)
