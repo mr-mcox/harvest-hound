@@ -91,18 +91,18 @@ class BamlSyncClient:
     def parse_stream(self):
       return self.__llm_stream_parser
     
-    def ExtractIngredients(self, text: str,
+    def ExtractIngredients(self, text: str,store_context: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> types.InventoryParsingResult:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
-            stream = self.stream.ExtractIngredients(text=text,
+            stream = self.stream.ExtractIngredients(text=text,store_context=store_context,
                 baml_options=baml_options)
             return stream.get_final_response()
         else:
             # Original non-streaming code
             result = self.__options.merge_options(baml_options).call_function_sync(function_name="ExtractIngredients", args={
-                "text": text,
+                "text": text,"store_context": store_context,
             })
             return typing.cast(types.InventoryParsingResult, result.cast_to(types, types, stream_types, False, __runtime__))
     def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,
@@ -128,11 +128,11 @@ class BamlStreamClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def ExtractIngredients(self, text: str,
+    def ExtractIngredients(self, text: str,store_context: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlSyncStream[stream_types.InventoryParsingResult, types.InventoryParsingResult]:
         ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="ExtractIngredients", args={
-            "text": text,
+            "text": text,"store_context": store_context,
         })
         return baml_py.BamlSyncStream[stream_types.InventoryParsingResult, types.InventoryParsingResult](
           result,
@@ -160,11 +160,11 @@ class BamlHttpRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def ExtractIngredients(self, text: str,
+    def ExtractIngredients(self, text: str,store_context: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="ExtractIngredients", args={
-            "text": text,
+            "text": text,"store_context": store_context,
         }, mode="request")
         return result
     def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,
@@ -182,11 +182,11 @@ class BamlHttpStreamRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def ExtractIngredients(self, text: str,
+    def ExtractIngredients(self, text: str,store_context: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="ExtractIngredients", args={
-            "text": text,
+            "text": text,"store_context": store_context,
         }, mode="stream")
         return result
     def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,

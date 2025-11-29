@@ -40,9 +40,35 @@
             background: #f8f8f8;
             border-radius: 4px;
             cursor: pointer;
+            position: relative;
         }
         .store-item:hover {
             background: #e8e8e8;
+        }
+        .store-item button {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .delete-btn {
+            background: #f44336 !important;
+        }
+        .delete-btn:hover {
+            background: #da190b !important;
+        }
+        .inventory-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f8f8f8;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .inventory-item button {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 0 2px;
         }
         .recipe-card {
             padding: 15px;
@@ -116,12 +142,11 @@
             <div id="storesList" class="stores-list"></div>
 
             <div id="inventorySection" style="display:none;">
-                <h3>Add Inventory</h3>
-                <input type="text" id="ingredientName" placeholder="Ingredient">
-                <input type="number" id="quantity" placeholder="Quantity" step="0.1">
-                <input type="text" id="unit" placeholder="Unit (lbs, bunch, etc)">
-                <button onclick="addInventory()">Add Item</button>
-                
+                <h3>Add Inventory (Bulk)</h3>
+                <textarea id="bulkIngredients" placeholder="Paste CSA delivery list:&#10;2 lbs carrots&#10;1/2 cup rice&#10;3 bunches kale" rows="5"></textarea>
+                <button onclick="addBulkInventory()">Parse and Add Ingredients</button>
+                <div id="parseResults" style="margin: 10px 0; padding: 10px; background: #f0f8ff; border-radius: 4px; display: none;"></div>
+
                 <h4>Current Inventory</h4>
                 <div id="inventoryList"></div>
             </div>

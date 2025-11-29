@@ -23,22 +23,79 @@ async function loadStores() {
     try {
         const response = await fetch('/stores');
         const stores = await response.json();
-        
+
         const storesList = document.getElementById('storesList');
         storesList.innerHTML = '';
-        
+
         stores.forEach(store => {
             const storeDiv = document.createElement('div');
             storeDiv.className = 'store-item';
+
+            // Build definition section if it's a definition-based store
+            let definitionSection = '';
+            if (store.type === 'definition') {
+                definitionSection = `
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd;" onclick="event.stopPropagation()">
+                        <textarea id="def-${store.id}" placeholder="Store definition..." style="width: 100%; height: 60px; font-size: 11px;">${store.definition || ''}</textarea>
+                        <button onclick="updateStoreDefinition('${store.id}')">Update Definition</button>
+                    </div>
+                `;
+            }
+
             storeDiv.innerHTML = `
-                <strong>${store.name}</strong> (${store.type})
-                <br><small>${store.description || 'No description'}</small>
+                <div onclick="selectStore('${store.id}')">
+                    <strong>${store.name}</strong> (${store.type})
+                    <br><small>${store.description || 'No description'}</small>
+                </div>
+                ${definitionSection}
+                <div onclick="event.stopPropagation()" style="margin-top: 5px;">
+                    <button class="delete-btn" onclick="deleteStore('${store.id}')">Delete Store</button>
+                </div>
             `;
-            storeDiv.onclick = () => selectStore(store.id);
+
             storesList.appendChild(storeDiv);
         });
     } catch (error) {
         updateStatus('Failed to load stores: ' + error.message, 'error');
+    }
+}
+
+async function deleteStore(storeId) {
+    if (!confirm('Delete this store and all its inventory?')) return;
+
+    try {
+        const response = await fetch(`/stores/${storeId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            updateStatus('Store deleted', 'success');
+            if (currentStoreId === storeId) {
+                currentStoreId = null;
+                document.getElementById('inventorySection').style.display = 'none';
+            }
+            loadStores();
+        }
+    } catch (error) {
+        updateStatus('Failed to delete store: ' + error.message, 'error');
+    }
+}
+
+async function updateStoreDefinition(storeId) {
+    const definition = document.getElementById(`def-${storeId}`).value;
+
+    try {
+        const response = await fetch(`/stores/${storeId}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ definition: definition })
+        });
+
+        if (response.ok) {
+            updateStatus('Store definition updated', 'success');
+        }
+    } catch (error) {
+        updateStatus('Failed to update definition: ' + error.message, 'error');
     }
 }
 
@@ -77,36 +134,141 @@ async function createStore() {
 async function selectStore(storeId) {
     currentStoreId = storeId;
     document.getElementById('inventorySection').style.display = 'block';
-    
+
     // Highlight selected store
     document.querySelectorAll('.store-item').forEach(item => {
         item.style.background = '#f8f8f8';
+        item.style.borderLeft = 'none';
     });
-    event.currentTarget.style.background = '#e0f2e0';
-    
+
+    // Find and highlight the clicked store
+    const storeItems = document.querySelectorAll('.store-item');
+    storeItems.forEach(item => {
+        if (item.querySelector(`[onclick*="${storeId}"]`)) {
+            item.style.background = '#e0f2e0';
+            item.style.borderLeft = '4px solid #4CAF50';
+        }
+    });
+
     // Load inventory
     await loadInventory();
 }
 
 async function loadInventory() {
     if (!currentStoreId) return;
-    
+
     try {
         const response = await fetch(`/stores/${currentStoreId}/inventory`);
         const items = await response.json();
-        
+
         const inventoryList = document.getElementById('inventoryList');
         if (items.length === 0) {
             inventoryList.innerHTML = '<p>No inventory items yet</p>';
         } else {
             inventoryList.innerHTML = items.map(item => `
-                <div style="padding: 5px; margin: 2px 0; background: #f8f8f8;">
-                    ${item.quantity} ${item.unit} ${item.ingredient}
+                <div class="inventory-item">
+                    <span>${item.quantity} ${item.unit} ${item.ingredient}</span>
+                    <div>
+                        <input type="number" id="qty-${item.id}" value="${item.quantity}" step="0.1" style="width: 60px; display: inline-block;">
+                        <button onclick="updateQuantity('${item.id}')">Update</button>
+                        <button class="delete-btn" onclick="deleteInventoryItem('${item.id}')">Delete</button>
+                    </div>
                 </div>
             `).join('');
         }
     } catch (error) {
         updateStatus('Failed to load inventory: ' + error.message, 'error');
+    }
+}
+
+async function addBulkInventory() {
+    if (!currentStoreId) {
+        alert('Please select a store first');
+        return;
+    }
+
+    const freeText = document.getElementById('bulkIngredients').value;
+
+    if (!freeText) {
+        alert('Please enter some ingredients');
+        return;
+    }
+
+    try {
+        updateStatus('Parsing ingredients...', 'info');
+        const response = await fetch(`/stores/${currentStoreId}/inventory/bulk`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ free_text: freeText })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const parseResults = document.getElementById('parseResults');
+            parseResults.style.display = 'block';
+
+            let message = `Added ${result.total} items!`;
+            if (result.skipped.length > 0) {
+                message += `\n\nSkipped: ${result.skipped.join(', ')}`;
+            }
+
+            parseResults.innerHTML = `
+                <strong>Parsed Successfully:</strong><br>
+                ${result.added.join('<br>')}
+                ${result.skipped.length > 0 ? `<br><br><strong>Skipped:</strong><br>${result.skipped.join('<br>')}` : ''}
+                ${result.notes ? `<br><br><strong>Notes:</strong><br>${result.notes}` : ''}
+            `;
+
+            updateStatus(message, 'success');
+            document.getElementById('bulkIngredients').value = '';
+            loadInventory();
+        } else {
+            updateStatus('Failed to parse: ' + result.error, 'error');
+        }
+    } catch (error) {
+        updateStatus('Failed to add bulk inventory: ' + error.message, 'error');
+    }
+}
+
+async function deleteInventoryItem(itemId) {
+    if (!confirm('Delete this item?')) return;
+
+    try {
+        const response = await fetch(`/inventory/${itemId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            updateStatus('Item deleted', 'success');
+            loadInventory();
+        }
+    } catch (error) {
+        updateStatus('Failed to delete: ' + error.message, 'error');
+    }
+}
+
+async function updateQuantity(itemId) {
+    const newQty = parseFloat(document.getElementById(`qty-${itemId}`).value);
+
+    if (!newQty || newQty <= 0) {
+        alert('Please enter a valid quantity');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/inventory/${itemId}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ quantity: newQty })
+        });
+
+        if (response.ok) {
+            updateStatus('Quantity updated', 'success');
+            loadInventory();
+        }
+    } catch (error) {
+        updateStatus('Failed to update: ' + error.message, 'error');
     }
 }
 

@@ -89,6 +89,15 @@ class AddInventoryRequest(BaseModel):
     unit: str
     notes: str = ""
 
+class BulkInventoryRequest(BaseModel):
+    free_text: str
+
+class UpdateInventoryRequest(BaseModel):
+    quantity: float
+
+class UpdateStoreRequest(BaseModel):
+    definition: str
+
 class GenerateRecipesRequest(BaseModel):
     additional_context: str = ""  # Changed from csa_contents
     num_recipes: int = 3
@@ -151,10 +160,41 @@ async def list_stores():
                 "id": str(s.id),
                 "name": s.name,
                 "type": s.store_type,
-                "description": s.description
+                "description": s.description,
+                "definition": s.definition
             }
             for s in stores
         ]
+
+@app.delete("/stores/{store_id}")
+async def delete_store(store_id: str):
+    """Delete a store and all its inventory"""
+    with Session(engine) as session:
+        # Delete all inventory items first
+        items = session.exec(
+            select(InventoryItem).where(InventoryItem.store_id == UUID(store_id))
+        ).all()
+        for item in items:
+            session.delete(item)
+
+        # Delete the store
+        store = session.get(Store, UUID(store_id))
+        if store:
+            session.delete(store)
+            session.commit()
+            return {"success": True}
+        return {"success": False, "error": "Store not found"}
+
+@app.patch("/stores/{store_id}")
+async def update_store(store_id: str, request: UpdateStoreRequest):
+    """Update store definition (for definition-based stores)"""
+    with Session(engine) as session:
+        store = session.get(Store, UUID(store_id))
+        if store:
+            store.definition = request.definition
+            session.commit()
+            return {"success": True}
+        return {"success": False, "error": "Store not found"}
 
 @app.post("/stores/{store_id}/inventory")
 async def add_inventory(store_id: str, request: AddInventoryRequest):
@@ -170,6 +210,57 @@ async def add_inventory(store_id: str, request: AddInventoryRequest):
         session.add(item)
         session.commit()
         return {"success": True, "item_id": str(item.id)}
+
+@app.post("/stores/{store_id}/inventory/bulk")
+async def add_bulk_inventory(store_id: str, request: BulkInventoryRequest):
+    """Parse free-text and bulk add inventory using BAML"""
+    try:
+        # Get store to access definition for parsing context
+        with Session(engine) as session:
+            store = session.get(Store, UUID(store_id))
+            store_context = store.definition if store and store.definition else None
+
+        # Call BAML to extract ingredients with store context
+        result = await b.ExtractIngredients(
+            text=request.free_text,
+            store_context=store_context
+        )
+
+        added_items = []
+        skipped = []
+
+        with Session(engine) as session:
+            for ing in result.ingredients:
+                # Skip if missing critical info
+                if not ing.name or ing.quantity <= 0:
+                    skipped.append(f"{ing.name or 'unknown'} (missing data)")
+                    continue
+
+                item = InventoryItem(
+                    store_id=UUID(store_id),
+                    ingredient_name=ing.name,
+                    quantity=ing.quantity,
+                    unit=ing.unit or "unit"
+                )
+                session.add(item)
+                added_items.append(f"{ing.quantity} {ing.unit or 'unit'} {ing.name}")
+
+            session.commit()
+
+        return {
+            "success": True,
+            "added": added_items,
+            "skipped": skipped,
+            "total": len(added_items),
+            "notes": result.parsing_notes
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "added": [],
+            "skipped": []
+        }
 
 @app.get("/stores/{store_id}/inventory")
 async def get_inventory(store_id: str):
@@ -187,6 +278,28 @@ async def get_inventory(store_id: str):
             }
             for i in items
         ]
+
+@app.delete("/inventory/{item_id}")
+async def delete_inventory_item(item_id: str):
+    """Delete an inventory item"""
+    with Session(engine) as session:
+        item = session.get(InventoryItem, UUID(item_id))
+        if item:
+            session.delete(item)
+            session.commit()
+            return {"success": True}
+        return {"success": False, "error": "Item not found"}
+
+@app.patch("/inventory/{item_id}")
+async def update_inventory_item(item_id: str, request: UpdateInventoryRequest):
+    """Update inventory item quantity"""
+    with Session(engine) as session:
+        item = session.get(InventoryItem, UUID(item_id))
+        if item:
+            item.quantity = request.quantity
+            session.commit()
+            return {"success": True}
+        return {"success": False, "error": "Item not found"}
 
 @app.get("/generate-recipes")  # Changed from POST to GET
 async def generate_recipes(

@@ -26,14 +26,12 @@ function GenerateSingleRecipe(
   additional_context: string,
   recipes_already_generated: string
 ) -> Recipe {
-  client "openai/gpt-4o-mini"
+  client Anthropic
   prompt #"
     You are a specialized culinary AI assistant for a family of four with two young children who prefer non-spicy foods.
 
     <household-context>
     - Intermediate cooking skills (comfortable with sautéing, braising, making roux)
-    - Well-stocked pantry focusing on Italian and Indian cuisines
-    - Regular CSA deliveries (prioritize these fresh ingredients)
     - Freezer with various meats
     - Children enjoy pasta, rice, slight preference for Mexican flavors
 
@@ -64,14 +62,13 @@ function GenerateSingleRecipe(
     </recipes-already-generated>
 
     Generate ONE recipe that:
-    1. Uses ingredients from the available inventory (especially fresh CSA items)
-    2. Fits the household preferences and equipment
-    3. Considers the user's additional context if provided
-    4. Is DIFFERENT from any recipes already generated
-    5. Minimizes active cooking time while maximizing flavor
-    6. Is appropriate for young children (not spicy)
-
-    DO NOT include leftover application suggestions.
+    1. Uses ingredients from the available inventory listed above
+    2. Prioritizes fresh CSA items that will spoil soon
+    3. Fits the household preferences and equipment
+    4. Considers the user's additional context if provided
+    5. Is DIFFERENT from any recipes already generated
+    6. Minimizes active cooking time while maximizing flavor
+    7. Is appropriate for young children (not spicy)
 
     {{ ctx.output_format }}
   "#
