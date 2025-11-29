@@ -100,7 +100,39 @@ Organize discoveries into LEARNINGS.md sections:
 - What we can definitively skip
 - What might be worth adding
 
-### Step 5: Update LEARNINGS.md
+### Step 5: Evaluate Open Questions
+
+Check if this experiment answered any open questions:
+
+1. **Read pain analysis** for "Related Open Questions" section (if exists)
+
+2. **Use thoughts-analyzer agent** to evaluate which questions were answered:
+
+**Agent Task**: "Given the learnings from this experiment, analyze which open questions in `docs/open-questions/` were:
+- Fully answered (ready to close)
+- Partially answered (update with new insights)
+- Still open (no change needed)
+
+For each question, provide:
+- Current state (answered/partial/open)
+- Key insights learned
+- Recommended action (delete/update/keep)"
+
+3. **For each answered question**:
+   - Extract key insights to LEARNINGS.md (if not already captured)
+   - Delete the question file: `rm docs/open-questions/[question].md`
+   - Inform user: "Closed out question: [name] - insights captured in LEARNINGS.md"
+
+4. **For partially answered questions**:
+   - Update question file with new insights
+   - Add "## Latest Exploration" section with date and findings
+   - Keep file for future exploration
+
+5. **For still-open questions**:
+   - No changes needed
+   - Note in summary which questions remain open
+
+### Step 6: Update LEARNINGS.md
 
 Make specific updates to `docs/LEARNINGS.md`:
 
@@ -143,23 +175,20 @@ Make specific updates to `docs/LEARNINGS.md`:
 - Add specific, concrete insights - not vague notes
 - Include context ("discovered during recipe overload experiment")
 
-### Step 6: Identify Patterns
+### Step 7: Identify Patterns
 
 Look for emerging patterns across learnings:
 - Repeated pain points → fundamental domain need
 - Consistent preferences → design principle
 - Domain boundaries → context separation
 
-### Step 7: Clean Up (Optional)
+### Step 8: Note Cleanup Opportunity
 
-Ask user about ephemeral files:
+"The pain analysis file `.scratch/pain-[topic].md` can now be deleted manually if you're done with this exploration cycle."
 
-"Would you like me to delete the pain analysis file?
-`.scratch/pain-[topic].md` - No longer needed now that learning is captured.
+(Don't automate deletion - user will handle this)
 
-[Delete / Keep for reference]"
-
-### Step 8: Next Experiment
+### Step 9: Next Experiment
 
 Based on learnings, suggest:
 
