@@ -149,59 +149,69 @@ async function addInventory() {
 }
 
 async function generateRecipes() {
-    const csaContents = document.getElementById('csaContents').value;
-    
-    if (!csaContents) {
-        alert('Please enter your CSA contents');
-        return;
-    }
-    
+    const additionalContext = document.getElementById('additionalContext').value;
+
     // Clear previous recipes
     const recipesList = document.getElementById('recipesList');
     recipesList.innerHTML = '<div class="recipe-card streaming">Generating recipes...</div>';
-    
+
     // Close previous SSE connection if exists
     if (eventSource) {
         eventSource.close();
     }
-    
-    // Create SSE connection
-    eventSource = new EventSource('/generate-recipes?' + new URLSearchParams({
-        csa_contents: csaContents,
+
+    // Create SSE connection with GET params
+    const params = new URLSearchParams({
+        additional_context: additionalContext || "",
         num_recipes: 3
-    }));
-    
+    });
+    eventSource = new EventSource('/generate-recipes?' + params);
+
     let recipesReceived = [];
-    
+
     eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        
+
+        // Handle completion
         if (data.complete) {
             updateStatus('Recipe generation complete!', 'success');
             eventSource.close();
             return;
         }
-        
+
+        // Handle errors
+        if (data.error) {
+            updateStatus('Error: ' + data.message, 'error');
+            eventSource.close();
+            recipesList.innerHTML = '<p>Failed to generate recipes. Try again.</p>';
+            return;
+        }
+
+        // Handle recipe data
         if (data.recipe) {
             recipesReceived.push(data.recipe);
-            
+
             // Update UI with streaming effect
             recipesList.innerHTML = recipesReceived.map((recipe, i) => `
                 <div class="recipe-card ${i === recipesReceived.length - 1 ? 'streaming' : ''}">
                     <h4>${recipe.name}</h4>
-                    <p><strong>Ingredients:</strong> ${recipe.ingredients.join(', ')}</p>
+                    <p><strong>Ingredients:</strong><br>${recipe.ingredients.join('<br>')}</p>
                     <p><strong>Instructions:</strong><br>${recipe.instructions.replace(/\n/g, '<br>')}</p>
+                    <p><strong>Time:</strong> ${recipe.active_time} min active${recipe.passive_time ? ' + ' + recipe.passive_time + ' min passive' : ''}</p>
+                    <p><strong>Servings:</strong> ${recipe.servings}</p>
+                    ${recipe.notes ? `<p><strong>Notes:</strong> ${recipe.notes}</p>` : ''}
                     <button onclick="acceptRecipe('${recipe.name}')">Accept Recipe</button>
                     <button onclick="claimIngredients('${recipe.name}')">Claim Ingredients</button>
                 </div>
             `).join('');
         }
     };
-    
+
     eventSource.onerror = (error) => {
-        updateStatus('Error generating recipes', 'error');
+        updateStatus('Connection error generating recipes', 'error');
         eventSource.close();
-        recipesList.innerHTML = '<p>Failed to generate recipes. Try again.</p>';
+        recipesList.innerHTML = '<p>Failed to generate recipes. Check console for details.</p>';
+        console.error('SSE Error:', error);
     };
 }
 

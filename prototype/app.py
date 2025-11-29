@@ -14,6 +14,10 @@ import json
 import asyncio
 from pydantic import BaseModel
 
+# Add BAML imports (after running: uv run baml-cli generate)
+from baml_client import b
+from baml_client.types import Recipe as BAMLRecipe
+
 # Database setup - SQLite for simplicity
 engine = create_engine("sqlite:///harvest.db")
 
@@ -86,8 +90,34 @@ class AddInventoryRequest(BaseModel):
     notes: str = ""
 
 class GenerateRecipesRequest(BaseModel):
-    csa_contents: str
+    additional_context: str = ""  # Changed from csa_contents
     num_recipes: int = 3
+
+def format_inventory_for_prompt() -> str:
+    """Load all stores and format inventory for LLM prompt"""
+    with Session(engine) as session:
+        stores = session.exec(select(Store)).all()
+
+        if not stores:
+            return "No inventory available. Generate recipes using common pantry staples."
+
+        inventory_parts = []
+        for store in stores:
+            items = session.exec(
+                select(InventoryItem).where(InventoryItem.store_id == store.id)
+            ).all()
+
+            if items:
+                item_list = ", ".join([
+                    f"{i.ingredient_name} ({i.quantity} {i.unit})"
+                    for i in items
+                ])
+                inventory_parts.append(f"{store.name}: {item_list}")
+
+        if not inventory_parts:
+            return "No inventory items found. Generate recipes using common pantry staples."
+
+        return "\n".join(inventory_parts)
 
 # --- Endpoints ---
 
@@ -158,48 +188,71 @@ async def get_inventory(store_id: str):
             for i in items
         ]
 
-@app.post("/generate-recipes")
-async def generate_recipes(request: GenerateRecipesRequest):
+@app.get("/generate-recipes")  # Changed from POST to GET
+async def generate_recipes(
+    additional_context: str = "",  # Query param
+    num_recipes: int = 3  # Query param
+):
     """
-    Generate recipes using BAML - with SSE streaming
-    This is where we'll test streaming value
+    Generate recipes using BAML with SSE streaming
+    Auto-loads all store inventories
     """
     async def stream_recipes():
-        # TODO: Integrate BAML here
-        # For now, mock streaming response
-        recipes = [
-            {
-                "name": "Roasted Root Vegetables",
-                "ingredients": ["carrots", "beets", "potatoes"],
-                "instructions": "1. Chop vegetables\n2. Toss with oil\n3. Roast at 425°F"
-            },
-            {
-                "name": "Kale Caesar Salad",
-                "ingredients": ["kale", "parmesan", "croutons"],
-                "instructions": "1. Massage kale\n2. Add dressing\n3. Top with cheese"
-            },
-            {
-                "name": "Carrot Ginger Soup",
-                "ingredients": ["carrots", "ginger", "onion"],
-                "instructions": "1. Sauté aromatics\n2. Add carrots\n3. Simmer and blend"
-            }
-        ]
-        
-        for i, recipe in enumerate(recipes):
-            # Simulate streaming delay
-            await asyncio.sleep(0.5)
-            
-            # Send as SSE format
-            data = json.dumps({
-                "index": i,
-                "total": len(recipes),
-                "recipe": recipe
+        try:
+            # Load inventory from all stores
+            available_inventory = format_inventory_for_prompt()
+
+            recipes_generated = []
+
+            # Generate recipes one at a time for better streaming UX
+            for i in range(num_recipes):
+                # Track what we've already generated to avoid duplicates
+                recipes_summary = "\n".join([
+                    f"- {r['name']}" for r in recipes_generated
+                ]) if recipes_generated else "None yet"
+
+                # Call BAML to generate single recipe
+                baml_recipe = await b.GenerateSingleRecipe(
+                    available_inventory=available_inventory,
+                    additional_context=additional_context or "No specific context provided",
+                    recipes_already_generated=recipes_summary
+                )
+
+                # Convert BAML recipe to dict for frontend
+                recipe_dict = {
+                    "name": baml_recipe.name,
+                    "ingredients": [
+                        f"{ing.quantity} {ing.unit} {ing.name}"
+                        for ing in baml_recipe.ingredients
+                    ],
+                    "instructions": baml_recipe.instructions,
+                    "active_time": baml_recipe.active_time_minutes,
+                    "passive_time": baml_recipe.passive_time_minutes,
+                    "servings": baml_recipe.servings,
+                    "notes": baml_recipe.notes
+                }
+
+                recipes_generated.append(recipe_dict)
+
+                # Stream immediately as SSE
+                data = json.dumps({
+                    "index": i,
+                    "total": num_recipes,
+                    "recipe": recipe_dict
+                })
+                yield f"data: {data}\n\n"
+
+            # Send completion event
+            yield f"data: {json.dumps({'complete': True})}\n\n"
+
+        except Exception as e:
+            # Send error event
+            error_data = json.dumps({
+                "error": True,
+                "message": str(e)
             })
-            yield f"data: {data}\n\n"
-        
-        # Send completion event
-        yield f"data: {json.dumps({'complete': True})}\n\n"
-    
+            yield f"data: {error_data}\n\n"
+
     return StreamingResponse(
         stream_recipes(),
         media_type="text/event-stream",

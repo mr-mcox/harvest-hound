@@ -33,7 +33,8 @@
       "Bash(npx prettier:*)",
       "WebSearch",
       "Bash(uv sync:*)",
-      "Bash(uv add:*)"
+      "Bash(uv add:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }
