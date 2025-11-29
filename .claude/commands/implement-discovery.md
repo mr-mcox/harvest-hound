@@ -6,22 +6,89 @@ Quickly implement a solution for: $ARGUMENTS
 
 Rapid implementation of experiments to test pain point solutions. Speed over perfection.
 
+**Key Principle**: YOLO coding. Get something working fast so the user can feel it.
+
+---
+
+## Background Context
+
+**Pain Analysis** (if exists):
+- Check `.scratch/pain-[topic].md` for structured context from `/discover-pain`
+
+**Prototype Structure**:
+- `prototype/app.py` - FastAPI backend
+- `prototype/templates/` - HTML templates (if exists)
+- `prototype/static/` - JS/CSS (if exists)
+
+**Domain Vocabulary** (for reference only):
+- `docs/domain-model-reference.md` - Don't constrain implementation, but use consistent terms
+
+---
+
 ## Process
 
-### Step 1: Acknowledge the Experiment
+### Step 1: Gather Context
+
+Check for pain analysis document:
+```
+Read .scratch/pain-[topic].md if it exists
+```
+
+If found:
+"Found pain analysis for [topic]. Building on:
+- **Pain**: [from document]
+- **Experiment**: [proposed experiment]
+- **Success Criteria**: [from document]"
+
+If not found:
+"No pain analysis found. Let me understand what we're building:
+- What specific behavior are we implementing?
+- What does success look like?"
+
+Then WAIT for context (from document or user).
+
+### Step 2: Targeted Code Exploration
+
+Use direct tools (Read, Glob) to understand current prototype structure:
+
+```
+Glob: prototype/**/*.py
+Glob: prototype/**/*.html
+Glob: prototype/**/*.js
+```
+
+**Scope**: Find where to make changes, not exhaustive code review.
+**Stop when**: You know which file(s) to modify and where.
+
+Read key files to understand:
+- Current endpoints (for backend changes)
+- Current UI structure (for frontend changes)
+- Where to add the new behavior
+
+### Step 3: Acknowledge the Experiment
 
 "Implementing: [what we're building]
-Goal: Test if [hypothesis] helps with [pain point]"
+Goal: Test if [hypothesis] helps with [pain point]
 
-### Step 2: Choose Simplest Approach
+Based on current prototype structure:
+- Backend changes: [where in app.py]
+- Frontend changes: [where in templates/HTML]
+- New files needed: [if any]"
+
+### Step 4: Choose Simplest Approach
 
 Pick the path of least resistance:
 - Inline everything in app.py
-- Add UI elements directly to index.html
+- Add UI elements directly to templates
 - Use global variables if needed
 - Copy-paste liberally
 
-### Step 3: Implement in Stages
+**Scope control**:
+- Single behavior change per experiment
+- Minimal files touched (1-2 ideal, 3 max)
+- First working solution, not best solution
+
+### Step 5: Implement in Stages
 
 1. **Backend first** (if needed)
    - Add endpoint/model change
@@ -34,14 +101,27 @@ Pick the path of least resistance:
 
 3. **Connect them**
    - Make sure data flows
-   - Don't worry about errors
+   - Don't worry about error handling
 
-### Step 4: Make It Demoable
+### Step 6: Make It Demoable
 
 Get to a state where user can:
 - Click through the workflow
 - See the new behavior
 - Provide immediate feedback
+
+"The experiment is ready to try. Run the prototype and [specific action to test]."
+
+### Step 7: Gather Reaction
+
+"Try this out and let me know:
+1. Does this help with [pain point]?
+2. What feels good/bad about it?
+3. What surprised you?
+
+When ready, use `/capture-learning [topic]` to document what we discovered."
+
+---
 
 ## Implementation Patterns
 
@@ -74,6 +154,8 @@ const quantity = document.getElementById('quantity').value || 1;
 const unit = document.getElementById('unit').value || 'unit';
 ```
 
+---
+
 ## Speed Hacks
 
 ### Database Changes
@@ -97,26 +179,36 @@ async def generate_with_ai():
     return mock_data
 ```
 
+---
+
 ## Success Indicators
 
-✅ User can see/try the new behavior
-✅ Takes < 30 minutes to implement
-✅ Generates "oh!" or "hmm..." reaction
-✅ Reveals something about the domain
+- User can see/try the new behavior
+- Single behavior change (not feature set)
+- Generates "oh!" or "hmm..." reaction
+- Reveals something about the domain
+
+---
 
 ## Anti-patterns
 
-❌ Refactoring existing code
-❌ Adding error handling
-❌ Creating abstractions
-❌ Worrying about performance
+- Refactoring existing code
+- Adding error handling
+- Creating abstractions
+- Worrying about performance
+- Writing tests
+- Building "for later"
+- Touching more than 3 files
 
-## Transition
+---
 
-After implementation:
-"Try this out and let me know:
-1. Does this help with [pain point]?
-2. What feels good/bad about it?
-3. What did we learn about the domain?"
+## Handoff
 
-Then use `capture-learning` to document insights.
+After implementation is demoable:
+
+"The experiment is ready. Here's how to test:
+1. [Specific steps to run/access]
+2. [What to try]
+3. [What to observe]
+
+After testing, use `/capture-learning [topic]` to document insights."
