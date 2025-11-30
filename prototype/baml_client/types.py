@@ -41,7 +41,7 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (4)
+# Generated classes (5)
 # #########################################################################
 
 class Ingredient(BaseModel):
@@ -66,6 +66,13 @@ class RecipeIngredient(BaseModel):
     name: str
     quantity: float
     unit: str
+
+class RecipePitch(BaseModel):
+    name: str
+    blurb: str
+    why_make_this: str
+    key_ingredients: typing.List[str]
+    active_time_minutes: int
 
 # #########################################################################
 # Generated type aliases (0)

@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 # Add BAML imports (after running: uv run baml-cli generate)
 from baml_client import b
-from baml_client.types import Recipe as BAMLRecipe
+from baml_client.types import Recipe as BAMLRecipe, RecipePitch as BAMLRecipePitch
 
 # Database setup - SQLite for simplicity
 engine = create_engine("sqlite:///harvest.db")
@@ -300,6 +300,101 @@ async def update_inventory_item(item_id: str, request: UpdateInventoryRequest):
             session.commit()
             return {"success": True}
         return {"success": False, "error": "Item not found"}
+
+@app.get("/generate-pitches")
+async def generate_pitches(
+    additional_context: str = "",
+    num_pitches: int = 10
+):
+    """
+    Generate lightweight recipe pitches for browsing
+    """
+    async def stream_pitches():
+        try:
+            # Load inventory from all stores
+            available_inventory = format_inventory_for_prompt()
+
+            # Call BAML to generate all pitches at once
+            pitches = await b.GenerateRecipePitches(
+                available_inventory=available_inventory,
+                additional_context=additional_context or "No specific context provided",
+                num_pitches=num_pitches
+            )
+
+            # Stream pitches one at a time for progressive loading
+            for i, pitch in enumerate(pitches):
+                pitch_dict = {
+                    "name": pitch.name,
+                    "blurb": pitch.blurb,
+                    "why_make_this": pitch.why_make_this,
+                    "key_ingredients": pitch.key_ingredients,
+                    "active_time": pitch.active_time_minutes
+                }
+
+                data = json.dumps({
+                    "index": i,
+                    "total": len(pitches),
+                    "pitch": pitch_dict
+                })
+                yield f"data: {data}\n\n"
+
+            # Send completion event
+            yield f"data: {json.dumps({'complete': True})}\n\n"
+
+        except Exception as e:
+            error_data = json.dumps({
+                "error": True,
+                "message": str(e)
+            })
+            yield f"data: {error_data}\n\n"
+
+    return StreamingResponse(
+        stream_pitches(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
+
+class FleshOutRequest(BaseModel):
+    pitch_name: str
+    additional_context: str = ""
+
+@app.post("/flesh-out-pitch")
+async def flesh_out_pitch(request: FleshOutRequest):
+    """
+    Generate a full recipe from a selected pitch name
+    """
+    try:
+        available_inventory = format_inventory_for_prompt()
+
+        # Use the pitch name as context for generation
+        context_with_pitch = f"{request.additional_context}\n\nFocus on creating a full recipe for: {request.pitch_name}"
+
+        baml_recipe = await b.GenerateSingleRecipe(
+            available_inventory=available_inventory,
+            additional_context=context_with_pitch,
+            recipes_already_generated=f"Fleshing out: {request.pitch_name}"
+        )
+
+        recipe_dict = {
+            "name": baml_recipe.name,
+            "ingredients": [
+                f"{ing.quantity} {ing.unit} {ing.name}"
+                for ing in baml_recipe.ingredients
+            ],
+            "instructions": baml_recipe.instructions,
+            "active_time": baml_recipe.active_time_minutes,
+            "passive_time": baml_recipe.passive_time_minutes,
+            "servings": baml_recipe.servings,
+            "notes": baml_recipe.notes
+        }
+
+        return {"success": True, "recipe": recipe_dict}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 @app.get("/generate-recipes")  # Changed from POST to GET
 async def generate_recipes(

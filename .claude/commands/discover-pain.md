@@ -10,11 +10,22 @@ Help the user articulate and understand pain points in the meal planning workflo
 
 ---
 
+## Path Reference Note
+
+**IMPORTANT**: All file paths in this command are relative to the **project root** (`/Users/mcox/dev/harvest-hound/`), NOT the current working directory (which is usually `prototype/`).
+
+When referencing files from `prototype/` directory, use `../` to reach project root:
+- `../docs/LEARNINGS.md`
+- `../docs/open-questions/`
+- `../.scratch/`
+
+---
+
 ## Background Context
 
 When relevant, reference these for domain vocabulary (not as constraints):
-- `docs/domain-model-reference.md` - Domain concepts and terminology
-- `docs/LEARNINGS.md` - Previous discoveries (check for related insights)
+- `docs/domain-model-reference.md` - Domain concepts and terminology (relative to project root)
+- `docs/LEARNINGS.md` - Previous discoveries (check for related insights) (relative to project root)
 
 ---
 

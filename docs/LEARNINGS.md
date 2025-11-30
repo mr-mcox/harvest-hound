@@ -28,7 +28,34 @@
   - Watch for: If non-LLM uses emerge, may need separation
   - (discovered: inventory-management experiment, 2025-11-29)
 
-- [ ] Recipe states needed: **NEEDS EXPLORATION** - "recipe pitches" before full recipes desired
+- [x] **Recipe representations**: Pitch as projection of underlying recipe concept
+  - Pitch = lightweight view for browsing (name, emotional blurb, practical appeal, key ingredients, time)
+  - Full = complete cooking instructions
+  - Pitch might be projection of internal recipe concept that doesn't get fleshed out until selected
+  - Works well: ~80% ready for decision-making
+  - Needs refinement: Sometimes title + blurb overlap unnecessarily
+  - Selection criteria: "excited to make it" vs "meh, doesn't sound good"
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+- [x] **Ingredient claiming is CRITICAL**: Multi-wave generation breaks without it
+  - Problem discovered: "Generate More Pitches" reuses ingredients already allocated to selected recipes
+  - Need to track which ingredients are "claimed" by selected pitches
+  - Blocking issue for iterative workflow (pick 3 → generate more → pick 2 more)
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+- [x] **Time representation needs refinement**: Both active AND total time matter
+  - Current: only shows active time in pitches
+  - Want: active + total time visible
+  - Future idea: Quadrant visualization (total time vs passive time, 4 quadrants)
+  - Progressive reveal: Hover for time breakdown?
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+- [x] **Week-level planning criteria**: Real need for structured constraints
+  - Example: "1 weekend meal, 1 guest meal (weeknight), 2 quick meals, 1 leftovers meal"
+  - Different from ad-hoc context ("busy week")
+  - Helps system generate balanced variety for the week
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
 - [ ] Ingredient complexity level:
 
 ### Workflows That Feel Natural
@@ -48,6 +75,20 @@
    - Update quantity works but feels "janky" for count-based items (3 roasts → 2 roasts)
    - Suggests portioning awareness could improve UX
    - (discovered: inventory-management experiment, 2025-11-29)
+
+4. [x] **Two-phase recipe browsing**: Pitches → selection → flesh out
+   - Pitch browsing feels right for exploring options
+   - Click-to-select interaction works well (reduced UI clutter vs checkboxes)
+   - Fleshing out selected recipes feels right
+   - User reaction: "This is what I hoped for from the system"
+   - Pitch quality ~80% there for decision-making
+   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+5. [x] **Iterative recipe generation in waves**: Pick some → generate more → pick rest
+   - Workflow confirmed: "Pick 3 → regenerate → pick 2 more → have 5 for the week"
+   - BROKEN without ingredient claiming: second wave reuses already-claimed ingredients
+   - Adaptive generation count needed: If picked N, don't need full 10 in next wave
+   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
 
 ### Surprising Complexities
 
@@ -83,6 +124,20 @@
   - Better context for recipe generation (knows 3 roasts vs 3 pounds)
   - Enables more accurate portioning suggestions
   - (discovered: inventory-management experiment, 2025-11-29)
+
+- [x] **Recipe pitch generation**: Two-field structure works well
+  - Emotional blurb (1 sentence, sensory, makes you hungry) + practical "why" (3-5 words)
+  - Blurb length about right for compelling decision-making
+  - Sometimes title + blurb overlap unnecessarily (room for refinement)
+  - Diversity prompt improvements: Removed time optimization bias, added explicit time diversity
+  - Batch generation (all 10 pitches at once) then stream to frontend works well
+  - ~80% ready for production, needs minor cleanup
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+- [x] **Pitch → full recipe fidelity**: "In the ballpark" is good enough
+  - Fleshed out recipes roughly match pitch concept
+  - Don't need perfect correspondence, just directionally correct
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
 
 - [ ] Substitution suggestions:
 
@@ -135,9 +190,38 @@
    - Update quantity works but could be better for count-based items
    - (discovered: inventory-management experiment, 2025-11-29)
 
-3. [ ] **Recipe acceptance workflow** - Needs exploration of what "accept" means
+4. [x] **Browse recipe pitches before committing token budget**
+   - Validated: Two-phase generation (pitches → flesh out) feels right
+   - Essential for exploring diverse options without expensive full generation
+   - User reaction: "This is what I hoped for from the system"
+   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+5. [x] **Ingredient claiming for multi-wave generation**
+   - Validated: CRITICAL for iterative workflow
+   - Without it, second wave reuses already-allocated ingredients
+   - Blocking issue for "pick 3 → generate more → pick 2 more" workflow
+   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+6. [ ] **Recipe acceptance workflow** - Needs exploration of what "accept" means
 
 ### Nice to Have
+- [x] **Week-level planning criteria**: Structured constraints for balanced variety
+  - Example: "1 weekend meal, 1 guest meal (weeknight), 2 quick meals, 1 leftovers meal"
+  - Different from ad-hoc context, helps generate balanced week
+  - Not blocking, but real need discovered
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+- [x] **Adaptive generation count**: Generate fewer pitches in subsequent waves
+  - If already picked 3, don't need full 10 in next wave (just 2-3 more)
+  - Efficiency + reduced cognitive load
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+- [x] **Time diversity in pitches**: Mix quick weeknight + leisurely weekend
+  - Not quite enough diversity yet in time commitments
+  - Want both active AND total time visible
+  - Future: Quadrant visualization (total vs passive time)
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
 - [ ] **5 recipes per week** (vs current 3) - easy parameter tweak, not blocking
 - [ ] **Prioritize expiring ingredients** - could be solved via context field
 

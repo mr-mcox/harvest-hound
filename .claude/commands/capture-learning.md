@@ -10,14 +10,27 @@ Extract and preserve domain discoveries from implementation experiments. Focus o
 
 ---
 
+## Path Reference Note
+
+**IMPORTANT**: All file paths in this command are relative to the **project root** (`/Users/mcox/dev/harvest-hound/`), NOT the current working directory (which is usually `prototype/`).
+
+When referencing files, use paths relative to project root:
+- `docs/LEARNINGS.md` = `/Users/mcox/dev/harvest-hound/docs/LEARNINGS.md`
+- `docs/open-questions/` = `/Users/mcox/dev/harvest-hound/docs/open-questions/`
+- `.scratch/` = `/Users/mcox/dev/harvest-hound/.scratch/`
+
+From `prototype/` directory, use `../` to reach project root files (e.g., `../docs/LEARNINGS.md`).
+
+---
+
 ## Target Files
 
 **Primary Output**:
-- `docs/LEARNINGS.md` - Accumulated prototype discoveries
+- `docs/LEARNINGS.md` - Accumulated prototype discoveries (relative to project root)
 
 **Context Sources**:
-- `.scratch/pain-[topic].md` - The pain analysis that drove this experiment
-- `docs/domain-model-reference.md` - Domain vocabulary for connecting insights
+- `.scratch/pain-[topic].md` - The pain analysis that drove this experiment (relative to project root)
+- `docs/domain-model-reference.md` - Domain vocabulary for connecting insights (relative to project root)
 
 ---
 

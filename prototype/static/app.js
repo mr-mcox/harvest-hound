@@ -3,6 +3,8 @@
 
 let currentStoreId = null;
 let eventSource = null;
+let selectedPitches = new Set();
+let pitchesData = [];
 
 // Store type change handler
 document.getElementById('storeType').addEventListener('change', (e) => {
@@ -308,6 +310,148 @@ async function addInventory() {
     } catch (error) {
         updateStatus('Failed to add inventory: ' + error.message, 'error');
     }
+}
+
+async function generatePitches() {
+    const additionalContext = document.getElementById('additionalContext').value;
+
+    // Show pitch section
+    document.getElementById('pitchSection').style.display = 'block';
+    const pitchesList = document.getElementById('pitchesList');
+    pitchesList.innerHTML = '<div style="padding: 20px; text-align: center;">Generating pitches...</div>';
+
+    // Reset selections
+    selectedPitches.clear();
+    pitchesData = [];
+
+    // Close previous SSE connection if exists
+    if (eventSource) {
+        eventSource.close();
+    }
+
+    // Create SSE connection with GET params
+    const params = new URLSearchParams({
+        additional_context: additionalContext || "",
+        num_pitches: 10
+    });
+    eventSource = new EventSource('/generate-pitches?' + params);
+
+    eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        // Handle completion
+        if (data.complete) {
+            updateStatus('Pitch generation complete! Click pitches to select.', 'success');
+            eventSource.close();
+            return;
+        }
+
+        // Handle errors
+        if (data.error) {
+            updateStatus('Error: ' + data.message, 'error');
+            eventSource.close();
+            pitchesList.innerHTML = '<p>Failed to generate pitches. Try again.</p>';
+            return;
+        }
+
+        // Handle pitch data
+        if (data.pitch) {
+            pitchesData.push(data.pitch);
+            renderPitches();
+        }
+    };
+
+    eventSource.onerror = (error) => {
+        updateStatus('Connection error generating pitches', 'error');
+        eventSource.close();
+        pitchesList.innerHTML = '<p>Failed to generate pitches. Check console for details.</p>';
+        console.error('SSE Error:', error);
+    };
+}
+
+function renderPitches() {
+    const pitchesList = document.getElementById('pitchesList');
+
+    pitchesList.innerHTML = pitchesData.map((pitch, i) => `
+        <div class="pitch-card ${selectedPitches.has(i) ? 'selected' : ''}" onclick="togglePitchSelection(${i})">
+            <h4>${pitch.name}</h4>
+            <div class="blurb">${pitch.blurb}</div>
+            <div class="key-ingredients">
+                <strong>Key ingredients:</strong> ${pitch.key_ingredients.join(', ')}
+            </div>
+            <div style="margin: 8px 0; font-size: 0.9em;">
+                <strong>Why:</strong> ${pitch.why_make_this} · <strong>Time:</strong> ~${pitch.active_time} min
+            </div>
+        </div>
+    `).join('');
+}
+
+function togglePitchSelection(index) {
+    if (selectedPitches.has(index)) {
+        selectedPitches.delete(index);
+    } else {
+        selectedPitches.add(index);
+    }
+    renderPitches();
+}
+
+async function fleshOutSelected() {
+    if (selectedPitches.size === 0) {
+        alert('Please select at least one pitch');
+        return;
+    }
+
+    updateStatus(`Fleshing out ${selectedPitches.size} selected pitches...`, 'info');
+
+    const additionalContext = document.getElementById('additionalContext').value;
+    const recipesList = document.getElementById('recipesList');
+
+    // Clear old recipes
+    recipesList.innerHTML = '';
+
+    for (const pitchIndex of selectedPitches) {
+        const pitch = pitchesData[pitchIndex];
+
+        // Add loading state
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'recipe-card streaming';
+        loadingDiv.innerHTML = `<h4>Fleshing out: ${pitch.name}...</h4>`;
+        recipesList.appendChild(loadingDiv);
+
+        try {
+            const response = await fetch('/flesh-out-pitch', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    pitch_name: pitch.name,
+                    additional_context: additionalContext
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const recipe = result.recipe;
+                loadingDiv.className = 'recipe-card';
+                loadingDiv.innerHTML = `
+                    <h4>${recipe.name}</h4>
+                    <p><strong>Ingredients:</strong><br>${recipe.ingredients.join('<br>')}</p>
+                    <p><strong>Instructions:</strong><br>${recipe.instructions.replace(/\n/g, '<br>')}</p>
+                    <p><strong>Time:</strong> ${recipe.active_time} min active${recipe.passive_time ? ' + ' + recipe.passive_time + ' min passive' : ''}</p>
+                    <p><strong>Servings:</strong> ${recipe.servings}</p>
+                    ${recipe.notes ? `<p><strong>Notes:</strong> ${recipe.notes}</p>` : ''}
+                    <button onclick="acceptRecipe('${recipe.name}')">Accept Recipe</button>
+                    <button onclick="claimIngredients('${recipe.name}')">Claim Ingredients</button>
+                `;
+            } else {
+                loadingDiv.innerHTML = `<p>Failed to flesh out ${pitch.name}: ${result.error}</p>`;
+            }
+        } catch (error) {
+            loadingDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+        }
+    }
+
+    updateStatus('Fleshing out complete!', 'success');
 }
 
 async function generateRecipes() {

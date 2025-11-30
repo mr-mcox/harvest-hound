@@ -86,6 +86,49 @@
             50% { opacity: 1; }
             100% { opacity: 0.7; }
         }
+        .pitch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .pitch-card {
+            padding: 15px;
+            background: #fff3e0;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pitch-card:hover {
+            background: #ffe0b2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .pitch-card.selected {
+            background: #c8e6c9;
+            border-left-color: #4CAF50;
+        }
+        .pitch-card h4 {
+            margin: 0 0 8px 0;
+        }
+        .pitch-card .blurb {
+            font-style: italic;
+            color: #333;
+            margin: 8px 0;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        .pitch-card .key-ingredients {
+            font-size: 0.9em;
+            color: #666;
+            margin: 8px 0;
+        }
+        .pitch-actions {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+        }
         button {
             background: #4CAF50;
             color: white;
@@ -155,14 +198,24 @@
         <!-- Right Panel - Recipe Generation -->
         <div class="panel">
             <h2>Recipe Planning</h2>
-            
+
             <div style="margin-bottom: 20px;">
                 <h3>Additional Context (optional)</h3>
                 <textarea id="additionalContext" placeholder="e.g., 'It's cold so soup would feel good' or 'Busy week, want something quick'" rows="3"></textarea>
-                <button onclick="generateRecipes()">Generate Recipes</button>
+                <button onclick="generatePitches()">Browse Recipe Ideas</button>
+                <button onclick="generateRecipes()">Generate Full Recipes (old)</button>
             </div>
 
-            <h3>Recipe Suggestions</h3>
+            <div id="pitchSection" style="display:none;">
+                <h3>Recipe Pitches - Click to Select</h3>
+                <div class="pitch-actions">
+                    <button onclick="fleshOutSelected()">Flesh Out Selected</button>
+                    <button onclick="generatePitches()">Generate More Pitches</button>
+                </div>
+                <div id="pitchesList" class="pitch-grid"></div>
+            </div>
+
+            <h3>Full Recipes</h3>
             <div id="recipesList"></div>
 
             <h3>Meal Plan</h3>

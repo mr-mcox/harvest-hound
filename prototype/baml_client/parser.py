@@ -30,6 +30,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="request")
         return typing.cast(types.InventoryParsingResult, result)
 
+    def GenerateRecipePitches(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.RecipePitch"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateRecipePitches", llm_response=llm_response, mode="request")
+        return typing.cast(typing.List["types.RecipePitch"], result)
+
     def GenerateSingleRecipe(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.Recipe:
@@ -49,6 +55,12 @@ class LlmStreamParser:
     ) -> stream_types.InventoryParsingResult:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.InventoryParsingResult, result)
+
+    def GenerateRecipePitches(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["stream_types.RecipePitch"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateRecipePitches", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.List["stream_types.RecipePitch"], result)
 
     def GenerateSingleRecipe(
         self, llm_response: str, baml_options: BamlCallOptions = {},

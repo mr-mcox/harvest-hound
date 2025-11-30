@@ -28,5 +28,8 @@ type_map = {
     "types.RecipeIngredient": types.RecipeIngredient,
     "stream_types.RecipeIngredient": stream_types.RecipeIngredient,
 
+    "types.RecipePitch": types.RecipePitch,
+    "stream_types.RecipePitch": stream_types.RecipePitch,
+
 
 }

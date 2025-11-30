@@ -1,20 +1,59 @@
-# Ingredient Claiming as Negotiation
+# Ingredient Claiming Mechanics
 
-**Discovered**: recipe-generation experiment, 2025-11-29
-**Priority**: Low (can defer)
+**Discovered**: recipe-pitch-selection experiment, 2025-11-29
+**Priority**: High (blocking iterative workflow)
 
-## Hypothesis
+## Problem
 
-Claiming might be more complex than simple decrement
+Multi-wave recipe generation reuses ingredients already allocated to selected pitches. When user picks 3 recipes using carrots, the next wave also suggests recipes with carrots even though they're "spoken for."
 
 ## Questions
 
-- Is claiming always "exact match or fail"?
-- Or is it negotiation? ("I need 2 lbs carrots, I have 1.5 lbs, that's probably fine")
-- Who decides if partial ingredients are acceptable? (user? AI?)
-- Can AI suggest substitutions on-the-fly during claiming?
-- How does this relate to Store types (explicit vs definition)?
+**When are ingredients claimed?**
+- When pitch is selected?
+- When recipe is fleshed out?
+- When recipe is accepted to meal plan?
+
+**How are claims represented?**
+- Decrement inventory quantities?
+- Track "reserved" amounts separately?
+- Ephemeral state during generation session vs persistent?
+
+**When are claims released?**
+- User deselects pitch?
+- User removes recipe from meal plan?
+- Session ends?
+- Week is completed?
+
+**How does claiming affect generation?**
+- Exclude claimed ingredients from available inventory?
+- Allow re-use but deprioritize?
+- Track multiple "reservations" on same ingredient?
+
+**Edge cases:**
+- Ingredient partially claimed (2 lbs carrots, 1 lb claimed, 1 lb still available)
+- User wants to "steal" ingredient from one recipe for another
+- Ingredient expires before cooking happens
+
+## Hypothesis
+
+**Simple approach:**
+- Claims are ephemeral during pitch browsing session
+- Selecting a pitch "reserves" its key ingredients
+- Deselecting releases them
+- Fleshing out doesn't change claim state (still reserved)
+- "Accept to meal plan" converts to persistent claim (decrements inventory)
+- Claims released when meal is cooked or user removes from plan
 
 ## Next Experiment
 
-Set up edge cases and explore claiming behavior
+Implement claiming as ephemeral state during pitch generation:
+- Track selected pitches + their key ingredients
+- Pass "unavailable_ingredients" to next wave generation
+- Test if this unblocks iterative workflow
+
+## Success Criteria
+
+- Second wave doesn't reuse ingredients from selected pitches
+- User can pick 3 → generate more → pick 2 more successfully
+- Feels natural (doesn't require explaining the claiming concept)
