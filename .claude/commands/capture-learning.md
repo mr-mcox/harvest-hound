@@ -132,7 +132,22 @@ For each question, provide:
    - No changes needed
    - Note in summary which questions remain open
 
-### Step 6: Update LEARNINGS.md
+### Step 6: Create New Open Questions
+
+Ask: "Did this experiment surface any new uncertainties or design questions we should track?"
+
+**Look for**:
+- Low-confidence learnings ("uncertain if worth it")
+- Multiple valid approaches with unclear tradeoffs
+- Domain concepts needing more exploration
+- Patterns that need validation across experiments
+
+**For each new open question identified**:
+- Create a question file in `docs/open-questions/[question-name].md`
+- Document the uncertainty, options considered, and what would help resolve it
+- Reference from LEARNINGS.md where relevant
+
+### Step 7: Update LEARNINGS.md
 
 Make specific updates to `docs/LEARNINGS.md`:
 
@@ -175,20 +190,20 @@ Make specific updates to `docs/LEARNINGS.md`:
 - Add specific, concrete insights - not vague notes
 - Include context ("discovered during recipe overload experiment")
 
-### Step 7: Identify Patterns
+### Step 8: Identify Patterns
 
 Look for emerging patterns across learnings:
 - Repeated pain points → fundamental domain need
 - Consistent preferences → design principle
 - Domain boundaries → context separation
 
-### Step 8: Note Cleanup Opportunity
+### Step 9: Note Cleanup Opportunity
 
 "The pain analysis file `.scratch/pain-[topic].md` can now be deleted manually if you're done with this exploration cycle."
 
 (Don't automate deletion - user will handle this)
 
-### Step 9: Next Experiment
+### Step 10: Next Experiment
 
 Based on learnings, suggest:
 
