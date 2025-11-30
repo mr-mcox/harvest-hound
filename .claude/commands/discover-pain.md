@@ -39,23 +39,16 @@ Use the `thoughts-locator` agent to search for related open questions:
 
 Return relevant question files with brief summaries."
 
-If related questions found, present to user:
+If related questions found, inform user:
 
 "I found related open questions we're already tracking:
 - [question file]: [summary]
 
-Options:
-1. Continue with this existing exploration thread
-2. Start a fresh pain analysis
-3. Merge insights from both
+I'll read these for context and reference them in the pain analysis.
+After we implement and test, `/capture-learning` will update or close
+these questions based on what we discover."
 
-Which approach would you prefer?"
-
-Then WAIT for user response.
-
-If user chooses to continue existing thread:
-- Read the existing question file for context
-- Reference it in the pain analysis later
+Then READ the related question files for context to inform the pain analysis.
 
 ### Step 3: Understand the Pain
 
@@ -133,8 +126,14 @@ Save structured analysis to `.scratch/pain-[sanitized-topic].md`:
 
 ## Related Open Questions
 (Optional - if this exploration relates to existing questions)
-This exploration may help answer:
-- `docs/open-questions/[relevant-question].md`
+
+**This exploration extends/relates to**:
+- `docs/open-questions/[relevant-question].md` - [brief context of how they relate]
+
+**Workflow**: After implementing this experiment, use `/capture-learning [topic]` to:
+- Update open questions with new insights
+- Close questions that are fully answered
+- Create new questions for uncertainties that surface
 
 ## Notes
 [Any additional context]
