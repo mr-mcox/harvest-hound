@@ -22,6 +22,7 @@ document.getElementById('storeType').addEventListener('change', (e) => {
 window.addEventListener('load', () => {
     loadStores();
     loadPlannedRecipes();
+    loadFlatInventory();
 });
 
 async function loadStores() {
@@ -187,11 +188,6 @@ async function loadInventory() {
 }
 
 async function addBulkInventory() {
-    if (!currentStoreId) {
-        alert('Please select a store first');
-        return;
-    }
-
     const freeText = document.getElementById('bulkIngredients').value;
 
     if (!freeText) {
@@ -199,9 +195,37 @@ async function addBulkInventory() {
         return;
     }
 
+    // Get or create a default store for adding ingredients
+    let storeId = currentStoreId;
+
+    if (!storeId) {
+        // Try to find an existing explicit store
+        const storesResponse = await fetch('/stores');
+        const stores = await storesResponse.json();
+        const explicitStore = stores.find(s => s.type === 'explicit');
+
+        if (explicitStore) {
+            storeId = explicitStore.id;
+        } else {
+            // Create a default "My Inventory" store
+            const createResponse = await fetch('/stores', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    name: 'My Inventory',
+                    store_type: 'explicit',
+                    description: 'Default inventory'
+                })
+            });
+            const newStore = await createResponse.json();
+            storeId = newStore.id;
+            loadStores();  // Refresh store list
+        }
+    }
+
     try {
         updateStatus('Parsing ingredients...', 'info');
-        const response = await fetch(`/stores/${currentStoreId}/inventory/bulk`, {
+        const response = await fetch(`/stores/${storeId}/inventory/bulk`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ free_text: freeText })
@@ -228,6 +252,7 @@ async function addBulkInventory() {
             updateStatus(message, 'success');
             document.getElementById('bulkIngredients').value = '';
             loadInventory();
+            loadFlatInventory();  // Refresh flat view
         } else {
             updateStatus('Failed to parse: ' + result.error, 'error');
         }
@@ -247,6 +272,7 @@ async function deleteInventoryItem(itemId) {
         if (response.ok) {
             updateStatus('Item deleted', 'success');
             loadInventory();
+            loadFlatInventory();  // Refresh flat view
         }
     } catch (error) {
         updateStatus('Failed to delete: ' + error.message, 'error');
@@ -271,6 +297,7 @@ async function updateQuantity(itemId) {
         if (response.ok) {
             updateStatus('Quantity updated', 'success');
             loadInventory();
+            loadFlatInventory();  // Refresh flat view
         }
     } catch (error) {
         updateStatus('Failed to update: ' + error.message, 'error');
@@ -731,6 +758,7 @@ async function cookRecipe(recipeId) {
 
             // Reload planned recipes and inventory display
             loadPlannedRecipes();
+            loadFlatInventory();  // Refresh flat view
             if (currentStoreId) {
                 loadInventory();
             }
@@ -764,11 +792,76 @@ async function abandonRecipe(recipeId) {
 
             // Reload planned recipes
             loadPlannedRecipes();
+            loadFlatInventory();  // Refresh flat view
         } else {
             updateStatus('Failed to abandon: ' + result.error, 'error');
         }
     } catch (error) {
         updateStatus('Error: ' + error.message, 'error');
+    }
+}
+
+async function loadFlatInventory() {
+    try {
+        const response = await fetch('/api/inventory/flat');
+        const data = await response.json();
+
+        const flatList = document.getElementById('flatInventoryList');
+
+        if (!data.items || data.items.length === 0) {
+            flatList.innerHTML = '<p style="color: #999; font-style: italic; padding: 20px; text-align: center;">No ingredients yet. Add some to get started!</p>';
+            return;
+        }
+
+        flatList.innerHTML = data.items.map(item => {
+            const reservedText = item.reserved_quantity > 0
+                ? `<span style="color: #999; font-size: 0.85em;">(${item.reserved_quantity} reserved)</span>`
+                : '';
+
+            return `
+                <div class="flat-inventory-item ${item.priority}">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">
+                            ${item.ingredient_name}
+                        </div>
+                        <div style="font-size: 0.85em; color: #666;">
+                            ${item.available_quantity} ${item.unit} available ${reservedText} · <span style="color: #999;">${item.store_name}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="priority-badge ${item.priority}" onclick="cyclePriority('${item.id}', '${item.priority}')" title="Click to change priority">
+                            ${item.priority}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Failed to load flat inventory:', error);
+        updateStatus('Failed to load flat inventory', 'error');
+    }
+}
+
+async function cyclePriority(itemId, currentPriority) {
+    // Cycle through priorities: low -> medium -> high -> urgent -> low
+    const priorities = ['low', 'medium', 'high', 'urgent'];
+    const currentIndex = priorities.indexOf(currentPriority);
+    const nextPriority = priorities[(currentIndex + 1) % priorities.length];
+
+    try {
+        const response = await fetch(`/inventory/${itemId}/priority`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ priority: nextPriority })
+        });
+
+        if (response.ok) {
+            updateStatus(`Priority updated to ${nextPriority}`, 'success');
+            loadFlatInventory();  // Reload to show new priority order
+        }
+    } catch (error) {
+        updateStatus('Failed to update priority: ' + error.message, 'error');
     }
 }
 

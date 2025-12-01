@@ -2,6 +2,7 @@ class Ingredient {
     name string
     quantity float
     unit string
+    priority string  // low, medium, high, urgent
 
     @@assert(positive_quantity, {{ this.quantity > 0 }})
     @@assert(name_not_empty, {{ this.name|length > 0 }})
@@ -60,6 +61,15 @@ function ExtractIngredients(text: string, store_context: string?) -> InventoryPa
         - Always use numbers, never words (2 not "two")
         - When parsing "xN" notation, the number N is the quantity and the item type is the unit
         </quantity>
+        <priority>
+        - Suggest a priority level for each ingredient: "low", "medium", "high", or "urgent"
+        - Priority guidelines:
+          * "urgent" - Fresh items that spoil quickly (leafy greens, herbs, berries, cream, soft cheeses)
+          * "high" - Items that should be used relatively soon (other fresh vegetables, fresh meat in fridge)
+          * "medium" - Default for most items (frozen meat, root vegetables, pantry staples with decent shelf life)
+          * "low" - Long shelf life items (dried goods, canned items, frozen vegetables, freezer meat)
+        - Use your judgment based on typical shelf life and perishability
+        </priority>
         </guidelines>
 
         {{ ctx.output_format }}

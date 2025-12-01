@@ -30,6 +30,7 @@ class Ingredient(BaseModel):
     name: typing.Optional[str] = None
     quantity: typing.Optional[float] = None
     unit: typing.Optional[str] = None
+    priority: typing.Optional[str] = None
 
 class InventoryParsingResult(BaseModel):
     ingredients: typing.List["Ingredient"]

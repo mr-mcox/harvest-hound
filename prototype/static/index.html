@@ -191,6 +191,61 @@
         .btn-abandon {
             background: #ff9800 !important;
         }
+        .flat-inventory-item {
+            padding: 12px;
+            margin: 6px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .flat-inventory-item.urgent {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .flat-inventory-item.high {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+        .flat-inventory-item.medium {
+            border-left-color: #4CAF50;
+            background: #f1f8f4;
+        }
+        .flat-inventory-item.low {
+            border-left-color: #9E9E9E;
+            background: #fafafa;
+        }
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .priority-badge:hover {
+            transform: scale(1.1);
+        }
+        .priority-badge.urgent {
+            background: #f44336;
+            color: white;
+        }
+        .priority-badge.high {
+            background: #ff9800;
+            color: white;
+        }
+        .priority-badge.medium {
+            background: #4CAF50;
+            color: white;
+        }
+        .priority-badge.low {
+            background: #9E9E9E;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -201,33 +256,42 @@
     </div>
 
     <div class="container">
-        <!-- Left Panel - Stores & Inventory -->
+        <!-- Left Panel - Inventory -->
         <div class="panel">
-            <h2>Stores & Inventory</h2>
-            
-            <div style="margin-bottom: 20px;">
-                <h3>Create Store</h3>
-                <input type="text" id="storeName" placeholder="Store name">
-                <select id="storeType">
-                    <option value="explicit">Explicit (CSA, Freezer)</option>
-                    <option value="definition">Definition (Grocery, Pantry)</option>
-                </select>
-                <textarea id="storeDefinition" placeholder="Definition (for LLM-inferred stores)" style="display:none;"></textarea>
-                <button onclick="createStore()">Create Store</button>
+            <h2>My Ingredients</h2>
+            <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px; font-size: 0.9em;">
+                <strong>💡 Tip:</strong> Click priority badges to adjust. Higher priority = used more in recipes.
             </div>
 
-            <h3>Your Stores</h3>
-            <div id="storesList" class="stores-list"></div>
+            <div id="flatInventoryList"></div>
 
-            <div id="inventorySection" style="display:none;">
-                <h3>Add Inventory (Bulk)</h3>
-                <textarea id="bulkIngredients" placeholder="Paste CSA delivery list:&#10;2 lbs carrots&#10;1/2 cup rice&#10;3 bunches kale" rows="5"></textarea>
-                <button onclick="addBulkInventory()">Parse and Add Ingredients</button>
-                <div id="parseResults" style="margin: 10px 0; padding: 10px; background: #f0f8ff; border-radius: 4px; display: none;"></div>
+            <details style="margin-top: 30px;">
+                <summary style="cursor: pointer; padding: 10px; background: #f5f5f5; border-radius: 4px; font-weight: 500;">
+                    ➕ Add Ingredients
+                </summary>
+                <div style="margin-top: 15px; padding: 15px; background: #fafafa; border-radius: 4px;">
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                        Paste your CSA delivery list or fridge contents:
+                    </p>
+                    <textarea id="bulkIngredients" placeholder="2 lbs carrots&#10;1 bunch kale&#10;1/2 lb bacon (in fridge)" rows="5"></textarea>
+                    <button onclick="addBulkInventory()">Parse and Add</button>
+                    <div id="parseResults" style="margin: 10px 0; padding: 10px; background: #fff; border-radius: 4px; display: none;"></div>
 
-                <h4>Current Inventory</h4>
-                <div id="inventoryList"></div>
-            </div>
+                    <details style="margin-top: 15px;">
+                        <summary style="cursor: pointer; font-size: 0.85em; color: #666;">Advanced: Manage Stores</summary>
+                        <div style="margin-top: 10px; font-size: 0.9em;">
+                            <input type="text" id="storeName" placeholder="Store name" style="font-size: 0.9em;">
+                            <select id="storeType" style="font-size: 0.9em;">
+                                <option value="explicit">Explicit (CSA, Freezer)</option>
+                                <option value="definition">Definition (Grocery, Pantry)</option>
+                            </select>
+                            <textarea id="storeDefinition" placeholder="Definition (for LLM-inferred stores)" style="display:none; font-size: 0.9em;"></textarea>
+                            <button onclick="createStore()" style="font-size: 0.9em;">Create Store</button>
+                            <div id="storesList" class="stores-list" style="max-height: 200px; margin-top: 10px;"></div>
+                        </div>
+                    </details>
+                </div>
+            </details>
         </div>
 
         <!-- Right Panel - Recipe Generation -->

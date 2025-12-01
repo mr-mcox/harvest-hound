@@ -48,6 +48,7 @@ class Ingredient(BaseModel):
     name: str
     quantity: float
     unit: str
+    priority: str
 
 class InventoryParsingResult(BaseModel):
     ingredients: typing.List["Ingredient"]

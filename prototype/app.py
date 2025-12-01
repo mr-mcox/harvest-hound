@@ -41,6 +41,7 @@ class InventoryItem(SQLModel, table=True):
     quantity: float
     unit: str
     notes: str = ""
+    priority: str = "medium"  # low, medium, high, urgent
     added_at: Optional[datetime] = Field(default_factory=datetime.now)
 
 class Recipe(SQLModel, table=True):
@@ -338,10 +339,11 @@ async def add_bulk_inventory(store_id: str, request: BulkInventoryRequest):
                     store_id=UUID(store_id),
                     ingredient_name=ing.name,
                     quantity=ing.quantity,
-                    unit=ing.unit or "unit"
+                    unit=ing.unit or "unit",
+                    priority=ing.priority if hasattr(ing, 'priority') and ing.priority else "medium"
                 )
                 session.add(item)
-                added_items.append(f"{ing.quantity} {ing.unit or 'unit'} {ing.name}")
+                added_items.append(f"{ing.quantity} {ing.unit or 'unit'} {ing.name} [{ing.priority if hasattr(ing, 'priority') else 'medium'}]")
 
             session.commit()
 
@@ -397,6 +399,20 @@ async def update_inventory_item(item_id: str, request: UpdateInventoryRequest):
             item.quantity = request.quantity
             session.commit()
             return {"success": True}
+        return {"success": False, "error": "Item not found"}
+
+class UpdatePriorityRequest(BaseModel):
+    priority: str  # low, medium, high, urgent
+
+@app.patch("/inventory/{item_id}/priority")
+async def update_item_priority(item_id: str, request: UpdatePriorityRequest):
+    """Update inventory item priority"""
+    with Session(engine) as session:
+        item = session.get(InventoryItem, UUID(item_id))
+        if item:
+            item.priority = request.priority
+            session.commit()
+            return {"success": True, "priority": item.priority}
         return {"success": False, "error": "Item not found"}
 
 @app.get("/generate-pitches")
@@ -680,6 +696,61 @@ async def claim_ingredients(recipe_id: str):
 async def get_available_inventory():
     """Get available inventory (physical minus reserved claims)"""
     return {"inventory": load_available_inventory()}
+
+@app.get("/api/inventory/flat")
+async def get_flat_inventory():
+    """Get all inventory items in a flat list with priority"""
+    with Session(engine) as session:
+        # Get all stores and their inventory
+        stores = session.exec(select(Store)).all()
+        store_dict = {str(s.id): s.name for s in stores}
+
+        # Get all inventory items
+        items = session.exec(select(InventoryItem)).all()
+
+        # Get reserved claims to calculate available quantities
+        reserved_claims = session.exec(
+            select(IngredientClaim).where(IngredientClaim.state == "reserved")
+        ).all()
+
+        # Build claims lookup: {store_name: {ingredient_name: total_reserved_qty}}
+        claims_by_store = {}
+        for claim in reserved_claims:
+            if claim.store_name not in claims_by_store:
+                claims_by_store[claim.store_name] = {}
+            if claim.ingredient_name not in claims_by_store[claim.store_name]:
+                claims_by_store[claim.store_name][claim.ingredient_name] = 0
+            claims_by_store[claim.store_name][claim.ingredient_name] += claim.quantity
+
+        # Build flat list with available quantities
+        flat_items = []
+        for item in items:
+            store_name = store_dict.get(str(item.store_id), "Unknown")
+
+            # Calculate available quantity
+            reserved = 0
+            if store_name in claims_by_store and item.ingredient_name in claims_by_store[store_name]:
+                reserved = claims_by_store[store_name][item.ingredient_name]
+
+            available_qty = max(0, item.quantity - reserved)
+
+            flat_items.append({
+                "id": str(item.id),
+                "ingredient_name": item.ingredient_name,
+                "quantity": item.quantity,
+                "available_quantity": available_qty,
+                "reserved_quantity": reserved,
+                "unit": item.unit,
+                "priority": item.priority,
+                "store_name": store_name,
+                "store_id": str(item.store_id)
+            })
+
+        # Sort by priority (urgent > high > medium > low), then by ingredient name
+        priority_order = {"urgent": 0, "high": 1, "medium": 2, "low": 3}
+        flat_items.sort(key=lambda x: (priority_order.get(x["priority"], 2), x["ingredient_name"]))
+
+        return {"items": flat_items}
 
 @app.get("/api/recipes/planned")
 async def get_planned_recipes():
