@@ -37,7 +37,8 @@ class RecipePitch {
 function GenerateRecipePitches(
   available_inventory: string,
   additional_context: string,
-  num_pitches: int
+  num_pitches: int,
+  claimed_ingredients: string?
 ) -> RecipePitch[] {
   client Anthropic
   prompt #"
@@ -68,6 +69,15 @@ function GenerateRecipePitches(
     {{ additional_context }}
     </user-context>
 
+    {% if claimed_ingredients %}
+    <claimed-ingredients>
+    The following ingredients are already spoken for by previously selected recipes. DO NOT use these as key ingredients in new pitches:
+    {{ claimed_ingredients }}
+
+    You may use other ingredients from the available inventory, but avoid the claimed ingredients listed above.
+    </claimed-ingredients>
+    {% endif %}
+
     Generate {{ num_pitches }} DIVERSE recipe pitches that:
     1. Use ingredients from the available inventory listed above
     2. Prioritize fresh CSA items that will spoil soon
@@ -95,7 +105,8 @@ function GenerateRecipePitches(
 function GenerateSingleRecipe(
   available_inventory: string,
   additional_context: string,
-  recipes_already_generated: string
+  recipes_already_generated: string,
+  claimed_ingredients: string?
 ) -> Recipe {
   client Anthropic
   prompt #"
@@ -131,6 +142,15 @@ function GenerateSingleRecipe(
     <recipes-already-generated>
     {{ recipes_already_generated }}
     </recipes-already-generated>
+
+    {% if claimed_ingredients %}
+    <claimed-ingredients>
+    The following ingredients have been claimed by other recipes being prepared. DO NOT use these ingredients - they are no longer available:
+    {{ claimed_ingredients }}
+
+    IMPORTANT: If the recipe you're generating was pitched with these ingredients, you must pivot to use ONLY the remaining available ingredients from the inventory above. Make substitutions that keep the recipe recognizable and delicious. If you cannot make a good version of this recipe without the claimed ingredients, that's okay - just make the best recipe you can with what's available.
+    </claimed-ingredients>
+    {% endif %}
 
     Generate ONE recipe that:
     1. Uses ingredients from the available inventory listed above

@@ -318,11 +318,29 @@ async function generatePitches() {
     // Show pitch section
     document.getElementById('pitchSection').style.display = 'block';
     const pitchesList = document.getElementById('pitchesList');
-    pitchesList.innerHTML = '<div style="padding: 20px; text-align: center;">Generating pitches...</div>';
 
-    // Reset selections
-    selectedPitches.clear();
-    pitchesData = [];
+    // Collect claimed ingredients from currently selected pitches (for wave 2)
+    const claimedIngredients = [];
+    const isWave2 = pitchesData.length > 0;  // If we already have pitches, this is wave 2
+
+    if (isWave2) {
+        // Wave 2: collect claimed ingredients from selected pitches
+        for (const pitchIndex of selectedPitches) {
+            const pitch = pitchesData[pitchIndex];
+            if (pitch && pitch.key_ingredients) {
+                claimedIngredients.push(...pitch.key_ingredients);
+            }
+        }
+        // Keep selections and existing pitches
+        updateStatus(`Generating more pitches (avoiding: ${claimedIngredients.slice(0, 3).join(', ')}${claimedIngredients.length > 3 ? '...' : ''})`, 'info');
+        pitchesList.innerHTML = '<div style="padding: 20px; text-align: center;">Generating more pitches...</div>';
+    } else {
+        // Wave 1: reset everything
+        selectedPitches.clear();
+        pitchesData = [];
+        updateStatus('Generating pitches...', 'info');
+        pitchesList.innerHTML = '<div style="padding: 20px; text-align: center;">Generating pitches...</div>';
+    }
 
     // Close previous SSE connection if exists
     if (eventSource) {
@@ -332,7 +350,8 @@ async function generatePitches() {
     // Create SSE connection with GET params
     const params = new URLSearchParams({
         additional_context: additionalContext || "",
-        num_pitches: 10
+        num_pitches: 10,
+        claimed_ingredients: claimedIngredients.join(', ')
     });
     eventSource = new EventSource('/generate-pitches?' + params);
 
@@ -409,13 +428,21 @@ async function fleshOutSelected() {
     // Clear old recipes
     recipesList.innerHTML = '';
 
+    // Track claimed ingredients across all fleshed-out recipes (greedy claiming)
+    const allClaimedIngredients = [];
+
+    let recipeCount = 0;
     for (const pitchIndex of selectedPitches) {
         const pitch = pitchesData[pitchIndex];
+        recipeCount++;
 
         // Add loading state
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'recipe-card streaming';
-        loadingDiv.innerHTML = `<h4>Fleshing out: ${pitch.name}...</h4>`;
+        const claimStatus = allClaimedIngredients.length > 0
+            ? ` (avoiding: ${allClaimedIngredients.slice(0, 3).join(', ')}${allClaimedIngredients.length > 3 ? '...' : ''})`
+            : '';
+        loadingDiv.innerHTML = `<h4>Fleshing out ${recipeCount}/${selectedPitches.size}: ${pitch.name}${claimStatus}...</h4>`;
         recipesList.appendChild(loadingDiv);
 
         try {
@@ -424,7 +451,8 @@ async function fleshOutSelected() {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     pitch_name: pitch.name,
-                    additional_context: additionalContext
+                    additional_context: additionalContext,
+                    claimed_ingredients: allClaimedIngredients.join(', ')
                 })
             });
 
@@ -432,6 +460,12 @@ async function fleshOutSelected() {
 
             if (result.success) {
                 const recipe = result.recipe;
+
+                // Add these ingredients to claimed list for next recipe
+                if (result.ingredient_names) {
+                    allClaimedIngredients.push(...result.ingredient_names);
+                }
+
                 loadingDiv.className = 'recipe-card';
                 loadingDiv.innerHTML = `
                     <h4>${recipe.name}</h4>

@@ -94,34 +94,34 @@ class BamlAsyncClient:
                 "text": text,"store_context": store_context,
             })
             return typing.cast(types.InventoryParsingResult, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,
+    async def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> typing.List["types.RecipePitch"]:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GenerateRecipePitches(available_inventory=available_inventory,additional_context=additional_context,num_pitches=num_pitches,
+            stream = self.stream.GenerateRecipePitches(available_inventory=available_inventory,additional_context=additional_context,num_pitches=num_pitches,claimed_ingredients=claimed_ingredients,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
             result = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateRecipePitches", args={
-                "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,
+                "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,"claimed_ingredients": claimed_ingredients,
             })
             return typing.cast(typing.List["types.RecipePitch"], result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,
+    async def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> types.Recipe:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GenerateSingleRecipe(available_inventory=available_inventory,additional_context=additional_context,recipes_already_generated=recipes_already_generated,
+            stream = self.stream.GenerateSingleRecipe(available_inventory=available_inventory,additional_context=additional_context,recipes_already_generated=recipes_already_generated,claimed_ingredients=claimed_ingredients,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
             result = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateSingleRecipe", args={
-                "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,
+                "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,"claimed_ingredients": claimed_ingredients,
             })
             return typing.cast(types.Recipe, result.cast_to(types, types, stream_types, False, __runtime__))
     
@@ -145,11 +145,11 @@ class BamlStreamClient:
           lambda x: typing.cast(types.InventoryParsingResult, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,
+    def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[typing.List["stream_types.RecipePitch"], typing.List["types.RecipePitch"]]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateRecipePitches", args={
-            "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,
+            "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,"claimed_ingredients": claimed_ingredients,
         })
         return baml_py.BamlStream[typing.List["stream_types.RecipePitch"], typing.List["types.RecipePitch"]](
           result,
@@ -157,11 +157,11 @@ class BamlStreamClient:
           lambda x: typing.cast(typing.List["types.RecipePitch"], x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,
+    def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.Recipe, types.Recipe]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateSingleRecipe", args={
-            "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,
+            "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,"claimed_ingredients": claimed_ingredients,
         })
         return baml_py.BamlStream[stream_types.Recipe, types.Recipe](
           result,
@@ -184,18 +184,18 @@ class BamlHttpRequestClient:
             "text": text,"store_context": store_context,
         }, mode="request")
         return result
-    async def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,
+    async def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateRecipePitches", args={
-            "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,
+            "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,"claimed_ingredients": claimed_ingredients,
         }, mode="request")
         return result
-    async def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,
+    async def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateSingleRecipe", args={
-            "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,
+            "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,"claimed_ingredients": claimed_ingredients,
         }, mode="request")
         return result
     
@@ -213,18 +213,18 @@ class BamlHttpStreamRequestClient:
             "text": text,"store_context": store_context,
         }, mode="stream")
         return result
-    async def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,
+    async def GenerateRecipePitches(self, available_inventory: str,additional_context: str,num_pitches: int,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateRecipePitches", args={
-            "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,
+            "available_inventory": available_inventory,"additional_context": additional_context,"num_pitches": num_pitches,"claimed_ingredients": claimed_ingredients,
         }, mode="stream")
         return result
-    async def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,
+    async def GenerateSingleRecipe(self, available_inventory: str,additional_context: str,recipes_already_generated: str,claimed_ingredients: typing.Optional[str] = None,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateSingleRecipe", args={
-            "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,
+            "available_inventory": available_inventory,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,"claimed_ingredients": claimed_ingredients,
         }, mode="stream")
         return result
     

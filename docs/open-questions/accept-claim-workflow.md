@@ -43,7 +43,41 @@
 - "Claim" happens when starting to cook (not at accept time)
 - Need to explore ingredient claiming as negotiation, not just decrement
 
+## Latest Exploration
+
+**Date**: 2025-11-30 (ingredient-claiming experiment)
+
+### Clarifications Made:
+
+**Three distinct moments discovered:**
+1. **Fleshing out** = Ephemeral claim on ingredients (implemented)
+   - Reserves inventory items during session
+   - Enables auto-pivot for subsequent recipes
+   - Not persistent, not consumption
+
+2. **Accept to meal plan** = Persistent claim (not yet explored)
+   - Would make claim permanent for the week
+   - Ingredients stay in inventory but marked "reserved"
+   - Allows for life happening (pizza night, ingredient goes bad)
+
+3. **Cooking** = Actual consumption (not yet explored)
+   - Ingredients decremented from inventory
+   - Can track feedback and note substitutions
+   - "Cooked" button triggers consumption
+
+**Distinction confirmed**: Claims ≠ Consumption
+- Accepting reserves ingredients but doesn't decrement
+- Prevents "shriveled turnip" problem (forgetting what was planned)
+- Can see what's physically available vs planned
+
+### Still Unexplored:
+
+- What does "accept to meal plan" UI/UX look like?
+- What happens if ingredients unavailable when ready to cook?
+- Can user give feedback to tweak recipes after acceptance?
+- How to handle overlapping ingredient needs across accepted recipes?
+- Should there be a "meal plan view" showing all accepted recipes + reserved ingredients?
+
 ## Next Experiment
 
-- Set up edge cases in prototype (conflicting recipes, missing ingredients)
-- `/discover-pain` around recipe acceptance workflow
+- `/discover-pain accept-to-meal-plan` - Explore acceptance workflow and meal plan management

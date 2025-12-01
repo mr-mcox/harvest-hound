@@ -45,15 +45,65 @@ Multi-wave recipe generation reuses ingredients already allocated to selected pi
 - "Accept to meal plan" converts to persistent claim (decrements inventory)
 - Claims released when meal is cooked or user removes from plan
 
-## Next Experiment
+## Latest Exploration
 
-Implement claiming as ephemeral state during pitch generation:
-- Track selected pitches + their key ingredients
-- Pass "unavailable_ingredients" to next wave generation
-- Test if this unblocks iterative workflow
+**Date**: 2025-11-30 (ingredient-claiming experiment - Phases 1 & 2)
 
-## Success Criteria
+### Questions ANSWERED:
 
-- Second wave doesn't reuse ingredients from selected pitches
-- User can pick 3 → generate more → pick 2 more successfully
-- Feels natural (doesn't require explaining the claiming concept)
+**When are ingredients claimed?**
+✅ **ANSWERED**: Fleshing out is the claiming moment (not pitch selection, not acceptance)
+- Selecting pitch = visual selection only
+- Fleshing out = creates ephemeral claim on inventory ingredients
+- Sequential flesh-out prevents conflicts (Recipe 1 claims → Recipe 2 avoids)
+
+**How are claims represented?**
+✅ **ANSWERED**: Ephemeral claims filtered to inventory items only
+- Track claimed ingredient names (not quantities yet)
+- Filter to only items in inventory system (pantry staples don't get claimed)
+- Pass claimed ingredients to next recipe generation for auto-pivot
+- Not decrementing inventory, just tracking "spoken for" status
+
+**When are claims released?**
+⏸️ **PARTIALLY ANSWERED**: Ephemeral claims work, persistent claims unexplored
+- Ephemeral claims during session (implemented)
+- Persistent claims when accepting to meal plan (Phase 3 - not yet explored)
+- Release on cooking vs removing from plan (Phase 3 - not yet explored)
+
+**How does claiming affect generation?**
+✅ **ANSWERED**: Exclude from available inventory, LLM auto-pivots
+- Claimed ingredients passed to BAML generation
+- LLM pivots to remaining inventory ingredients
+- Works well when pivot stays within recipe concept
+- **NEW DISCOVERY**: Needs identity validation (beef→pork broke recipe promise)
+
+### New Complexities Discovered:
+
+**Multiple claim types needed**:
+- Inventory claiming: Reserve what you have (implemented)
+- Grocery claiming: Build list for what you need (not implemented)
+- Optional ingredients: Suggestions, not requirements (not implemented)
+
+**Recipe identity boundaries**:
+- Auto-pivot works BUT can break the pitch promise
+- Example: "Beef Pot Roast" pitch → "Pork Butt Pot Roast" recipe = broken trust
+- Need validator to check if pivot is too different
+
+**Edge cases partially addressed**:
+- Pantry staples: Solved (filter to inventory only)
+- Partial claims: Not yet handled
+- Stealing ingredients: Not yet explored
+- Ingredient expiration: Not yet handled
+
+## Still Open:
+
+Phase 3 questions remain:
+- Persistent claims when accepting to meal plan
+- Claims release workflow (cooking vs removing from plan)
+- Partial quantity claiming (2 lbs total, 1 lb claimed, 1 lb available)
+
+## Next Experiments:
+
+1. **Recipe identity validation** (high priority) - Prevent pivots that break pitch promise
+2. **Grocery vs inventory claiming** (medium priority) - Different claim models for different sources
+3. **Phase 3: Meal plan acceptance** (future) - Persistent claims and release workflow

@@ -58,8 +58,53 @@ Recipe = just data (name, ingredients, instructions)
 
 **Key insight**: Recipe representations are more important than recipe states. Same recipe concept can have multiple views (pitch, full, sous chef version, etc.)
 
-## Next Experiment
+## Latest Exploration (Update 2)
 
-**High priority**: Implement ingredient claiming for pitch selection workflow
+**Date**: 2025-11-30 (ingredient-claiming experiment)
 
-**Medium priority**: Explore recipe acceptance workflow to clarify when recipes become persistent
+### Additional Learnings:
+
+**Fleshing out timing confirmed**:
+- Fleshing out is when ingredients get claimed (ephemeral)
+- Not at pitch selection (just visual selection)
+- Not at acceptance (that's persistent claim - unexplored)
+
+**Recipe identity validation needed**:
+- NEW STATE DISCOVERED: Recipe can pivot during flesh-out
+- Pivot should stay within recipe concept (radish→potato ✓)
+- Pivot can break identity (beef→pork ✗)
+- Need validator: Does fleshed recipe match pitch promise?
+- Three failure modes:
+  1. Can't make with available ingredients
+  2. Effort significantly different (quick→long braise)
+  3. Family expectations broken ("that's not what I thought")
+
+**Pitch lifecycle states**:
+- Active (selectable)
+- Ingredient Conflict (should be disabled/grayed when ingredients claimed)
+- Selected (user picked it)
+- Fleshed Out (full recipe generated)
+
+### Updated State Understanding:
+
+**Confirmed states with timing**:
+1. **Pitch** (lightweight, browsable) - ephemeral, no claims yet
+2. **Selected Pitch** - visual selection, still ephemeral
+3. **Fleshing Out** - generating full recipe, THIS is where ephemeral claims happen
+4. **Full Recipe** - fleshed out, ingredients claimed (ephemeral), ready to review
+5. **Accepted** (to meal plan) - persistent claim on ingredients (unexplored)
+6. **Cooking** - consumption event (unexplored)
+7. **Completed** - cooked, ingredients consumed, can provide feedback (unexplored)
+
+**Also discovered**: Pitches need lifecycle management
+- Pitches should be disabled/grayed when their key ingredients are claimed by fleshed-out recipes
+- Visual feedback for ingredient conflicts
+
+## Next Experiments
+
+**High priority**:
+1. Recipe identity validation - Judge whether pivot is acceptable
+2. Pitch disabling when ingredients claimed
+
+**Medium priority**:
+3. Explore recipe acceptance workflow to clarify persistent claims

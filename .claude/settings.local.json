@@ -37,7 +37,8 @@
       "Bash(cat:*)",
       "mcp__baml_Docs__search_baml_documentation",
       "mcp__baml_Docs__search_baml_code",
-      "mcp__baml_Docs__fetch_generic_url_content"
+      "mcp__baml_Docs__fetch_generic_url_content",
+      "Bash(node -c:*)"
     ],
     "deny": []
   }

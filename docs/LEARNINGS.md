@@ -43,6 +43,38 @@
   - Blocking issue for iterative workflow (pick 3 → generate more → pick 2 more)
   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
 
+- [x] **Claiming mechanics validated**: Phases 1 & 2 implemented and working
+  - Wave 2 avoids claimed ingredients successfully (no sneaking ingredients in)
+  - Auto-pivot works well (radish → potato pivot felt natural)
+  - Fleshing out is the right moment to claim ingredients (not pitch selection, not meal plan acceptance)
+  - Sequential claiming prevents conflicts across multiple recipes
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+- [x] **Claiming sophistication needed**: Different claim types for different ingredient sources
+  - Inventory claiming: Reserve what you have (current implementation)
+  - Grocery claiming: Build shopping list for what you need to buy (not yet implemented)
+  - Optional ingredients: Things that would enhance meal but aren't required (coleslaw, cheese, garnishes)
+  - Three ingredient sources emerging: Inventory (have it), Grocery Essential (need it), Grocery Optional (nice to have)
+  - Grocery store claiming is fundamentally different - it's list-building, not reservation
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+- [x] **Pantry staples vs inventory items**: Only claim trackable inventory
+  - Problem: Was claiming "baking powder", "garlic powder" - pantry staples shouldn't block future recipes
+  - Solution: Filter claimed ingredients to only items in inventory system
+  - Pantry staples are effectively unlimited, don't need claiming
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+- [x] **Recipe identity boundaries**: Pivots can break the pitch promise
+  - Example problem: Pitch said "Beef Pot Roast (sirloin)", fleshed out used pork butt - NOT the same dish!
+  - Three pivot boundaries that break identity:
+    1. Can't make with available ingredients (substitution impossible)
+    2. Effort significantly different (quick weeknight → 3-hour braise)
+    3. Family expectations broken ("that's not what I thought we were having")
+  - Need recipe identity validation: Judge whether pivot is too different from pitch
+  - Possible solution: Early commitment to core ingredients, validate before returning fleshed recipe
+  - Open question: How to implement this judge? Separate BAML call? Constraints in generation?
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
+
 - [x] **Time representation needs refinement**: Both active AND total time matter
   - Current: only shows active time in pitches
   - Want: active + total time visible
@@ -89,6 +121,22 @@
    - BROKEN without ingredient claiming: second wave reuses already-claimed ingredients
    - Adaptive generation count needed: If picked N, don't need full 10 in next wave
    - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+6. [x] **Structured meal planning workflow**: Specs upfront, systematic filling
+   - User provides meal needs with constraints: "quick weeknight x2", "guest meal that cooks while I work", "leftovers meal"
+   - System generates pitches per category/spec
+   - User selects from each category
+   - Next wave fills remaining slots with remaining ingredients
+   - Different from ad-hoc "generate 10 pitches" - this is purposeful, constraint-driven planning
+   - Wave sizing: 3x the number of unfilled meal slots (if need 2 more meals, generate 6 pitches)
+   - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+7. [x] **Pitch lifecycle management**: Pitches should disable when ingredients claimed
+   - Current problem: All pitches remain selectable even after ingredients are claimed by fleshed-out recipes
+   - Better UX: Pitches using claimed ingredients get visually disabled/grayed out
+   - Reveals ingredient conflicts immediately (can't pick both anymore)
+   - Status messages showing "avoiding X, Y, Z" feel silly - pitch disabling is the real UX
+   - (discovered: ingredient-claiming experiment, 2025-11-30)
 
 ### Surprising Complexities
 
@@ -139,7 +187,24 @@
   - Don't need perfect correspondence, just directionally correct
   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
 
-- [ ] Substitution suggestions:
+- [x] **Auto-pivot with claimed ingredients**: LLM handles substitutions well
+  - Pass claimed ingredients to recipe generation → LLM pivots automatically
+  - Example success: Radish → potato pivot in pot roast felt natural
+  - Example failure: Beef sirloin → pork butt broke recipe identity (needs validation)
+  - LLM prompt: "DO NOT use these ingredients, pivot to remaining inventory"
+  - Works well when pivot stays within recipe concept
+  - Breaks when core protein/technique changes significantly
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+- [x] **Optional ingredients for grocery enhancement**: Recipe suggestions beyond essentials
+  - Recipes include optional additions: coleslaw, cheese, garnishes, etc.
+  - These are "nice to have" not "must have" for the recipe
+  - Creates opportunity for grocery list view with two sections:
+    - Essential: Can't make recipe without these
+    - Optional: Would enhance the meal, user decides
+  - User can review optional items and decide which to add to grocery list
+  - Different claiming model: optional items are suggestions, not reservations
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
 
 ### API Shapes That Feel Right
 - [x] **GET endpoint with query params for SSE**: EventSource compatibility matters
@@ -200,27 +265,52 @@
    - Validated: CRITICAL for iterative workflow
    - Without it, second wave reuses already-allocated ingredients
    - Blocking issue for "pick 3 → generate more → pick 2 more" workflow
-   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+   - Implemented in Phases 1 & 2: Wave 2 claiming + greedy flesh-out
+   - (discovered: recipe-pitch-selection experiment, ingredient-claiming experiment, 2025-11-29/30)
 
-6. [ ] **Recipe acceptance workflow** - Needs exploration of what "accept" means
+6. [x] **Recipe identity validation**: Prevent pivot from breaking pitch promise
+   - Essential: User picks "Beef Pot Roast", system delivers "Pork Butt Pot Roast" - broken trust
+   - Need judge/validator to check if pivot is too different
+   - Three boundaries: ingredients unavailable, effort significantly different, family expectations broken
+   - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+7. [ ] **Recipe acceptance workflow** - Needs exploration of what "accept" means
 
 ### Nice to Have
 - [x] **Week-level planning criteria**: Structured constraints for balanced variety
   - Example: "1 weekend meal, 1 guest meal (weeknight), 2 quick meals, 1 leftovers meal"
   - Different from ad-hoc context, helps generate balanced week
-  - Not blocking, but real need discovered
-  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+  - Evolved to: Structured meal planning workflow (specs upfront, systematic filling)
+  - (discovered: recipe-pitch-selection experiment, ingredient-claiming experiment, 2025-11-29/30)
 
 - [x] **Adaptive generation count**: Generate fewer pitches in subsequent waves
   - If already picked 3, don't need full 10 in next wave (just 2-3 more)
   - Efficiency + reduced cognitive load
-  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+  - Evolved to: 3x unfilled meal slots (need 2 meals → generate 6 pitches)
+  - (discovered: recipe-pitch-selection experiment, ingredient-claiming experiment, 2025-11-29/30)
 
 - [x] **Time diversity in pitches**: Mix quick weeknight + leisurely weekend
   - Not quite enough diversity yet in time commitments
   - Want both active AND total time visible
   - Future: Quadrant visualization (total vs passive time)
   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+
+- [x] **Pitch disabling when ingredients claimed**: Visual conflict indication
+  - Pitches using claimed ingredients should be grayed out/disabled
+  - Better UX than status messages showing "avoiding X, Y, Z"
+  - Reveals conflicts immediately, prevents impossible selections
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+- [x] **Grocery list view with optional ingredients**: Essential vs nice-to-have
+  - Show what's required vs what would enhance meals
+  - User decides which optional items to add to grocery run
+  - Two sections: Essential (must buy), Optional (user choice)
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+- [x] **Recipe prioritization by uncommon ingredients**: Flesh out CSA items first
+  - Prevents common ingredients getting claimed before exotic CSA produce
+  - Nice to have, not blocking (auto-pivot works well enough)
+  - (discovered: ingredient-claiming experiment, 2025-11-30)
 
 - [ ] **5 recipes per week** (vs current 3) - easy parameter tweak, not blocking
 - [ ] **Prioritize expiring ingredients** - could be solved via context field

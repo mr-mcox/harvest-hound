@@ -102,6 +102,12 @@ class GenerateRecipesRequest(BaseModel):
     additional_context: str = ""  # Changed from csa_contents
     num_recipes: int = 3
 
+def get_inventory_ingredient_names() -> set:
+    """Get set of all ingredient names currently in inventory (for filtering claimed ingredients)"""
+    with Session(engine) as session:
+        items = session.exec(select(InventoryItem)).all()
+        return {item.ingredient_name.lower() for item in items}
+
 def format_inventory_for_prompt() -> str:
     """Load all stores and format inventory for LLM prompt"""
     with Session(engine) as session:
@@ -304,10 +310,12 @@ async def update_inventory_item(item_id: str, request: UpdateInventoryRequest):
 @app.get("/generate-pitches")
 async def generate_pitches(
     additional_context: str = "",
-    num_pitches: int = 10
+    num_pitches: int = 10,
+    claimed_ingredients: str = ""
 ):
     """
     Generate lightweight recipe pitches for browsing
+    Accepts claimed_ingredients to avoid suggesting recipes with already-selected ingredients
     """
     async def stream_pitches():
         try:
@@ -318,7 +326,8 @@ async def generate_pitches(
             pitches = await b.GenerateRecipePitches(
                 available_inventory=available_inventory,
                 additional_context=additional_context or "No specific context provided",
-                num_pitches=num_pitches
+                num_pitches=num_pitches,
+                claimed_ingredients=claimed_ingredients if claimed_ingredients else None
             )
 
             # Stream pitches one at a time for progressive loading
@@ -360,11 +369,13 @@ async def generate_pitches(
 class FleshOutRequest(BaseModel):
     pitch_name: str
     additional_context: str = ""
+    claimed_ingredients: str = ""
 
 @app.post("/flesh-out-pitch")
 async def flesh_out_pitch(request: FleshOutRequest):
     """
     Generate a full recipe from a selected pitch name
+    Accepts claimed_ingredients to pivot away from already-used ingredients
     """
     try:
         available_inventory = format_inventory_for_prompt()
@@ -375,7 +386,8 @@ async def flesh_out_pitch(request: FleshOutRequest):
         baml_recipe = await b.GenerateSingleRecipe(
             available_inventory=available_inventory,
             additional_context=context_with_pitch,
-            recipes_already_generated=f"Fleshing out: {request.pitch_name}"
+            recipes_already_generated=f"Fleshing out: {request.pitch_name}",
+            claimed_ingredients=request.claimed_ingredients if request.claimed_ingredients else None
         )
 
         recipe_dict = {
@@ -391,7 +403,15 @@ async def flesh_out_pitch(request: FleshOutRequest):
             "notes": baml_recipe.notes
         }
 
-        return {"success": True, "recipe": recipe_dict}
+        # Return only ingredients that are in inventory (filter out pantry staples)
+        # This prevents claiming common items like "salt", "baking powder", "garlic powder"
+        inventory_items = get_inventory_ingredient_names()
+        ingredient_names = [
+            ing.name for ing in baml_recipe.ingredients
+            if ing.name.lower() in inventory_items
+        ]
+
+        return {"success": True, "recipe": recipe_dict, "ingredient_names": ingredient_names}
 
     except Exception as e:
         return {"success": False, "error": str(e)}
