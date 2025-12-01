@@ -1,7 +1,9 @@
 # Week-Level Planning Criteria
 
 **Discovered**: recipe-pitch-selection experiment, 2025-11-29
-**Priority**: Medium (nice to have, improves variety)
+**Uncertainty**: Medium (free text vs structured form unclear, but can start simple)
+**Architectural Impact**: Low (just adds context input to generation, no data model changes)
+**One-Way Door**: No (can start with free text, evolve to structured later)
 
 ## Problem
 

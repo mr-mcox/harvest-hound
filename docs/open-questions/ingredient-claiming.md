@@ -1,7 +1,9 @@
 # Ingredient Claiming Mechanics
 
 **Discovered**: recipe-pitch-selection experiment, 2025-11-29
-**Priority**: High (blocking iterative workflow)
+**Uncertainty**: Medium-High (current implementation works but has architectural smells)
+**Architectural Impact**: High (affects BAML design, generation flow, state ownership, recipe schema)
+**One-Way Door**: Yes (refactoring BAML prompts and generation flow is expensive)
 
 ## Problem
 
@@ -95,6 +97,35 @@ Multi-wave recipe generation reuses ingredients already allocated to selected pi
 - Stealing ingredients: Not yet explored
 - Ingredient expiration: Not yet handled
 
+## Architectural Implications
+
+**Current approach (architectural smell)**:
+```
+Prompt: "Generate recipe avoiding: carrots, beef, potatoes"
+LLM: *tries to remember what's available*
+LLM: *does implicit inventory subtraction*
+LLM: *might accidentally use claimed ingredients*
+```
+
+**Problems**:
+- LLM doing inventory management (not its strength)
+- Implicit state subtraction (error-prone)
+- Unclear separation of concerns (who owns availability state?)
+
+**Better approach**:
+```
+LLM: Generate recipe → outputs claimed_ingredients: ["carrots", "beef"]
+Code: claimed.update(recipe.claimed_ingredients)
+Code: available = inventory - claimed
+LLM: Generate next recipe with explicit available list
+```
+
+**Benefits**:
+- Clear separation: LLM generates, code manages state
+- Deterministic claiming (auditable)
+- LLM focuses on recipe quality, not inventory math
+- Affects: RecipePitch schema needs `claimed_ingredients` field
+
 ## Still Open:
 
 Phase 3 questions remain:
@@ -104,6 +135,7 @@ Phase 3 questions remain:
 
 ## Next Experiments:
 
-1. **Recipe identity validation** (high priority) - Prevent pivots that break pitch promise
-2. **Grocery vs inventory claiming** (medium priority) - Different claim models for different sources
-3. **Phase 3: Meal plan acceptance** (future) - Persistent claims and release workflow
+1. **Fix claiming implementation** (high priority) - Switch to explicit claiming with LLM outputting claimed ingredients
+2. **Recipe identity validation** (high priority) - Prevent pivots that break pitch promise
+3. **Store claiming semantics** (medium priority) - Different claim behavior per store type
+4. **Phase 3: Meal plan acceptance** (future) - Persistent claims and release workflow

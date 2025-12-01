@@ -1,8 +1,9 @@
 # Household Profile Effectiveness
 
 **Discovered**: recipe-generation experiment, 2025-11-29
-**Priority**: Low (can defer)
-**Blocked By**: Inventory management bottleneck
+**Uncertainty**: Low (feels "in the ballpark", just needs minor refinement)
+**Architectural Impact**: Low (just prompt tuning, no data model or flow changes)
+**One-Way Door**: No (can iterate on prompt anytime)
 
 ## Current State
 

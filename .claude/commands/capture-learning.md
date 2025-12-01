@@ -158,7 +158,45 @@ Ask: "Did this experiment surface any new uncertainties or design questions we s
 **For each new open question identified**:
 - Create a question file in `docs/open-questions/[question-name].md`
 - Document the uncertainty, options considered, and what would help resolve it
+- **Include uncertainty/architectural impact assessment**:
+  - **Uncertainty**: Low/Medium/High (how much do we know?)
+  - **Architectural Impact**: Low/Medium/High (does this affect data model, persistence, or core abstractions?)
+  - **One-Way Door**: Yes/No (is this expensive to change later?)
 - Reference from LEARNINGS.md where relevant
+
+**Template for new open question files**:
+```markdown
+# [Question Title]
+
+**Discovered**: [experiment name], [date]
+**Uncertainty**: Low/Medium/High
+**Architectural Impact**: Low/Medium/High
+**One-Way Door**: Yes/No
+
+## The Question
+
+[Clear statement of what's uncertain]
+
+## Context
+
+[Why this matters, what triggered the question]
+
+## Options Considered
+
+[Different approaches with pros/cons]
+
+## Architectural Implications
+
+[What parts of the system does this affect?]
+- Data model changes?
+- Persistence strategy?
+- Core abstractions?
+- Generation flow?
+
+## Next Steps to Explore
+
+[What experiments would help resolve this]
+```
 
 ### Step 7: Update LEARNINGS.md
 

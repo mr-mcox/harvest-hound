@@ -1,7 +1,9 @@
 # Recipe Context Sources (Magazine Clips, Past Recipes)
 
 **Discovered**: recipe-pitch-selection experiment, 2025-11-29
-**Priority**: Low (enhancement for later)
+**Uncertainty**: High (many unknowns about storage, integration, value)
+**Architectural Impact**: Medium (eventually affects data model, but not needed for MVP)
+**One-Way Door**: No (feature addition, doesn't change core generation flow)
 
 ## Observation
 

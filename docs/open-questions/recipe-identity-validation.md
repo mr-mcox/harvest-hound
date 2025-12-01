@@ -1,7 +1,9 @@
 # Recipe Identity Validation
 
 **Discovered**: ingredient-claiming experiment, 2025-11-30
-**Priority**: High (breaks user trust)
+**Uncertainty**: High (two approaches with unclear tradeoffs - constraints vs judge)
+**Architectural Impact**: Medium-High (affects generation flow, claiming timing, error handling)
+**One-Way Door**: Partially (affects generation flow, but more isolated than data model changes)
 
 ## Problem
 
@@ -83,6 +85,34 @@ User identified three boundaries where a pivot is "too different":
 - Clear failure when core ingredients unavailable
 - User can trust that selecting a pitch = getting that dish concept
 
+## Architectural Implications
+
+**Affects generation flow**:
+- **Constraints approach**: Must extract core ingredients before generation
+  - Affects: BAML prompt structure (pass required ingredients)
+  - Risk: Too restrictive → boring recipes
+
+- **Judge approach**: Validate after generation
+  - Affects: Error handling (what if validation fails?)
+  - Affects: Claiming timing (claim before or after validation?)
+  - Risk: Wasted tokens on failed validations
+
+**Affects claiming timing**:
+```
+Option 1: Claim → Validate
+- Recipe generates → claims ingredients → validator checks
+- Problem: If validation fails, need to unclaim
+
+Option 2: Generate → Validate → Claim
+- Recipe generates → validator checks → then claims
+- Better: No unclaiming needed, but more complex flow
+```
+
+**Affects error handling**:
+- If validation fails: Regenerate? Show error? Disable pitch?
+- User feedback: "Can't make this with remaining ingredients"
+- UI implications: Loading states, error messages
+
 ## Edge Cases to Explore
 
 - Pitch lists multiple protein options ("chicken or beef")
@@ -96,3 +126,4 @@ User identified three boundaries where a pivot is "too different":
 2. Test with intentionally conflicting scenarios
 3. Measure: How often does judge catch bad pivots?
 4. Refine: What makes a good "recipe identity" check?
+5. Determine: Should validation happen before or after claiming?

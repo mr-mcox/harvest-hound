@@ -1,7 +1,11 @@
 # Recipe States & Lifecycle
 
 **Discovered**: recipe-generation experiment, 2025-11-29
-**Priority**: Medium (workflow clarity needed)
+**Uncertainty**: Medium (some states validated, Phase 3+ still unclear)
+**Architectural Impact**: High (affects persistence, what gets saved, state transitions)
+**One-Way Door**: Yes (state management and persistence are foundational)
+
+**Note**: Overlaps with `accept-claim-workflow.md` - consider consolidating after Phase 3 exploration
 
 ## Current Model
 

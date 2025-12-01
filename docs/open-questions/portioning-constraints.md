@@ -1,8 +1,9 @@
-# Open Question: Portioning Constraints
+# Portioning Constraints
 
-**Status**: Open
-**Created**: 2025-11-29
-**Last Updated**: 2025-11-29
+**Discovered**: inventory-management experiment, 2025-11-29
+**Uncertainty**: Medium (pain observed, but unclear if explicit modeling needed)
+**Architectural Impact**: Medium (would affect data model, UX, generation constraints if modeled)
+**One-Way Door**: Partially (can add later, but affects UX and generation quality)
 
 ## The Question
 

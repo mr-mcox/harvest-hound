@@ -1,7 +1,9 @@
 # Prototype vs MVP Boundary
 
 **Discovered**: recipe-generation experiment, 2025-11-29
-**Priority**: Low (not urgent)
+**Uncertainty**: Low (will emerge naturally from prototype learnings)
+**Architectural Impact**: N/A (meta-question about process, not architecture)
+**One-Way Door**: No (decision can be made when ready)
 
 ## Observation
 

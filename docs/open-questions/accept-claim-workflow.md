@@ -1,7 +1,9 @@
 # Accept vs Claim Ingredients Workflow
 
 **Discovered**: recipe-generation experiment, 2025-11-29
-**Priority**: Medium (workflow clarity needed)
+**Uncertainty**: High (Phase 3 not explored - only ephemeral claims validated)
+**Architectural Impact**: High (affects persistence strategy, inventory mutation, what gets saved when)
+**One-Way Door**: Yes (persistence and state management are foundational decisions)
 
 ## Current State
 
@@ -77,6 +79,43 @@
 - Can user give feedback to tweak recipes after acceptance?
 - How to handle overlapping ingredient needs across accepted recipes?
 - Should there be a "meal plan view" showing all accepted recipes + reserved ingredients?
+
+## Architectural Implications
+
+**Critical decision: When does inventory decrement?**
+```
+Option 1: Accept = decrement
+accept_recipe() → inventory.decrement()
+- Simple, immediate
+- Problem: "Pizza night happened" → inventory is wrong
+
+Option 2: Cook = decrement
+accept_recipe() → meal_plan.add(recipe) → marks ingredients as "reserved"
+cook_recipe() → inventory.decrement()
+- More flexible, handles life happening
+- Requires: MealPlan entity, persistent claim tracking
+```
+
+**Affects data model**:
+- Need `MealPlan` entity? Or just `Recipe.status = "accepted"`?
+- Need persistent claim representation? Or just ephemeral?
+- How to represent "reserved but not consumed"?
+
+**Affects inventory truthfulness**:
+- Does inventory show "physical quantity" or "available quantity"?
+- Do we need two views: "what I have" vs "what's unplanned"?
+
+**Affects persistence strategy**:
+```
+Ephemeral only (Phase 1-2): Nothing persisted during pitch browsing
+Persistent claims (Phase 3): Accept → save to DB, track reservations
+Consumption (future): Cook → decrement inventory, mark completed
+```
+
+**Affects error handling**:
+- What if ingredient expires before cooking?
+- What if user wants to modify accepted recipe?
+- What if user needs to "steal" ingredient for different meal?
 
 ## Next Experiment
 

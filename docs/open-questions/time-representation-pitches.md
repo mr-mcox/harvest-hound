@@ -1,7 +1,9 @@
 # Time Representation in Recipe Pitches
 
 **Discovered**: recipe-pitch-selection experiment, 2025-11-29
-**Priority**: Medium (nice to have, not blocking)
+**Uncertainty**: Low (user wants active + total time, path is clear)
+**Architectural Impact**: Low (just adds fields to RecipePitch schema, presentation layer)
+**One-Way Door**: No (easy to iterate on display and schema fields)
 
 ## Problem
 
