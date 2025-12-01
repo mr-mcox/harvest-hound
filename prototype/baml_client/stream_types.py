@@ -54,6 +54,7 @@ class RecipePitch(BaseModel):
     blurb: typing.Optional[str] = None
     why_make_this: typing.Optional[str] = None
     key_ingredients: typing.List[str]
+    explicit_ingredients: typing.List["RecipeIngredient"]
     active_time_minutes: typing.Optional[int] = None
 
 # #########################################################################

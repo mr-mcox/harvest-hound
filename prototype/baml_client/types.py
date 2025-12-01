@@ -72,6 +72,7 @@ class RecipePitch(BaseModel):
     blurb: str
     why_make_this: str
     key_ingredients: typing.List[str]
+    explicit_ingredients: typing.List["RecipeIngredient"]
     active_time_minutes: int
 
 # #########################################################################

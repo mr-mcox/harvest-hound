@@ -269,7 +269,7 @@ class RecipePitchAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("RecipePitch")
-        self._properties: typing.Set[str] = set([  "name",  "blurb",  "why_make_this",  "key_ingredients",  "active_time_minutes",  ])
+        self._properties: typing.Set[str] = set([  "name",  "blurb",  "why_make_this",  "key_ingredients",  "explicit_ingredients",  "active_time_minutes",  ])
         self._props = RecipePitchProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -312,6 +312,10 @@ class RecipePitchProperties:
     @property
     def key_ingredients(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("key_ingredients"))
+    
+    @property
+    def explicit_ingredients(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("explicit_ingredients"))
     
     @property
     def active_time_minutes(self) -> type_builder.ClassPropertyViewer:

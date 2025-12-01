@@ -119,16 +119,58 @@ grocery_list = {ingredient: [recipe_ids]}  # Non-blocking, shared
 
 Don't conflate these concerns. See `ingredient-optionality.md` for that question.
 
+## Latest Exploration
+
+**Date**: 2025-12-01 (ingredient-claiming-cognitive-load experiment)
+
+### What Was Validated:
+
+✅ **Explicit vs Definition Store Separation Works**
+- Implemented two store types in BAML prompt:
+  - **Explicit stores** (CSA, Freezer): Itemized with quantities, need claiming
+  - **Definition stores** (Pantry Staples): Unlimited, never claimed
+- LLM receives them in separate prompt sections, understands the distinction
+- Code manages decremented inventory state for explicit stores only
+- Backend tracks: `{store_name: {ingredient_name: (quantity, unit)}}`
+- Definition stores never get claimed (always available)
+
+✅ **Quantity-Aware Claiming Works**
+- Claiming behavior: "reserve" (for explicit stores)
+- Decrements quantities correctly
+- Partial availability tracked: "0.5 lb remaining"
+- No edge cases found in testing
+
+### Store Type Mapping:
+
+Current implementation maps to Option 2 (Store-Specific Claiming):
+
+| Store Type | Claiming Behavior | Implementation Status |
+|------------|-------------------|----------------------|
+| Explicit (CSA, Freezer) | `reserve` | ✅ Implemented |
+| Definition (Pantry) | `unlimited` | ✅ Implemented |
+| Grocery | `list_build` | ❌ Not yet explored |
+
+### What Remains Open:
+
+**Grocery Store Claiming** (list-building semantics):
+- Haven't tested recipes that need grocery ingredients yet
+- Questions remain:
+  - How does LLM decide ingredient comes from grocery vs inventory?
+  - Can multiple recipes share same grocery item?
+  - How to present grocery list to user?
+  - Does claiming affect grocery differently than inventory?
+
 ## Success Criteria
 
-- Clear definition of what "claim" means per store type
-- Inventory claiming continues to work (reservation)
-- Grocery claiming builds useful shopping list
-- No confusion between claiming semantics and optionality
+- ✅ Clear definition of what "claim" means per store type (explicit = reserve, definition = unlimited)
+- ✅ Inventory claiming continues to work (reservation validated)
+- ❌ Grocery claiming builds useful shopping list (not yet tested)
+- ✅ No confusion between claiming semantics and optionality (kept separate)
 
 ## Next Experiment
 
-1. Implement store-specific claiming (Option 2)
-2. Test with recipes that use both inventory and grocery ingredients
-3. Mock grocery list view
-4. Validate: Does reservation vs list-building distinction work?
+1. ~~Implement store-specific claiming (Option 2)~~ ✅ DONE for explicit/definition stores
+2. **Add grocery store type with list-building behavior**
+3. Test with recipes that use both inventory and grocery ingredients
+4. Mock grocery list view
+5. Validate: Does reservation vs list-building distinction work?

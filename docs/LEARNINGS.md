@@ -64,6 +64,27 @@
   - Pantry staples are effectively unlimited, don't need claiming
   - (discovered: ingredient-claiming experiment, 2025-11-30)
 
+- [x] **Store type separation validated**: Explicit vs definition stores works architecturally
+  - Explicit stores (CSA, Freezer): Itemized with quantities, need claiming
+  - Definition stores (Pantry Staples): Unlimited, never claimed
+  - LLM receives them separately in prompt, understands the distinction
+  - Code manages decremented inventory state for explicit stores only
+  - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
+
+- [x] **Quantity-aware claiming works smoothly**: No edge cases found
+  - Backend tracks inventory as nested dict: {store_name: {ingredient_name: (quantity, unit)}}
+  - Claiming decrements quantities correctly
+  - Partial availability tracked ("0.5 lb remaining")
+  - Auto-pivot respects decremented quantities (rainbow radish → black radish when inventory changes)
+  - User reaction: "That worked great"
+  - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
+
+- [x] **Pitch explicit ingredients**: Backend needs it, UI doesn't
+  - explicit_ingredients used for claiming logic (what to decrement from inventory)
+  - But UI doesn't need to display it - title + blurb sufficient for browsing
+  - Validates architectural separation: code owns state management, UI shows human-friendly info
+  - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
+
 - [x] **Recipe identity boundaries**: Pivots can break the pitch promise
   - Example problem: Pitch said "Beef Pot Roast (sirloin)", fleshed out used pork butt - NOT the same dish!
   - Three pivot boundaries that break identity:
@@ -131,12 +152,19 @@
    - Wave sizing: 3x the number of unfilled meal slots (if need 2 more meals, generate 6 pitches)
    - (discovered: ingredient-claiming experiment, 2025-11-30)
 
-7. [x] **Pitch lifecycle management**: Pitches should disable when ingredients claimed
-   - Current problem: All pitches remain selectable even after ingredients are claimed by fleshed-out recipes
-   - Better UX: Pitches using claimed ingredients get visually disabled/grayed out
-   - Reveals ingredient conflicts immediately (can't pick both anymore)
-   - Status messages showing "avoiding X, Y, Z" feel silly - pitch disabling is the real UX
-   - (discovered: ingredient-claiming experiment, 2025-11-30)
+7. [x] **Pitch lifecycle management**: Invalid pitches should be removed automatically
+   - Pitches using claimed ingredients become invalid (insufficient inventory)
+   - Initially tried graying out invalid pitches for visibility
+   - User feedback: "I'd like them removed" - don't want to see unavailable options
+   - Suggests pitch pool maintenance: remove invalid, optionally backfill with new pitches
+   - (discovered: ingredient-claiming experiment, ingredient-claiming-cognitive-load experiment, 2025-11-30/12-01)
+
+8. [x] **Pitch pool self-healing**: Generate to maintain availability threshold
+   - After claiming ingredients, some pitches become invalid (removed)
+   - Want to maintain consistent pool of available options
+   - Automatic backfill: when available pitches drop below threshold, generate more
+   - Decision: Defer automatic backfill, manual "Generate More" works for now
+   - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
 
 ### Surprising Complexities
 
@@ -205,6 +233,27 @@
   - User can review optional items and decide which to add to grocery list
   - Different claiming model: optional items are suggestions, not reservations
   - (discovered: ingredient-claiming experiment, 2025-11-30)
+
+- [x] **LLM/code separation of concerns**: Architectural win for recipe quality
+  - Before: LLM did recipe creation AND inventory math simultaneously (cognitive overload)
+  - After: LLM declares what it used (explicit_ingredients), code manages state
+  - Benefits observed:
+    - Quantity-aware claiming works smoothly (no edge cases)
+    - Auto-pivot respects decremented inventory (rainbow radish → black radish)
+    - Recipe quality improved (LLM focuses on recipes, not accounting)
+  - User reaction: "This change is working quite well"
+  - Validates architectural principle: LLM for content generation, code for state management
+  - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
+
+- [x] **Technique diversity over ingredient diversity**: Prompt fixed CSA usage problem
+  - Problem: LLM interpreted "MAXIMALLY DIVERSE" as "use different ingredients"
+  - Result: Only 1 radish recipe when radishes are main CSA item → others rot if pitch unappealing
+  - Fix: Explicit prompt guidance "diverse in TECHNIQUE, not ingredient choice"
+  - Added: "5-7 radish recipes with different techniques is BETTER than forcing diversity across ingredients"
+  - Success: User got multiple radish options, found something appealing
+  - User reaction: "I have trouble with radishes and saw something I liked"
+  - Validates: Fresh ingredients are high priority, need multiple creative options
+  - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
 
 ### API Shapes That Feel Right
 - [x] **GET endpoint with query params for SSE**: EventSource compatibility matters

@@ -40,6 +40,15 @@ Ad-hoc context ("busy week", "want something quick") doesn't provide enough stru
 - "Batch cooking": 2 large-batch with leftovers, 1 quick assembly
 - "Variety exploration": Mix of 5 different cuisines
 
+## Latest Exploration
+
+**Date**: 2025-12-01 (ingredient-claiming-cognitive-load experiment)
+
+User insight evolved this into **criteria-based generation**:
+> "I'm also curious if there are multiple criteria, simultaneously creating pitches for all of them - eg 'weekend meal', 'quick weeknight', 'short active but potentially long cooking for weeknight guest' as separate criteria and we lay out pitches according to those criteria."
+
+This suggests moving beyond free text to structured criteria with simultaneous generation. See related question: **[Criteria-Based Generation](criteria-based-generation.md)** for implementation approach.
+
 ## Hypothesis
 
 **Start simple:**
@@ -47,6 +56,11 @@ Ad-hoc context ("busy week", "want something quick") doesn't provide enough stru
 - Free text input, LLM interprets naturally
 - Example prompts: "1 weekend project, 2 quick weeknight, 2 with leftovers"
 - See if free text provides enough structure before building complex UI
+
+**Next evolution** (see `criteria-based-generation.md`):
+- Single BAML call with keyed output per criteria
+- UI groups pitches by criteria
+- Structured meal planning workflow
 
 **If free text insufficient:**
 - Build simple structured form (sliders for time, checkboxes for constraints)

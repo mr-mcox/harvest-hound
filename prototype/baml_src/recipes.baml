@@ -27,6 +27,7 @@ class RecipePitch {
   blurb string @description("Single evocative sentence - emotional appeal, sensory, makes you want to cook it")
   why_make_this string @description("Concise practical appeal - 3-5 words capturing key benefit (e.g., 'One-pan weeknight dinner', 'Wow-factor for guests', 'Great leftovers')")
   key_ingredients string[] @description("3-5 main ingredients that will be used")
+  explicit_ingredients RecipeIngredient[] @description("Structured list of explicit store ingredients with quantities that this recipe will claim")
   active_time_minutes int @description("Estimated active cooking time")
 
   @@assert(name_not_empty, {{ this.name|length > 0 }})
@@ -35,10 +36,10 @@ class RecipePitch {
 }
 
 function GenerateRecipePitches(
-  available_inventory: string,
+  explicit_stores: string,
+  definition_stores: string,
   additional_context: string,
-  num_pitches: int,
-  claimed_ingredients: string?
+  num_pitches: int
 ) -> RecipePitch[] {
   client Anthropic
   prompt #"
@@ -61,52 +62,51 @@ function GenerateRecipePitches(
     - Kid-friendly but flavorful
     </household-context>
 
-    <available-inventory>
-    {{ available_inventory }}
-    </available-inventory>
+    <explicit-stores>
+    These are ingredients with specific quantities that need to be claimed (use them explicitly in your pitches):
+    {{ explicit_stores }}
+    </explicit-stores>
+
+    <definition-stores>
+    These are unlimited pantry staples (don't list in explicit_ingredients):
+    {{ definition_stores }}
+    </definition-stores>
 
     <user-context>
     {{ additional_context }}
     </user-context>
 
-    {% if claimed_ingredients %}
-    <claimed-ingredients>
-    The following ingredients are already spoken for by previously selected recipes. DO NOT use these as key ingredients in new pitches:
-    {{ claimed_ingredients }}
-
-    You may use other ingredients from the available inventory, but avoid the claimed ingredients listed above.
-    </claimed-ingredients>
-    {% endif %}
-
     Generate {{ num_pitches }} DIVERSE recipe pitches that:
-    1. Use ingredients from the available inventory listed above
-    2. Prioritize fresh CSA items that will spoil soon
+    1. PRIORITIZE fresh CSA items that will spoil soon - generate MULTIPLE creative options for the same fresh ingredient
+    2. Use ingredients from the explicit stores listed above
     3. Fit the household preferences and equipment
     4. Consider the user's additional context if provided
-    5. Are MAXIMALLY DIVERSE from each other:
-       - Different techniques (roasting, braising, raw, pickled, grilled, etc.)
-       - Different flavor profiles (bright & acidic, rich & savory, sweet & tangy)
-       - Different cuisines and styles
+    5. Are diverse in TECHNIQUE, not ingredient choice:
+       - If you have radishes, suggest: roasted radishes, quick-pickled radishes, radish tacos, radish greens pesto, radish salad, etc.
+       - Different techniques (roasting, braising, raw, pickled, grilled, sautéed, fermented)
+       - Different flavor profiles (bright & acidic, rich & savory, sweet & tangy, funky & fermented)
+       - Different cuisines and styles (Mexican, Italian, Asian, comfort food)
        - DIFFERENT TIME COMMITMENTS (mix quick 15-min meals with leisurely 60-min weekend projects)
-       - Different formats (one-pot, protein+sides, bowls, tacos, etc.)
+       - Different formats (one-pot, protein+sides, bowls, tacos, salads, sides)
     6. Are appropriate for young children (not spicy)
+
+    CRITICAL: Don't artificially limit yourself to one pitch per ingredient. If radishes are the main CSA item, 5-7 radish recipes with different techniques is BETTER than forcing diversity across ingredients. Fresh items spoil - give multiple options!
 
     IMPORTANT - Keep pitches CONCISE:
     - blurb: ONE evocative sentence maximum. Sensory, emotional, makes you hungry. NO practical details.
     - why_make_this: 3-5 WORDS capturing key practical benefit (e.g., "One-pan weeknight", "Weekend project", "Great leftovers")
+    - explicit_ingredients: List ONLY ingredients from explicit stores with quantities (not pantry staples)
     - Don't repeat information between fields
-
-    Be creative and diverse - if you suggest roasted radishes, also suggest quick-pickled radishes, radish tacos, radish greens pesto, etc.
 
     {{ ctx.output_format }}
   "#
 }
 
 function GenerateSingleRecipe(
-  available_inventory: string,
+  explicit_stores: string,
+  definition_stores: string,
   additional_context: string,
-  recipes_already_generated: string,
-  claimed_ingredients: string?
+  recipes_already_generated: string
 ) -> Recipe {
   client Anthropic
   prompt #"
@@ -131,9 +131,15 @@ function GenerateSingleRecipe(
     - Kid-friendly but flavorful
     </household-context>
 
-    <available-inventory>
-    {{ available_inventory }}
-    </available-inventory>
+    <explicit-stores>
+    These are ingredients with specific quantities available:
+    {{ explicit_stores }}
+    </explicit-stores>
+
+    <definition-stores>
+    These are unlimited pantry staples:
+    {{ definition_stores }}
+    </definition-stores>
 
     <user-context>
     {{ additional_context }}
@@ -143,17 +149,8 @@ function GenerateSingleRecipe(
     {{ recipes_already_generated }}
     </recipes-already-generated>
 
-    {% if claimed_ingredients %}
-    <claimed-ingredients>
-    The following ingredients have been claimed by other recipes being prepared. DO NOT use these ingredients - they are no longer available:
-    {{ claimed_ingredients }}
-
-    IMPORTANT: If the recipe you're generating was pitched with these ingredients, you must pivot to use ONLY the remaining available ingredients from the inventory above. Make substitutions that keep the recipe recognizable and delicious. If you cannot make a good version of this recipe without the claimed ingredients, that's okay - just make the best recipe you can with what's available.
-    </claimed-ingredients>
-    {% endif %}
-
     Generate ONE recipe that:
-    1. Uses ingredients from the available inventory listed above
+    1. Uses ingredients from the explicit stores listed above
     2. Prioritizes fresh CSA items that will spoil soon
     3. Fits the household preferences and equipment
     4. Considers the user's additional context if provided

@@ -13,6 +13,7 @@ from datetime import datetime
 import json
 import asyncio
 from pydantic import BaseModel
+import copy
 
 # Add BAML imports (after running: uv run baml-cli generate)
 from baml_client import b
@@ -108,31 +109,78 @@ def get_inventory_ingredient_names() -> set:
         items = session.exec(select(InventoryItem)).all()
         return {item.ingredient_name.lower() for item in items}
 
-def format_inventory_for_prompt() -> str:
-    """Load all stores and format inventory for LLM prompt"""
+def load_initial_inventory() -> dict:
+    """
+    Load initial inventory state from database as a nested dict for quantity tracking.
+    Structure: {store_name: {ingredient_name: (quantity, unit)}}
+    """
+    with Session(engine) as session:
+        stores = session.exec(select(Store)).all()
+        inventory_state = {}
+
+        for store in stores:
+            if store.store_type == "explicit":
+                items = session.exec(
+                    select(InventoryItem).where(InventoryItem.store_id == store.id)
+                ).all()
+
+                if items:
+                    inventory_state[store.name] = {
+                        item.ingredient_name: (item.quantity, item.unit)
+                        for item in items
+                    }
+
+        return inventory_state
+
+def format_inventory_for_prompt(available_inventory: dict = None) -> tuple[str, str]:
+    """
+    Load all stores and format inventory for LLM prompt, split into explicit and definition stores.
+    If available_inventory dict is provided, use it for explicit stores (for quantity tracking).
+    Returns (explicit_stores_str, definition_stores_str)
+    """
     with Session(engine) as session:
         stores = session.exec(select(Store)).all()
 
         if not stores:
-            return "No inventory available. Generate recipes using common pantry staples."
+            return ("No explicit inventory available.", "Common pantry staples (olive oil, butter, salt, pepper, etc.)")
 
-        inventory_parts = []
+        explicit_parts = []
+        definition_parts = []
+
         for store in stores:
-            items = session.exec(
-                select(InventoryItem).where(InventoryItem.store_id == store.id)
-            ).all()
+            if store.store_type == "definition":
+                # Definition stores - just show the definition
+                definition_parts.append(f"{store.name}: {store.definition or store.description}")
+            else:
+                # Explicit stores - show itemized inventory
+                if available_inventory and store.name in available_inventory:
+                    # Use the tracked inventory (with decremented quantities)
+                    items_dict = available_inventory[store.name]
+                    if items_dict:
+                        item_list = ", ".join([
+                            f"{name} ({qty} {unit})"
+                            for name, (qty, unit) in items_dict.items()
+                            if qty > 0  # Only show items with quantity remaining
+                        ])
+                        if item_list:
+                            explicit_parts.append(f"{store.name}: {item_list}")
+                else:
+                    # Use database inventory (initial state)
+                    items = session.exec(
+                        select(InventoryItem).where(InventoryItem.store_id == store.id)
+                    ).all()
 
-            if items:
-                item_list = ", ".join([
-                    f"{i.ingredient_name} ({i.quantity} {i.unit})"
-                    for i in items
-                ])
-                inventory_parts.append(f"{store.name}: {item_list}")
+                    if items:
+                        item_list = ", ".join([
+                            f"{i.ingredient_name} ({i.quantity} {i.unit})"
+                            for i in items
+                        ])
+                        explicit_parts.append(f"{store.name}: {item_list}")
 
-        if not inventory_parts:
-            return "No inventory items found. Generate recipes using common pantry staples."
+        explicit_str = "\n".join(explicit_parts) if explicit_parts else "No explicit inventory available."
+        definition_str = "\n".join(definition_parts) if definition_parts else "No definition stores configured."
 
-        return "\n".join(inventory_parts)
+        return (explicit_str, definition_str)
 
 # --- Endpoints ---
 
@@ -311,23 +359,31 @@ async def update_inventory_item(item_id: str, request: UpdateInventoryRequest):
 async def generate_pitches(
     additional_context: str = "",
     num_pitches: int = 10,
-    claimed_ingredients: str = ""
+    available_inventory_json: str = ""
 ):
     """
-    Generate lightweight recipe pitches for browsing
-    Accepts claimed_ingredients to avoid suggesting recipes with already-selected ingredients
+    Generate lightweight recipe pitches for browsing with quantity-aware ingredient tracking
+    Accepts optional available_inventory_json to use decremented inventory state
     """
     async def stream_pitches():
         try:
-            # Load inventory from all stores
-            available_inventory = format_inventory_for_prompt()
+            # Parse inventory if provided, otherwise load from DB
+            current_inventory = None
+            if available_inventory_json:
+                try:
+                    current_inventory = json.loads(available_inventory_json)
+                except json.JSONDecodeError:
+                    pass  # Fall back to DB inventory
+
+            # Load inventory split by store type, using decremented state if available
+            explicit_stores, definition_stores = format_inventory_for_prompt(current_inventory)
 
             # Call BAML to generate all pitches at once
             pitches = await b.GenerateRecipePitches(
-                available_inventory=available_inventory,
+                explicit_stores=explicit_stores,
+                definition_stores=definition_stores,
                 additional_context=additional_context or "No specific context provided",
-                num_pitches=num_pitches,
-                claimed_ingredients=claimed_ingredients if claimed_ingredients else None
+                num_pitches=num_pitches
             )
 
             # Stream pitches one at a time for progressive loading
@@ -337,6 +393,10 @@ async def generate_pitches(
                     "blurb": pitch.blurb,
                     "why_make_this": pitch.why_make_this,
                     "key_ingredients": pitch.key_ingredients,
+                    "explicit_ingredients": [
+                        {"name": ing.name, "quantity": ing.quantity, "unit": ing.unit}
+                        for ing in pitch.explicit_ingredients
+                    ],
                     "active_time": pitch.active_time_minutes
                 }
 
@@ -369,25 +429,30 @@ async def generate_pitches(
 class FleshOutRequest(BaseModel):
     pitch_name: str
     additional_context: str = ""
-    claimed_ingredients: str = ""
+    explicit_ingredients: list = []  # Ingredients claimed by this pitch
+    available_inventory: dict = {}  # Current inventory state (after previous claims)
 
 @app.post("/flesh-out-pitch")
 async def flesh_out_pitch(request: FleshOutRequest):
     """
-    Generate a full recipe from a selected pitch name
-    Accepts claimed_ingredients to pivot away from already-used ingredients
+    Generate a full recipe from a selected pitch name with quantity-aware claiming
+    Accepts available_inventory dict to track decremented quantities
     """
     try:
-        available_inventory = format_inventory_for_prompt()
+        # Use provided inventory state or load fresh from DB
+        current_inventory = request.available_inventory if request.available_inventory else load_initial_inventory()
+
+        # Format inventory for prompt
+        explicit_stores, definition_stores = format_inventory_for_prompt(current_inventory)
 
         # Use the pitch name as context for generation
         context_with_pitch = f"{request.additional_context}\n\nFocus on creating a full recipe for: {request.pitch_name}"
 
         baml_recipe = await b.GenerateSingleRecipe(
-            available_inventory=available_inventory,
+            explicit_stores=explicit_stores,
+            definition_stores=definition_stores,
             additional_context=context_with_pitch,
-            recipes_already_generated=f"Fleshing out: {request.pitch_name}",
-            claimed_ingredients=request.claimed_ingredients if request.claimed_ingredients else None
+            recipes_already_generated=f"Fleshing out: {request.pitch_name}"
         )
 
         recipe_dict = {
@@ -403,15 +468,30 @@ async def flesh_out_pitch(request: FleshOutRequest):
             "notes": baml_recipe.notes
         }
 
-        # Return only ingredients that are in inventory (filter out pantry staples)
-        # This prevents claiming common items like "salt", "baking powder", "garlic powder"
-        inventory_items = get_inventory_ingredient_names()
-        ingredient_names = [
-            ing.name for ing in baml_recipe.ingredients
-            if ing.name.lower() in inventory_items
-        ]
+        # Claim the explicit ingredients from the pitch
+        # Decrement quantities from current_inventory
+        updated_inventory = copy.deepcopy(current_inventory)
 
-        return {"success": True, "recipe": recipe_dict, "ingredient_names": ingredient_names}
+        for claimed_ing in request.explicit_ingredients:
+            ing_name = claimed_ing["name"]
+            ing_qty = claimed_ing["quantity"]
+            ing_unit = claimed_ing["unit"]
+
+            # Find this ingredient in the inventory and decrement
+            for store_name, items in updated_inventory.items():
+                if ing_name in items:
+                    current_qty, current_unit = items[ing_name]
+                    # Simple subtraction (assuming units match - real version would need unit conversion)
+                    new_qty = max(0, current_qty - ing_qty)
+                    updated_inventory[store_name][ing_name] = (new_qty, current_unit)
+                    break
+
+        return {
+            "success": True,
+            "recipe": recipe_dict,
+            "updated_inventory": updated_inventory,
+            "claimed_ingredients": request.explicit_ingredients
+        }
 
     except Exception as e:
         return {"success": False, "error": str(e)}

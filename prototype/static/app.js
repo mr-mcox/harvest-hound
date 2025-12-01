@@ -5,6 +5,8 @@ let currentStoreId = null;
 let eventSource = null;
 let selectedPitches = new Set();
 let pitchesData = [];
+let currentInventory = null;  // Track inventory state across flesh-outs
+let invalidPitches = new Set();  // Track pitches that can't be made anymore
 
 // Store type change handler
 document.getElementById('storeType').addEventListener('change', (e) => {
@@ -319,27 +321,21 @@ async function generatePitches() {
     document.getElementById('pitchSection').style.display = 'block';
     const pitchesList = document.getElementById('pitchesList');
 
-    // Collect claimed ingredients from currently selected pitches (for wave 2)
-    const claimedIngredients = [];
-    const isWave2 = pitchesData.length > 0;  // If we already have pitches, this is wave 2
+    // Determine if this is first batch or adding more
+    const isFirstBatch = pitchesData.length === 0;
 
-    if (isWave2) {
-        // Wave 2: collect claimed ingredients from selected pitches
-        for (const pitchIndex of selectedPitches) {
-            const pitch = pitchesData[pitchIndex];
-            if (pitch && pitch.key_ingredients) {
-                claimedIngredients.push(...pitch.key_ingredients);
-            }
-        }
-        // Keep selections and existing pitches
-        updateStatus(`Generating more pitches (avoiding: ${claimedIngredients.slice(0, 3).join(', ')}${claimedIngredients.length > 3 ? '...' : ''})`, 'info');
-        pitchesList.innerHTML = '<div style="padding: 20px; text-align: center;">Generating more pitches...</div>';
-    } else {
-        // Wave 1: reset everything
+    if (isFirstBatch) {
+        // First batch: reset everything
         selectedPitches.clear();
         pitchesData = [];
+        currentInventory = null;
+        invalidPitches.clear();
         updateStatus('Generating pitches...', 'info');
         pitchesList.innerHTML = '<div style="padding: 20px; text-align: center;">Generating pitches...</div>';
+    } else {
+        // Adding more: keep existing pitches, append new ones
+        updateStatus('Generating more pitches with updated inventory...', 'info');
+        pitchesList.innerHTML += '<div style="padding: 20px; text-align: center; border-top: 2px solid #ccc;">Loading more...</div>';
     }
 
     // Close previous SSE connection if exists
@@ -351,16 +347,18 @@ async function generatePitches() {
     const params = new URLSearchParams({
         additional_context: additionalContext || "",
         num_pitches: 10,
-        claimed_ingredients: claimedIngredients.join(', ')
+        available_inventory_json: currentInventory ? JSON.stringify(currentInventory) : ""
     });
     eventSource = new EventSource('/generate-pitches?' + params);
+
+    const startingIndex = pitchesData.length;  // Track where new pitches start
 
     eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
 
         // Handle completion
         if (data.complete) {
-            updateStatus('Pitch generation complete! Click pitches to select.', 'success');
+            updateStatus(`${isFirstBatch ? 'Pitch generation' : 'More pitches'} complete! Click pitches to select.`, 'success');
             eventSource.close();
             return;
         }
@@ -369,7 +367,9 @@ async function generatePitches() {
         if (data.error) {
             updateStatus('Error: ' + data.message, 'error');
             eventSource.close();
-            pitchesList.innerHTML = '<p>Failed to generate pitches. Try again.</p>';
+            if (isFirstBatch) {
+                pitchesList.innerHTML = '<p>Failed to generate pitches. Try again.</p>';
+            }
             return;
         }
 
@@ -383,26 +383,89 @@ async function generatePitches() {
     eventSource.onerror = (error) => {
         updateStatus('Connection error generating pitches', 'error');
         eventSource.close();
-        pitchesList.innerHTML = '<p>Failed to generate pitches. Check console for details.</p>';
+        if (isFirstBatch) {
+            pitchesList.innerHTML = '<p>Failed to generate pitches. Check console for details.</p>';
+        }
         console.error('SSE Error:', error);
     };
+}
+
+function checkPitchValidity(pitch, inventory) {
+    // Check if a pitch's ingredients are still available in the inventory
+    if (!pitch.explicit_ingredients || pitch.explicit_ingredients.length === 0) {
+        return true;  // No explicit ingredients, always valid
+    }
+
+    if (!inventory) {
+        return true;  // No inventory tracking yet, assume valid
+    }
+
+    // Check each ingredient
+    for (const ing of pitch.explicit_ingredients) {
+        let found = false;
+        let sufficient = false;
+
+        for (const storeName in inventory) {
+            const items = inventory[storeName];
+            if (ing.name in items) {
+                found = true;
+                const [availableQty, availableUnit] = items[ing.name];
+                // Simple check: is there enough quantity? (ignoring unit conversion for now)
+                if (availableQty >= ing.quantity) {
+                    sufficient = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found || !sufficient) {
+            return false;  // At least one ingredient is missing or insufficient
+        }
+    }
+
+    return true;  // All ingredients available
 }
 
 function renderPitches() {
     const pitchesList = document.getElementById('pitchesList');
 
-    pitchesList.innerHTML = pitchesData.map((pitch, i) => `
-        <div class="pitch-card ${selectedPitches.has(i) ? 'selected' : ''}" onclick="togglePitchSelection(${i})">
-            <h4>${pitch.name}</h4>
-            <div class="blurb">${pitch.blurb}</div>
-            <div class="key-ingredients">
-                <strong>Key ingredients:</strong> ${pitch.key_ingredients.join(', ')}
+    // Check validity and update invalid set
+    invalidPitches.clear();
+    pitchesData.forEach((pitch, i) => {
+        if (!checkPitchValidity(pitch, currentInventory)) {
+            invalidPitches.add(i);
+        }
+    });
+
+    // Show status if there are invalid pitches
+    const invalidCount = invalidPitches.size;
+    const statusMsg = invalidCount > 0
+        ? `<div style="padding: 10px; background: #fff3cd; border: 1px solid #ffc107; margin-bottom: 10px; border-radius: 4px;">⚠️ ${invalidCount} pitch${invalidCount > 1 ? 'es' : ''} no longer possible with remaining inventory (marked grayed out)</div>`
+        : '';
+
+    pitchesList.innerHTML = statusMsg + pitchesData.map((pitch, i) => {
+        // Format explicit ingredients for display
+        const explicitIngDisplay = pitch.explicit_ingredients && pitch.explicit_ingredients.length > 0
+            ? pitch.explicit_ingredients.map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`).join(', ')
+            : 'None specified';
+
+        const isInvalid = invalidPitches.has(i);
+        const invalidClass = isInvalid ? ' invalid' : '';
+        const invalidStyle = isInvalid ? ' style="opacity: 0.5; background: #f5f5f5; pointer-events: none;"' : '';
+
+        return `
+            <div class="pitch-card ${selectedPitches.has(i) ? 'selected' : ''}${invalidClass}" onclick="togglePitchSelection(${i})"${invalidStyle}>
+                <h4>${pitch.name}${isInvalid ? ' <span style="color: #999; font-size: 0.8em;">(unavailable)</span>' : ''}</h4>
+                <div class="blurb">${pitch.blurb}</div>
+                <div style="margin: 8px 0; font-size: 0.85em; color: #666;">
+                    <strong>Claims:</strong> ${explicitIngDisplay}
+                </div>
+                <div style="margin: 8px 0; font-size: 0.9em;">
+                    <strong>Why:</strong> ${pitch.why_make_this} · <strong>Time:</strong> ~${pitch.active_time} min
+                </div>
             </div>
-            <div style="margin: 8px 0; font-size: 0.9em;">
-                <strong>Why:</strong> ${pitch.why_make_this} · <strong>Time:</strong> ~${pitch.active_time} min
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function togglePitchSelection(index) {
@@ -428,21 +491,20 @@ async function fleshOutSelected() {
     // Clear old recipes
     recipesList.innerHTML = '';
 
-    // Track claimed ingredients across all fleshed-out recipes (greedy claiming)
-    const allClaimedIngredients = [];
-
     let recipeCount = 0;
     for (const pitchIndex of selectedPitches) {
         const pitch = pitchesData[pitchIndex];
         recipeCount++;
 
+        // Show what's being claimed
+        const claimingDisplay = pitch.explicit_ingredients && pitch.explicit_ingredients.length > 0
+            ? pitch.explicit_ingredients.map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`).join(', ')
+            : 'no explicit ingredients';
+
         // Add loading state
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'recipe-card streaming';
-        const claimStatus = allClaimedIngredients.length > 0
-            ? ` (avoiding: ${allClaimedIngredients.slice(0, 3).join(', ')}${allClaimedIngredients.length > 3 ? '...' : ''})`
-            : '';
-        loadingDiv.innerHTML = `<h4>Fleshing out ${recipeCount}/${selectedPitches.size}: ${pitch.name}${claimStatus}...</h4>`;
+        loadingDiv.innerHTML = `<h4>Fleshing out ${recipeCount}/${selectedPitches.size}: ${pitch.name}</h4><p style="font-size: 0.9em; color: #666;">Claiming: ${claimingDisplay}...</p>`;
         recipesList.appendChild(loadingDiv);
 
         try {
@@ -452,7 +514,8 @@ async function fleshOutSelected() {
                 body: JSON.stringify({
                     pitch_name: pitch.name,
                     additional_context: additionalContext,
-                    claimed_ingredients: allClaimedIngredients.join(', ')
+                    explicit_ingredients: pitch.explicit_ingredients || [],
+                    available_inventory: currentInventory || {}
                 })
             });
 
@@ -461,21 +524,24 @@ async function fleshOutSelected() {
             if (result.success) {
                 const recipe = result.recipe;
 
-                // Add these ingredients to claimed list for next recipe
-                if (result.ingredient_names) {
-                    allClaimedIngredients.push(...result.ingredient_names);
-                }
+                // Update inventory state for next recipe
+                currentInventory = result.updated_inventory;
+
+                // Show claimed ingredients
+                const claimedDisplay = result.claimed_ingredients && result.claimed_ingredients.length > 0
+                    ? result.claimed_ingredients.map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`).join(', ')
+                    : 'none';
 
                 loadingDiv.className = 'recipe-card';
                 loadingDiv.innerHTML = `
                     <h4>${recipe.name}</h4>
+                    <p style="font-size: 0.85em; color: #28a745;"><strong>✓ Claimed:</strong> ${claimedDisplay}</p>
                     <p><strong>Ingredients:</strong><br>${recipe.ingredients.join('<br>')}</p>
                     <p><strong>Instructions:</strong><br>${recipe.instructions.replace(/\n/g, '<br>')}</p>
                     <p><strong>Time:</strong> ${recipe.active_time} min active${recipe.passive_time ? ' + ' + recipe.passive_time + ' min passive' : ''}</p>
                     <p><strong>Servings:</strong> ${recipe.servings}</p>
                     ${recipe.notes ? `<p><strong>Notes:</strong> ${recipe.notes}</p>` : ''}
                     <button onclick="acceptRecipe('${recipe.name}')">Accept Recipe</button>
-                    <button onclick="claimIngredients('${recipe.name}')">Claim Ingredients</button>
                 `;
             } else {
                 loadingDiv.innerHTML = `<p>Failed to flesh out ${pitch.name}: ${result.error}</p>`;
@@ -485,7 +551,10 @@ async function fleshOutSelected() {
         }
     }
 
-    updateStatus('Fleshing out complete!', 'success');
+    updateStatus('Fleshing out complete! Inventory updated.', 'success');
+
+    // Re-render pitches to mark invalid ones
+    renderPitches();
 }
 
 async function generateRecipes() {
