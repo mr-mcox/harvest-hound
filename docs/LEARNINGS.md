@@ -85,6 +85,27 @@
   - Validates architectural separation: code owns state management, UI shows human-friendly info
   - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
 
+- [x] **Recipe lifecycle states**: Planned → Cooked/Abandoned works well
+  - Three states sufficient: planned (reserved), cooked (consumed), abandoned (released)
+  - Auto-save on flesh-out feels natural (no "don't save" needed since abandon is low effort)
+  - Models how user wants to use system: plan for week → cook or abandon as week progresses
+  - User reaction: "That model seemed to work quite well"
+  - (discovered: recipe-persistence experiment, 2025-12-01)
+
+- [x] **IngredientClaim as persistent entity**: Works invisibly in background
+  - Two claim states: reserved (planned), consumed (cooked)
+  - Claims work transparently - user doesn't think about them, they just work
+  - Distinction could be clearer in UI ("why aren't I getting radish recipes? oh, forgot about that planned meal")
+  - Physical vs available inventory distinction validated
+  - (discovered: recipe-persistence experiment, 2025-12-01)
+
+- [x] **Recipe persistence transforms system feel**: From session tool to weekly hub
+  - Page refresh with recipes persisted changes entire experience
+  - User reaction: "Now feeling like a central hub to keep coming back to over the course of a week, feels a lot more authentic"
+  - Validates hypothesis: persistence eliminates planning work loss frustration
+  - Critical bug: Pitches must respect saved recipe claims to prevent double-booking ingredients
+  - (discovered: recipe-persistence experiment, 2025-12-01)
+
 - [x] **Recipe identity boundaries**: Pivots can break the pitch promise
   - Example problem: Pitch said "Beef Pot Roast (sirloin)", fleshed out used pork butt - NOT the same dish!
   - Three pivot boundaries that break identity:
@@ -165,6 +186,16 @@
    - Automatic backfill: when available pitches drop below threshold, generate more
    - Decision: Defer automatic backfill, manual "Generate More" works for now
    - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
+
+9. [x] **Recipe persistence workflow**: Auto-save on flesh-out → cook/abandon lifecycle
+   - Fleshing out automatically saves recipe to "My Planned Recipes" (no separate accept step)
+   - Planned recipes visible at top of page (compact view) as weekly hub
+   - Cook action: consumes claims, decrements inventory, marks recipe complete
+   - Abandon action: releases claims without consuming inventory, marks recipe abandoned
+   - Low-friction abandoning makes auto-save acceptable (no "don't save this" needed)
+   - Page becomes central hub to return to throughout week
+   - User reaction: "Feels a lot more authentic"
+   - (discovered: recipe-persistence experiment, 2025-12-01)
 
 ### Surprising Complexities
 
@@ -323,7 +354,19 @@
    - Three boundaries: ingredients unavailable, effort significantly different, family expectations broken
    - (discovered: ingredient-claiming experiment, 2025-11-30)
 
-7. [ ] **Recipe acceptance workflow** - Needs exploration of what "accept" means
+7. [x] **Ingredient claim visibility**: Need to see what's claimed vs available
+   - Essential: "Why aren't I getting radish recipes? Oh, forgot about that planned meal that claimed them"
+   - Need bidirectional lookup: which recipes → which ingredients, which ingredients → which recipes
+   - Week-level view: "Oh we aren't using beets for anything this week? Maybe I'll roast them as a side"
+   - Helps prevent ingredient waste and reveals meal planning gaps
+   - Week-by-week operation means n is small, so detailed tracking is feasible
+   - (discovered: recipe-persistence experiment, 2025-12-01)
+
+8. [x] **Recipe editing/tweaking after planning**: Substitute ingredients in saved recipes
+   - Nice to have: "I planned this earlier but now want to substitute Y ingredient"
+   - Feedback option: "That's close, but please do X" to refine recipe
+   - Not blocking for MVP, abandoning is low-effort workaround
+   - (discovered: recipe-persistence experiment, 2025-12-01)
 
 ### Nice to Have
 - [x] **Week-level planning criteria**: Structured constraints for balanced variety
@@ -366,7 +409,22 @@
 
 ### Not Needed
 - [x] **Per-generation store selection** - Auto-including all stores works fine
-  - (discovered: recipe-generation experiment, 2025-11-29) 
+  - (discovered: recipe-generation experiment, 2025-11-29)
+
+- [x] **Bulk operations on recipes**: Week-by-week n is small enough
+  - No need for "abandon all", "reorder", or other batch operations
+  - Individual recipe management sufficient for 5-7 planned recipes per week
+  - (discovered: recipe-persistence experiment, 2025-12-01)
+
+## UI/UX Discoveries
+
+### Emerging Needs
+- [x] **Different views for different contexts**: Single page getting cluttered
+  - Need planning view, cooking view, reviewing view as distinct modes
+  - Compact recipe representation works for weekly hub
+  - More detailed view needed for cooking
+  - System needs thoughtful information architecture as features grow
+  - (discovered: recipe-persistence experiment, 2025-12-01) 
 
 ## Architecture Decisions for MVP
 

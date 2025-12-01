@@ -50,6 +50,24 @@ class Recipe(SQLModel, table=True):
     ingredients_json: str  # Just store as JSON for now
     instructions: str
     source: str = "ai_generated"
+    state: str = "planned"  # planned, cooked, abandoned
+    active_time: int = 0  # minutes
+    passive_time: int = 0  # minutes
+    servings: int = 1
+    notes: str = ""
+    created_at: Optional[datetime] = Field(default_factory=datetime.now)
+    planned_at: Optional[datetime] = Field(default_factory=datetime.now)
+    cooked_at: Optional[datetime] = None
+
+class IngredientClaim(SQLModel, table=True):
+    """Links recipe to specific ingredient with state tracking"""
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
+    recipe_id: UUID = Field(foreign_key="recipe.id")
+    ingredient_name: str
+    store_name: str
+    quantity: float
+    unit: str
+    state: str = "reserved"  # reserved, consumed
     created_at: Optional[datetime] = Field(default_factory=datetime.now)
 
 class MealPlan(SQLModel, table=True):
@@ -131,6 +149,32 @@ def load_initial_inventory() -> dict:
                     }
 
         return inventory_state
+
+def load_available_inventory() -> dict:
+    """
+    Load inventory and subtract reserved claims from planned recipes.
+    Returns only the AVAILABLE inventory (physical minus reserved).
+    Structure: {store_name: {ingredient_name: (quantity, unit)}}
+    """
+    # Start with physical inventory
+    inventory = load_initial_inventory()
+
+    # Get all reserved claims from planned recipes
+    with Session(engine) as session:
+        reserved_claims = session.exec(
+            select(IngredientClaim).where(IngredientClaim.state == "reserved")
+        ).all()
+
+        # Subtract reserved quantities
+        for claim in reserved_claims:
+            if claim.store_name in inventory:
+                if claim.ingredient_name in inventory[claim.store_name]:
+                    current_qty, current_unit = inventory[claim.store_name][claim.ingredient_name]
+                    # Subtract the reserved amount
+                    available_qty = max(0, current_qty - claim.quantity)
+                    inventory[claim.store_name][claim.ingredient_name] = (available_qty, current_unit)
+
+    return inventory
 
 def format_inventory_for_prompt(available_inventory: dict = None) -> tuple[str, str]:
     """
@@ -364,18 +408,24 @@ async def generate_pitches(
     """
     Generate lightweight recipe pitches for browsing with quantity-aware ingredient tracking
     Accepts optional available_inventory_json to use decremented inventory state
+    AUTO-ACCOUNTS for reserved ingredients from planned recipes
     """
     async def stream_pitches():
         try:
-            # Parse inventory if provided, otherwise load from DB
+            # Parse inventory if provided (from in-session tracking),
+            # otherwise load available inventory (physical minus reserved claims)
             current_inventory = None
             if available_inventory_json:
                 try:
                     current_inventory = json.loads(available_inventory_json)
                 except json.JSONDecodeError:
-                    pass  # Fall back to DB inventory
+                    pass  # Fall back to available inventory
 
-            # Load inventory split by store type, using decremented state if available
+            # If no inventory provided, load available inventory (accounts for reserved claims)
+            if current_inventory is None:
+                current_inventory = load_available_inventory()
+
+            # Load inventory split by store type, using decremented state
             explicit_stores, definition_stores = format_inventory_for_prompt(current_inventory)
 
             # Call BAML to generate all pitches at once
@@ -436,7 +486,7 @@ class FleshOutRequest(BaseModel):
 async def flesh_out_pitch(request: FleshOutRequest):
     """
     Generate a full recipe from a selected pitch name with quantity-aware claiming
-    Accepts available_inventory dict to track decremented quantities
+    AUTO-SAVES recipe to database and creates persistent ingredient claims
     """
     try:
         # Use provided inventory state or load fresh from DB
@@ -472,19 +522,60 @@ async def flesh_out_pitch(request: FleshOutRequest):
         # Decrement quantities from current_inventory
         updated_inventory = copy.deepcopy(current_inventory)
 
-        for claimed_ing in request.explicit_ingredients:
-            ing_name = claimed_ing["name"]
-            ing_qty = claimed_ing["quantity"]
-            ing_unit = claimed_ing["unit"]
+        # PERSIST RECIPE AND CLAIMS TO DATABASE
+        with Session(engine) as session:
+            # Create recipe record
+            db_recipe = Recipe(
+                name=baml_recipe.name,
+                ingredients_json=json.dumps([
+                    f"{ing.quantity} {ing.unit} {ing.name}"
+                    for ing in baml_recipe.ingredients
+                ]),
+                instructions=baml_recipe.instructions,
+                state="planned",
+                active_time=baml_recipe.active_time_minutes,
+                passive_time=baml_recipe.passive_time_minutes,
+                servings=baml_recipe.servings,
+                notes=baml_recipe.notes or ""
+            )
+            session.add(db_recipe)
+            session.commit()
+            session.refresh(db_recipe)
 
-            # Find this ingredient in the inventory and decrement
-            for store_name, items in updated_inventory.items():
-                if ing_name in items:
-                    current_qty, current_unit = items[ing_name]
-                    # Simple subtraction (assuming units match - real version would need unit conversion)
-                    new_qty = max(0, current_qty - ing_qty)
-                    updated_inventory[store_name][ing_name] = (new_qty, current_unit)
-                    break
+            recipe_id = db_recipe.id
+
+            # Create ingredient claims for explicit ingredients
+            for claimed_ing in request.explicit_ingredients:
+                ing_name = claimed_ing["name"]
+                ing_qty = claimed_ing["quantity"]
+                ing_unit = claimed_ing["unit"]
+
+                # Find which store this ingredient came from
+                store_name = None
+                for s_name, items in updated_inventory.items():
+                    if ing_name in items:
+                        store_name = s_name
+                        current_qty, current_unit = items[ing_name]
+                        # Simple subtraction (assuming units match)
+                        new_qty = max(0, current_qty - ing_qty)
+                        updated_inventory[s_name][ing_name] = (new_qty, current_unit)
+                        break
+
+                # Create claim record
+                if store_name:
+                    claim = IngredientClaim(
+                        recipe_id=recipe_id,
+                        ingredient_name=ing_name,
+                        store_name=store_name,
+                        quantity=ing_qty,
+                        unit=ing_unit,
+                        state="reserved"
+                    )
+                    session.add(claim)
+
+            session.commit()
+
+        recipe_dict["id"] = str(recipe_id)  # Include ID for frontend
 
         return {
             "success": True,
@@ -584,6 +675,131 @@ async def claim_ingredients(recipe_id: str):
         "missing": ["olive oil"],
         "substitutions": []
     }
+
+@app.get("/api/inventory/available")
+async def get_available_inventory():
+    """Get available inventory (physical minus reserved claims)"""
+    return {"inventory": load_available_inventory()}
+
+@app.get("/api/recipes/planned")
+async def get_planned_recipes():
+    """Get all planned recipes with their ingredient claims"""
+    with Session(engine) as session:
+        # Get all planned recipes
+        recipes = session.exec(
+            select(Recipe).where(Recipe.state == "planned")
+        ).all()
+
+        result = []
+        for recipe in recipes:
+            # Get claims for this recipe
+            claims = session.exec(
+                select(IngredientClaim).where(IngredientClaim.recipe_id == recipe.id)
+            ).all()
+
+            result.append({
+                "id": str(recipe.id),
+                "name": recipe.name,
+                "ingredients": json.loads(recipe.ingredients_json),
+                "instructions": recipe.instructions,
+                "active_time": recipe.active_time,
+                "passive_time": recipe.passive_time,
+                "servings": recipe.servings,
+                "notes": recipe.notes,
+                "planned_at": recipe.planned_at.isoformat() if recipe.planned_at else None,
+                "claims": [
+                    {
+                        "ingredient": c.ingredient_name,
+                        "quantity": c.quantity,
+                        "unit": c.unit,
+                        "store": c.store_name
+                    }
+                    for c in claims
+                ]
+            })
+
+        return {"recipes": result}
+
+@app.post("/api/recipes/{recipe_id}/cook")
+async def cook_recipe(recipe_id: str):
+    """
+    Mark recipe as cooked - consume ingredient claims and decrement inventory
+    """
+    with Session(engine) as session:
+        # Get recipe
+        recipe = session.get(Recipe, UUID(recipe_id))
+        if not recipe:
+            return {"success": False, "error": "Recipe not found"}
+
+        # Get all claims for this recipe
+        claims = session.exec(
+            select(IngredientClaim).where(
+                IngredientClaim.recipe_id == UUID(recipe_id),
+                IngredientClaim.state == "reserved"
+            )
+        ).all()
+
+        # Decrement inventory for each claim
+        for claim in claims:
+            # Find the inventory item
+            with Session(engine) as inv_session:
+                store = inv_session.exec(
+                    select(Store).where(Store.name == claim.store_name)
+                ).first()
+
+                if store:
+                    inv_item = inv_session.exec(
+                        select(InventoryItem).where(
+                            InventoryItem.store_id == store.id,
+                            InventoryItem.ingredient_name == claim.ingredient_name
+                        )
+                    ).first()
+
+                    if inv_item:
+                        # Decrement quantity
+                        inv_item.quantity = max(0, inv_item.quantity - claim.quantity)
+                        inv_session.commit()
+
+            # Mark claim as consumed
+            claim.state = "consumed"
+
+        # Update recipe state
+        recipe.state = "cooked"
+        recipe.cooked_at = datetime.now()
+
+        session.commit()
+
+        return {"success": True, "message": f"Cooked {recipe.name}!"}
+
+@app.post("/api/recipes/{recipe_id}/abandon")
+async def abandon_recipe(recipe_id: str):
+    """
+    Abandon recipe - release ingredient claims without consuming
+    """
+    with Session(engine) as session:
+        # Get recipe
+        recipe = session.get(Recipe, UUID(recipe_id))
+        if not recipe:
+            return {"success": False, "error": "Recipe not found"}
+
+        # Get all claims for this recipe
+        claims = session.exec(
+            select(IngredientClaim).where(
+                IngredientClaim.recipe_id == UUID(recipe_id),
+                IngredientClaim.state == "reserved"
+            )
+        ).all()
+
+        # Delete claims (they're released, not consumed)
+        for claim in claims:
+            session.delete(claim)
+
+        # Update recipe state
+        recipe.state = "abandoned"
+
+        session.commit()
+
+        return {"success": True, "message": f"Abandoned {recipe.name}"}
 
 @app.get("/meal-plans/current")
 async def get_current_meal_plan():

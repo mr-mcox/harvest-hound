@@ -156,6 +156,41 @@
             background: #e8f5e9;
             color: #2e7d32;
         }
+        .planned-recipe {
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #2196F3;
+            cursor: pointer;
+        }
+        .planned-recipe:hover {
+            background: #f5f5f5;
+        }
+        .planned-recipe.expanded {
+            background: #fff;
+            border-left-color: #4CAF50;
+        }
+        .planned-recipe-details {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        .planned-recipe.expanded .planned-recipe-details {
+            display: block;
+        }
+        .recipe-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        .btn-cook {
+            background: #4CAF50 !important;
+        }
+        .btn-abandon {
+            background: #ff9800 !important;
+        }
     </style>
 </head>
 <body>
@@ -198,6 +233,12 @@
         <!-- Right Panel - Recipe Generation -->
         <div class="panel">
             <h2>Recipe Planning</h2>
+
+            <!-- My Planned Recipes Section -->
+            <div style="margin-bottom: 30px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+                <h3>My Planned Recipes</h3>
+                <div id="plannedRecipesList"></div>
+            </div>
 
             <div style="margin-bottom: 20px;">
                 <h3>Additional Context (optional)</h3>

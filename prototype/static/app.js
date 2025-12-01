@@ -18,9 +18,10 @@ document.getElementById('storeType').addEventListener('change', (e) => {
     }
 });
 
-// Load stores on page load
+// Load stores and planned recipes on page load
 window.addEventListener('load', () => {
     loadStores();
+    loadPlannedRecipes();
 });
 
 async function loadStores() {
@@ -551,7 +552,19 @@ async function fleshOutSelected() {
         }
     }
 
-    updateStatus('Fleshing out complete! Inventory updated.', 'success');
+    updateStatus('Fleshing out complete! Recipes saved to meal plan.', 'success');
+
+    // Reload available inventory from backend (accounts for newly saved claims)
+    try {
+        const invResponse = await fetch('/api/inventory/available');
+        const invData = await invResponse.json();
+        currentInventory = invData.inventory;
+    } catch (error) {
+        console.error('Failed to reload available inventory:', error);
+    }
+
+    // Reload planned recipes to show newly saved recipes
+    loadPlannedRecipes();
 
     // Re-render pitches to mark invalid ones
     renderPitches();
@@ -642,19 +655,136 @@ async function claimIngredients(recipeName) {
     }
 }
 
+async function loadPlannedRecipes() {
+    try {
+        const response = await fetch('/api/recipes/planned');
+        const data = await response.json();
+
+        const plannedList = document.getElementById('plannedRecipesList');
+
+        if (!data.recipes || data.recipes.length === 0) {
+            plannedList.innerHTML = '<p style="color: #999; font-style: italic;">No planned recipes yet. Flesh out some pitches to get started!</p>';
+            return;
+        }
+
+        plannedList.innerHTML = data.recipes.map(recipe => {
+            const claimsDisplay = recipe.claims && recipe.claims.length > 0
+                ? recipe.claims.map(c => `${c.quantity} ${c.unit} ${c.ingredient}`).join(', ')
+                : 'No claims';
+
+            return `
+                <div class="planned-recipe" id="planned-${recipe.id}" onclick="togglePlannedRecipe('${recipe.id}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${recipe.name}</strong>
+                            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+                                ${recipe.active_time} min · ${recipe.servings} servings
+                            </div>
+                        </div>
+                    </div>
+                    <div class="planned-recipe-details">
+                        <div style="font-size: 0.9em; color: #666; margin-bottom: 8px;">
+                            <strong>Claims:</strong> ${claimsDisplay}
+                        </div>
+                        <p><strong>Ingredients:</strong><br>${recipe.ingredients.join('<br>')}</p>
+                        <p><strong>Instructions:</strong><br>${recipe.instructions.replace(/\n/g, '<br>')}</p>
+                        ${recipe.notes ? `<p><strong>Notes:</strong> ${recipe.notes}</p>` : ''}
+                        <div class="recipe-actions">
+                            <button class="btn-cook" onclick="event.stopPropagation(); cookRecipe('${recipe.id}')">Mark as Cooked</button>
+                            <button class="btn-abandon" onclick="event.stopPropagation(); abandonRecipe('${recipe.id}')">Abandon Recipe</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Failed to load planned recipes:', error);
+        updateStatus('Failed to load planned recipes', 'error');
+    }
+}
+
+function togglePlannedRecipe(recipeId) {
+    const recipeDiv = document.getElementById(`planned-${recipeId}`);
+    recipeDiv.classList.toggle('expanded');
+}
+
+async function cookRecipe(recipeId) {
+    if (!confirm('Mark this recipe as cooked? This will decrement your inventory.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/recipes/${recipeId}/cook`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            updateStatus(result.message, 'success');
+
+            // Reload available inventory (claims consumed, physical inventory decremented)
+            const invResponse = await fetch('/api/inventory/available');
+            const invData = await invResponse.json();
+            currentInventory = invData.inventory;
+
+            // Reload planned recipes and inventory display
+            loadPlannedRecipes();
+            if (currentStoreId) {
+                loadInventory();
+            }
+        } else {
+            updateStatus('Failed to mark as cooked: ' + result.error, 'error');
+        }
+    } catch (error) {
+        updateStatus('Error: ' + error.message, 'error');
+    }
+}
+
+async function abandonRecipe(recipeId) {
+    if (!confirm('Abandon this recipe? Claims will be released.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/recipes/${recipeId}/abandon`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            updateStatus(result.message, 'success');
+
+            // Reload available inventory (claims released, ingredients available again)
+            const invResponse = await fetch('/api/inventory/available');
+            const invData = await invResponse.json();
+            currentInventory = invData.inventory;
+
+            // Reload planned recipes
+            loadPlannedRecipes();
+        } else {
+            updateStatus('Failed to abandon: ' + result.error, 'error');
+        }
+    } catch (error) {
+        updateStatus('Error: ' + error.message, 'error');
+    }
+}
+
 function updateStatus(message, type = 'info') {
     const status = document.getElementById('status');
     status.textContent = message;
-    
+
     // Style based on type
     const colors = {
         success: '#e8f5e9',
         error: '#ffebee',
         info: '#e3f2fd'
     };
-    
+
     status.style.background = colors[type] || colors.info;
-    
+
     // Auto-clear after 5 seconds
     setTimeout(() => {
         status.textContent = 'Ready...';
