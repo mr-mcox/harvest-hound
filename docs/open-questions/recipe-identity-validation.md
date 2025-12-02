@@ -120,10 +120,42 @@ Option 2: Generate → Validate → Claim
 - User explicitly wants flexibility ("surprise me")
 - Budget constraint makes exact ingredient unavailable
 
-## Next Experiment
+## Key Insights (2025-12-02, pitch-recipe-identity experiment)
 
-1. Implement judge prompt to validate after generation
-2. Test with intentionally conflicting scenarios
-3. Measure: How often does judge catch bad pivots?
-4. Refine: What makes a good "recipe identity" check?
-5. Determine: Should validation happen before or after claiming?
+**Functional fidelity > character preservation**
+- Technique preservation is CRITICAL: "flip every 4-7 minutes" vs "move around with tongs" = broken dish
+- Example: Spaghetti All'Assassina requires specific flipping technique for crispy bottom layer
+- Character/tone preservation doesn't matter (style can adapt freely)
+
+**Contextual adaptations are features, not bugs**
+- Kid-friendly modifications (less spicy, familiar flavors) ✓
+- Pantry substitutions (dried herbs instead of fresh) ✓
+- These improve usability and don't break recipe identity
+
+**Judge dimensions that matter**:
+1. Ingredient compatibility (can we make this with what we have?)
+2. Technique preservation (are the cooking methods the same?)
+3. Effort alignment (is time commitment similar?)
+
+**Judge dimensions that don't matter**:
+- Character/writing style/tone
+- Prose quality
+- Recipe format
+
+**Round-trip testing validates concept**:
+- Recipe→Pitch→Recipe achieves 69.5% fidelity
+- Lower than ideal, but experiment validated the measurement approach
+- Technique drift is the main failure mode
+
+## Current Status
+
+**Open** - Still needs implementation
+- Functional fidelity validation is still important for MVP
+- Now understand what dimensions to validate (technique, not character)
+- Implementation approach still undecided (constraints vs judge vs hybrid)
+
+**Next Steps**:
+1. Design judge prompt focused on functional/technique fidelity (not character)
+2. Test with scenarios where technique changes break the dish
+3. Determine validation timing (before or after claiming)
+4. Handle validation failures gracefully (error messages, pitch disabling)

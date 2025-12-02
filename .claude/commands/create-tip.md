@@ -3,9 +3,9 @@
 Generate a Technical Implementation Plan (TIP) for: $ARGUMENTS
 
 This command creates a strategic implementation plan focused on sequencing, integration, and risk management. Use this when:
-- Domain model is clear (or you have a domain design proposal)
-- You need to align on the implementation approach and sequencing
-- You want to identify risks and dependencies before detailed task planning
+- You have a feature frame from `frame-feature` (recommended for MVP)
+- You have a domain design proposal from `explore-domain-design`
+- Or you have a clear, small feature that doesn't need framing (quick feature mode)
 
 **Purpose**: Establish strategic direction for implementation. The TIP provides high-level phases and integration awareness - detailed file changes and specific tests come later in `plan-tasks`.
 
@@ -14,12 +14,20 @@ This command creates a strategic implementation plan focused on sequencing, inte
 ## Available Agents
 
 **For focused context gathering:**
-- `architecture-context-builder` - Orchestrates locators to build minimal context package
-- `domain-locator` - Finds relevant domain model sections (if you need to go deeper)
-- `domain-analyzer` - Synthesizes domain understanding (if you need to go deeper)
+- `prototype-explorer` - Explores prototype code for patterns and current implementation
 - `code-locator` - Finds implementation patterns and tests (if you need more examples)
 - `code-analyzer` - Explains current implementation (if you need to understand existing code)
 - `thoughts-locator` - Finds related past work (if context is needed)
+
+**For MVP**: Primary context comes from `docs/LEARNINGS.md` and `prototype/` code. Use agents to explore prototype patterns worth preserving.
+
+---
+
+## Input Sources (Check in Order)
+
+1. `.scratch/frame-[feature-name].md` - Feature frame from `frame-feature` (preferred for MVP)
+2. `docs/development/design-decisions/decision-[name].md` - Domain design from `explore-domain-design`
+3. `docs/LEARNINGS.md` + `prototype/` - Direct context for quick features
 
 ---
 
@@ -29,73 +37,88 @@ This command creates a strategic implementation plan focused on sequencing, inte
 
 I'll help you create an implementation plan for: [topic from $ARGUMENTS]
 
-Let me start by reading any related design decision documents to understand the full scope.
+Let me check for existing context...
 
 Then continue immediately...
 
-### Step 2: Read Design Decision First
+### Step 2: Check for Existing Context
 
-**If design decision exists**:
-- Read `docs/development/design-decisions/decision-[name].md` fully
-- Extract: design decision, domain changes, integration points, pain points to monitor
-- Use this to inform targeted context gathering
+**Check for feature frame first**:
+- Look for `.scratch/frame-[feature-name].md`
+- If found: "Found feature frame. I'll use this for user stories, acceptance criteria, and scope boundaries."
 
-**If no design decision exists**:
-- Proceed directly to Step 3
+**Check for design decision**:
+- Look for `docs/development/design-decisions/decision-[name].md`
+- If found: "Found design decision. I'll use this for domain changes and integration points."
+
+**If neither exists** (quick feature mode):
+- "No frame or design decision found. This works for quick features."
+- "Let me gather context from LEARNINGS.md and the prototype..."
+
+Read the relevant input document(s) fully.
 
 ### Step 3: Build Focused Context
 
-Use `architecture-context-builder` to gather focused context (informed by design decision if available):
+**If using feature frame**:
+Extract from frame:
+- Problem statement
+- User stories (essential vs nice-to-have)
+- Acceptance criteria (these become TDD seeds)
+- Prototype contrast (what to preserve/change)
+- Scope boundaries (in/out of scope)
+- Open risks
 
-The context builder will spawn locators in parallel to find:
-- Essential domain model sections (minimal, focused)
-- Relevant code patterns and test examples
-- Key architectural decisions that constrain implementation
+**If using design decision**:
+Extract from design decision:
+- Design decision and rationale
+- Domain changes (new/modified/removed concepts)
+- Integration points
+- Pain points to monitor
+
+**For all cases**, explore prototype for context:
+
+Use `prototype-explorer` or direct exploration to find:
+- Current implementation patterns worth preserving
+- Code examples to reference for similar features
+- Test patterns to follow
 
 **Context Budget Target**: ~800-2000 tokens of focused references
 
-Wait for context builder to complete.
-
 ### Step 4: Optional Deep Dives
 
-[Only if architecture-context-builder flags areas needing deeper understanding]
+[Only if initial exploration flags areas needing deeper understanding]
 
-If context builder suggests deeper analysis:
-- Use `domain-analyzer` on [specific sections] to understand [specific aspect]
-- Use `code-analyzer` on [specific files] to understand [specific implementation]
-- Use `thoughts-locator` for [specific historical context]
+If you need deeper analysis:
+- Use `code-analyzer` on specific prototype files to understand current approach
+- Use `thoughts-locator` for historical context on design decisions
+- Read specific sections of `docs/LEARNINGS.md` for validated discoveries
 
-### Step 5: Read Additional Artifacts
-
-**If this modifies existing features**:
-- Read relevant sections of domain-model/ (from context builder)
-- Understand: current behavior, integration points, constraints
-
-### Step 6: Synthesize Understanding
+### Step 5: Synthesize Understanding
 
 Based on my research:
 
-**Domain Context** (from architecture-context-builder):
-- Key concepts: [list concepts, reference docs with file:line]
-- Relevant behaviors: [specific aspects]
-- Constraints: [specific rules to respect]
-
-**Code Patterns** (from context builder):
-- Implementation pattern to follow: `[file:line]` - [pattern name]
-- Test pattern to follow: `[test file:line]` - [approach]
-- Similar feature for reference: `[file:line]` - [what's relevant]
-
-**Architecture Decisions**:
-- [Relevant decision/principle]
-- [How it constrains this work]
+**From Feature Frame** (if applicable):
+- Problem: [problem statement]
+- Stories: [list with essential/nice-to-have]
+- Key acceptance criteria: [these seed TDD]
+- Scope: [in/out]
 
 **From Design Decision** (if applicable):
 - Design decision: [brief summary of chosen approach]
 - Domain changes: [new/modified/removed concepts]
 - Integration points: [systems affected]
-- Pain points to monitor: [known complexity areas from domain design]
+- Pain points to monitor: [known complexity areas]
 
-### Step 7: Ask Clarifying Questions
+**From Prototype Exploration**:
+- Implementation pattern to follow: `[file:line]` - [pattern name]
+- Test pattern to follow: `[test file:line]` - [approach]
+- Similar feature for reference: `[file:line]` - [what's relevant]
+
+**From LEARNINGS.md**:
+- Relevant validated discoveries: [list]
+- Workflows that feel natural: [list]
+
+### Step 6: Ask Clarifying Questions
 
 Questions that research and context couldn't answer:
 
@@ -107,7 +130,7 @@ Questions that research and context couldn't answer:
 - [Question about test coverage needs]
 - [Question about test data or scenarios]
 
-**Scope Boundaries**:
+**Scope Boundaries** (if no frame):
 - [Question about what's in/out of scope]
 - [Question about phasing decisions]
 
@@ -115,24 +138,24 @@ Questions that research and context couldn't answer:
 - [Question requiring human judgment]
 - [Question about non-functional requirements]
 
-Only ask questions you genuinely cannot answer from the architectural context.
+Only ask questions you genuinely cannot answer from the context.
 
 Then WAIT for user responses before proceeding.
 
-### Step 8: After User Responses
+### Step 7: After User Responses
 
-Thank you. Based on your input and the architectural context, I'll create the strategic implementation plan.
+Thank you. Based on your input and the context, I'll create the strategic implementation plan.
 
-### Step 9: Generate Strategic Implementation Plan
+### Step 8: Generate Strategic Implementation Plan
 
 Create a TIP at `docs/development/tips/tip-[feature-name].md`.
 
 **IMPORTANT - What belongs in the TIP**:
-- ✅ Strategic phase groupings ("Refactor domain model", "Update event sourcing")
+- ✅ Strategic phase groupings
 - ✅ Sequencing rationale (why this order, dependencies)
 - ✅ Integration points awareness (what systems are affected)
 - ✅ Risk assessment and mitigation strategies
-- ✅ High-level test strategy direction
+- ✅ High-level test strategy direction (TDD seeds from acceptance criteria)
 - ✅ Effort estimates per phase
 
 **What does NOT belong in the TIP** (plan-tasks will add these):
@@ -150,18 +173,20 @@ The TIP should include:
 date: YYYY-MM-DD
 feature: [feature-name]
 status: draft
-related_domain_design: [path if exists]
+frame: .scratch/frame-[feature-name].md  # or "none"
 estimated_effort: [XS/S/M/L/XL]
 confidence: [High/Medium/Low]
 tags: [relevant, tags]
 ---
 ```
 
-**Domain Context Section**:
-- List relevant domain-model/ docs
-- Summarize key concepts (reference, don't reproduce)
-- Note domain changes if from a domain design
-- **Keep references at doc level, not file:line level**
+**Context Section**:
+- Problem statement (from frame or LEARNINGS.md)
+- User stories if from frame (essential vs nice-to-have)
+- Key acceptance criteria (TDD seeds)
+- Scope boundaries (in/out of scope)
+- Relevant prototype patterns to follow
+- Key learnings that inform this feature
 
 **Implementation Phases** (Use as many as needed - could be 2, could be 10):
 For each phase:
@@ -170,10 +195,13 @@ For each phase:
 
 **Purpose**: [What this accomplishes and why it's sequenced here]
 
-**Scope**: [High-level areas of work - domain model, events, API, etc.]
+**Scope**: [High-level areas of work - domain model, API, UI, BAML, etc.]
+
+**TDD Focus**:
+- [Acceptance criterion this phase addresses]
+- Test approach: [Unit/Integration/E2E]
 
 **Key Considerations**:
-- TDD: Write tests for new behavior before implementation
 - [Important design decision or constraint]
 - [Integration point to be aware of]
 - [Technical challenge to address]
@@ -192,14 +220,14 @@ For each phase:
 **High-Level Test Strategy** (TDD throughout):
 - Test-driven approach with red-green-refactor cycle per phase
 - What kinds of tests are needed (unit, integration, e2e)
-- Key scenarios to validate (happy path, edge cases, error handling)
+- Key scenarios to validate (from acceptance criteria)
 - Testing approach per phase
 - **Do NOT specify exact test names or assertions**
 
 **Integration Points**:
-- Backend: [General areas - API, domain model, events, persistence]
+- Backend: [General areas - API, models, services]
 - Frontend: [General areas - components, state, UI flows]
-- External: [Services, LLMs, etc.]
+- BAML: [Prompt changes if applicable]
 - **Identify WHAT will be affected, not HOW to change it**
 
 **Library Research** (only if needed):
@@ -215,8 +243,8 @@ For each phase:
 
 **Implementation Notes**:
 - **TDD**: Test-Driven Development throughout all phases
-- Architectural patterns to follow (reference docs)
-- Key principles to maintain
+- Prototype patterns to follow (with file references)
+- Prototype patterns to change (with rationale)
 - Quality gates
 - **General guidance, not specific code examples**
 
@@ -225,7 +253,7 @@ For each phase:
 - Confidence level (High/Medium/Low)
 - Justification: What drives complexity (novel patterns, integration points, decision density, steering needs)
 
-### Step 10: Present for Review
+### Step 9: Present for Review
 
 I've created the strategic implementation plan at:
 `docs/development/tips/tip-[feature-name].md`
@@ -255,7 +283,7 @@ Please review the plan and let me know:
 
 Then WAIT for user feedback and approval.
 
-### Step 11: After Approval
+### Step 10: After Approval
 
 Great! The strategic plan is approved and ready for detailed task breakdown.
 
@@ -266,13 +294,32 @@ Great! The strategic plan is approved and ready for detailed task breakdown.
 
 ---
 
+## Quick Feature Mode
+
+For small, obvious features without a frame:
+
+**When to skip frame-feature**:
+- Feature is straightforward (e.g., "fix quantity editing regression")
+- Scope is clear from LEARNINGS.md
+- No user story ambiguity
+- Single pain point with obvious solution
+
+**Process adjustments**:
+- Read LEARNINGS.md directly for context
+- Explore prototype for current implementation
+- Include brief problem statement in TIP (from learnings)
+- Implicit acceptance criteria (what "done" looks like)
+- Same phase structure, just lighter context section
+
+---
+
 ## Quality Guidelines
 
 **Good TIPs Focus On**:
 - Strategic sequencing (why this order)
 - Integration awareness (what's affected)
 - Risk management (what could go wrong)
-- Test strategy direction (what needs testing)
+- Test strategy direction (TDD seeds from acceptance criteria)
 - Effort estimates (how much work)
 
 **Good TIPs Avoid**:
@@ -293,17 +340,16 @@ Great! The strategic plan is approved and ready for detailed task breakdown.
   - Minimize coordination overhead
 
 **Context Efficiency**:
-- Use architecture-context-builder first - it's designed for this
-- Only use specific locators/analyzers if you need to go deeper
+- Feature frame is your primary context source when available
+- Use prototype exploration to find patterns worth preserving
+- Only use specific analyzers if you need to go deeper
 - Don't gather context you won't use in the plan
 - Quality over quantity - focused context beats comprehensive
 
 **Agent Usage Tips**:
-- Architecture-context-builder is your primary tool - trust it
-- Only spawn additional agents if context builder suggests it
-- Code-analyzer for understanding complex existing implementations
-- Domain-analyzer if domain model sections need deeper synthesis
-- Thoughts-locator rarely needed (usually for brownfield projects)
+- For MVP: LEARNINGS.md + prototype exploration covers most needs
+- Use code-analyzer for understanding complex prototype implementations
+- Use thoughts-locator rarely (for historical context on past decisions)
 
 **Complexity Estimate Guidance**:
 
@@ -316,22 +362,37 @@ Great! The strategic plan is approved and ready for detailed task breakdown.
   - Example: Create new endpoint using existing endpoint as template
 
 - **M (Moderate)**: Some novel patterns, multiple integration points, regular oversight needed
-  - Example: Add event sourcing to new domain concept with multiple projections
+  - Example: New feature with multiple components but clear prototype patterns
 
 - **L (Complex)**: Novel approach, many architectural decisions, frequent steering required
-  - Example: Implement new bounded context with custom patterns
+  - Example: Feature requiring new patterns not in prototype
 
 - **XL (Very Complex)**: Unclear patterns, extensive decision-making, continuous collaboration
   - Example: Major refactor affecting multiple systems with new architectural patterns
 
 **Complexity Factors**:
-- Pattern novelty: Can Claude follow existing examples or forge new ground?
+- Pattern novelty: Can Claude follow existing prototype examples or forge new ground?
 - Decision density: How many judgment calls required?
 - Context coordination: How much context must be held across files/systems?
 - Integration points: How many systems must coordinate?
 - Steering likelihood: How much human course-correction expected?
 
 Complexity is per-phase; overall complexity considers how phases build on each other.
+
+---
+
+## Integration with Other Commands
+
+**Input from**:
+- `frame-feature` (`.scratch/frame-[feature-name].md`) - preferred for MVP
+- `explore-domain-design` (`docs/development/design-decisions/decision-[name].md`) - for architectural decisions
+- Direct (LEARNINGS.md + prototype) - for quick features
+
+**Output to**: `plan-tasks` reads TIP and adds detailed tasks
+
+**If architectural uncertainty surfaces**: Use `explore-domain-design` before continuing
+
+**After implementation**: Delete TIP (code becomes source of truth)
 
 ---
 

@@ -172,3 +172,168 @@ function GenerateSingleRecipe(
     {{ ctx.output_format }}
   "#
 }
+
+// Generate a pitch from an existing recipe (reverse direction)
+function GeneratePitchFromRecipe(
+  recipe_name: string,
+  recipe_ingredients: string,
+  recipe_instructions: string,
+  recipe_description: string
+) -> RecipePitch {
+  client Anthropic
+  prompt #"
+    You are creating a compelling pitch for an existing recipe.
+
+    Your goal is to capture the ESSENCE and CHARACTER of this recipe in a browsable pitch format.
+
+    <recipe>
+    Name: {{ recipe_name }}
+
+    {% if recipe_description %}
+    Description: {{ recipe_description }}
+    {% endif %}
+
+    Ingredients:
+    {{ recipe_ingredients }}
+
+    Instructions:
+    {{ recipe_instructions }}
+    </recipe>
+
+    Generate a RecipePitch that:
+    1. Preserves the VOICE and CHARACTER of the original recipe
+       - If the recipe has a personal story, reflect that in the blurb
+       - If it mentions cultural context, honor that
+       - If it has dramatic language ("bravery", "patience"), keep that energy
+
+    2. Accurately represents the EFFORT and TECHNIQUE
+       - If it's a slow braise, the pitch should suggest that
+       - If it's a quick weeknight meal, convey speed
+       - If it has unusual techniques (charring, flipping), hint at that
+
+    3. Highlights the CORE INGREDIENTS that define the dish
+       - Focus on what makes this recipe distinctive
+       - List 3-5 key ingredients (not every ingredient)
+
+    4. Creates ACCURATE EXPECTATIONS
+       - The blurb should set up what the fleshed-out recipe will deliver
+       - Don't promise something the recipe doesn't provide
+       - If it's complex, don't make it sound simple
+
+    IMPORTANT - Pitch Structure:
+    - name: Use the exact recipe name
+    - blurb: ONE evocative sentence capturing the recipe's character/appeal
+    - why_make_this: 3-5 words capturing practical benefit
+    - key_ingredients: 3-5 main ingredients (semantic names, not quantities)
+    - explicit_ingredients: For this test, mark all ingredients as from "Test Store"
+    - active_time_minutes: Estimate based on instructions
+
+    {{ ctx.output_format }}
+  "#
+}
+
+// Fidelity scoring across multiple dimensions
+class FidelityScore {
+  ingredient_alignment int @description("0-100: Do core ingredients match between original and generated?")
+  ingredient_reasoning string @description("Explanation of ingredient alignment score")
+
+  effort_alignment int @description("0-100: Is time/complexity/technique as expected?")
+  effort_reasoning string @description("Explanation of effort alignment score")
+
+  experience_alignment int @description("0-100: Does generated recipe deliver on pitch/original's promise?")
+  experience_reasoning string @description("Explanation of experience alignment score")
+
+  character_preservation int @description("0-100: Is the voice, style, and personality preserved?")
+  character_reasoning string @description("Explanation of character preservation score")
+
+  overall_score int @description("0-100: Overall fidelity (weighted average)")
+  overall_assessment string @description("Summary assessment of fidelity")
+}
+
+// Judge fidelity: Does the round-trip maintain recipe identity?
+function JudgeFidelity(
+  original_recipe_name: string,
+  original_recipe_description: string,
+  original_ingredients: string,
+  original_instructions: string,
+  pitch_name: string,
+  pitch_blurb: string,
+  pitch_why_make_this: string,
+  generated_recipe_name: string,
+  generated_ingredients: string,
+  generated_instructions: string
+) -> FidelityScore {
+  client Anthropic
+  prompt #"
+    You are evaluating whether a recipe survived a round-trip transformation:
+    Original Recipe → Pitch → Generated Recipe
+
+    Your job is to assess FIDELITY across multiple dimensions.
+
+    <original-recipe>
+    Name: {{ original_recipe_name }}
+    {% if original_recipe_description %}
+    Description: {{ original_recipe_description }}
+    {% endif %}
+
+    Ingredients:
+    {{ original_ingredients }}
+
+    Instructions:
+    {{ original_instructions }}
+    </original-recipe>
+
+    <pitch>
+    Name: {{ pitch_name }}
+    Blurb: {{ pitch_blurb }}
+    Why Make This: {{ pitch_why_make_this }}
+    </pitch>
+
+    <generated-recipe>
+    Name: {{ generated_recipe_name }}
+
+    Ingredients:
+    {{ generated_ingredients }}
+
+    Instructions:
+    {{ generated_instructions }}
+    </generated-recipe>
+
+    Evaluate fidelity across these dimensions:
+
+    1. INGREDIENT ALIGNMENT (0-100)
+       - Do the core/defining ingredients match?
+       - Minor substitutions are OK (e.g., "yellow onion" vs "white onion")
+       - Major omissions or additions should lower score
+       - Focus on IDENTITY-DEFINING ingredients, not every detail
+
+    2. EFFORT ALIGNMENT (0-100)
+       - Is the time commitment similar?
+       - Is the technique complexity similar?
+       - Would someone selecting the pitch get what they expected?
+       - 10-min difference in time is OK; 30+ min is not
+
+    3. EXPERIENCE ALIGNMENT (0-100)
+       - Does the generated recipe deliver on the pitch's promise?
+       - If pitch said "comfort food", is generated recipe comforting?
+       - If pitch suggested "quick weeknight", is it actually quick?
+       - Does it fulfill the emotional/sensory expectations?
+
+    4. CHARACTER PRESERVATION (0-100)
+       - If original had distinctive voice, is it preserved?
+       - If original had cultural context, is it honored?
+       - If original had dramatic language ("bravery", "patience"), is that energy maintained?
+       - Would someone who loved the original recognize this version?
+
+    5. OVERALL SCORE (0-100)
+       Calculate weighted average:
+       - Ingredient alignment: 30%
+       - Effort alignment: 25%
+       - Experience alignment: 25%
+       - Character preservation: 20%
+
+    Be honest and specific in your reasoning. This is a research evaluation.
+
+    {{ ctx.output_format }}
+  "#
+}

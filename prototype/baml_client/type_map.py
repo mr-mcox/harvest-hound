@@ -16,6 +16,9 @@ from . import stream_types
 
 type_map = {
 
+    "types.FidelityScore": types.FidelityScore,
+    "stream_types.FidelityScore": stream_types.FidelityScore,
+
     "types.Ingredient": types.Ingredient,
     "stream_types.Ingredient": stream_types.Ingredient,
 

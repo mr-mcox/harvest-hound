@@ -117,6 +117,34 @@
   - Open question: How to implement this judge? Separate BAML call? Constraints in generation?
   - (discovered: ingredient-claiming experiment, 2025-11-30)
 
+- [x] **Pitch as projection, not entity**: Architectural clarity achieved
+  - Pitch = ephemeral view/projection of recipe concept (not separate entity)
+  - Recipe = aggregate root (canonical, reusable, long-lived)
+  - Multiple pitches can point to same underlying recipe (session-scoped, disposable)
+  - Don't need lineage tracking (pitch → recipe history)
+  - Bidirectional promise-keeping: pitch→recipe AND recipe→pitch must be faithful
+  - (discovered: pitch-recipe-identity experiment, 2025-12-02)
+
+- [x] **Functional fidelity > character preservation**: What matters in recipe generation
+  - Technique fidelity is CRITICAL: "flip every 4-7 minutes" vs "move around with tongs" = broken dish
+  - Example: Spaghetti All'Assassina requires specific flipping technique for crispy bottom
+  - Character/tone preservation doesn't matter (style can adapt)
+  - Contextual adaptations are FEATURES not bugs:
+    - Kid-friendly modifications (less spicy, familiar flavors)
+    - Pantry substitutions (dried herbs instead of fresh)
+    - These improve usability, don't break recipe identity
+  - Judge dimensions that matter: ingredient compatibility, technique preservation, effort alignment
+  - Judge dimensions that don't: character, writing style, tone
+  - (discovered: pitch-recipe-identity experiment, 2025-12-02)
+
+- [x] **POINTER vs GENERATIVE pitches**: Two distinct patterns (deferred for MVP)
+  - POINTER pitches: Reference existing canonical recipe (NYT clip → should return original)
+  - GENERATIVE pitches: Novel recipe creation from inventory
+  - Different handling: POINTER returns stored recipe, GENERATIVE creates new
+  - For MVP: Skip POINTER entirely (clipped recipes + mixed workflow too complex for prototype)
+  - For MVP: Only GENERATIVE pitches from inventory
+  - (discovered: pitch-recipe-identity experiment, 2025-12-02)
+
 - [x] **Time representation needs refinement**: Both active AND total time matter
   - Current: only shows active time in pitches
   - Want: active + total time visible
@@ -385,6 +413,16 @@
   - Validates: Fresh ingredients are high priority, need multiple creative options
   - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
 
+- [x] **Round-trip fidelity testing**: Recipe→Pitch→Recipe validates technique preservation
+  - Approach: Take human-crafted recipe → generate pitch → flesh out → judge fidelity
+  - Test corpus: 4 characterful recipes (Kimchi Carbonara, Spaghetti All'Assassina, Chicken Yassa, Haluski)
+  - Results: 69.5% overall fidelity (medium-low)
+    - Ingredient: 66.75%, Effort: 85.25%, Experience: 71%, Character: 50.5%
+  - Key finding: Technique drift breaks recipes (flip vs toss = different dish)
+  - Validated: Can measure fidelity, but character scoring was wrong dimension
+  - Experiment sufficient for architectural clarity, not worth implementing for prototype
+  - (discovered: pitch-recipe-identity experiment, 2025-12-02)
+
 ### API Shapes That Feel Right
 - [x] **GET endpoint with query params for SSE**: EventSource compatibility matters
   - POST with request body doesn't work with EventSource
@@ -530,6 +568,20 @@
   - No need for "abandon all", "reorder", or other batch operations
   - Individual recipe management sufficient for 5-7 planned recipes per week
   - (discovered: recipe-persistence experiment, 2025-12-01)
+
+- [x] **POINTER vs GENERATIVE pitch distinction**: Too complex for prototype/MVP
+  - Mixed workflow (clipped recipes + generated recipes) is overengineered
+  - Clipped recipe storage and retrieval adds complexity without validating core hypothesis
+  - MVP: Focus only on GENERATIVE pitches from inventory
+  - Post-MVP consideration: Recipe library + reuse workflow could be valuable later
+  - (discovered: pitch-recipe-identity experiment, 2025-12-02)
+
+- [x] **Character preservation in fidelity**: Doesn't matter for recipe quality
+  - Character/tone/writing style can adapt freely
+  - User cares about functional fidelity (will recipe work?), not prose quality
+  - Kid-friendly adaptations and pantry substitutions improve usability
+  - Technique preservation is what matters, not character consistency
+  - (discovered: pitch-recipe-identity experiment, 2025-12-02)
 
 ## UI/UX Discoveries
 

@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["Ingredient","InventoryParsingResult","Recipe","RecipeIngredient","RecipePitch",]
+          ["FidelityScore","Ingredient","InventoryParsingResult","Recipe","RecipeIngredient","RecipePitch",]
         ), enums=set(
           []
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -31,8 +31,12 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 5
+    # Generated classes 6
     # #########################################################################
+
+    @property
+    def FidelityScore(self) -> "FidelityScoreViewer":
+        return FidelityScoreViewer(self)
 
     @property
     def Ingredient(self) -> "IngredientViewer":
@@ -62,8 +66,83 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated classes 5
+# Generated classes 6
 # #########################################################################
+
+class FidelityScoreAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("FidelityScore")
+        self._properties: typing.Set[str] = set([  "ingredient_alignment",  "ingredient_reasoning",  "effort_alignment",  "effort_reasoning",  "experience_alignment",  "experience_reasoning",  "character_preservation",  "character_reasoning",  "overall_score",  "overall_assessment",  ])
+        self._props = FidelityScoreProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "FidelityScoreProperties":
+        return self._props
+
+
+class FidelityScoreViewer(FidelityScoreAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class FidelityScoreProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def ingredient_alignment(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("ingredient_alignment"))
+    
+    @property
+    def ingredient_reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("ingredient_reasoning"))
+    
+    @property
+    def effort_alignment(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("effort_alignment"))
+    
+    @property
+    def effort_reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("effort_reasoning"))
+    
+    @property
+    def experience_alignment(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("experience_alignment"))
+    
+    @property
+    def experience_reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("experience_reasoning"))
+    
+    @property
+    def character_preservation(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("character_preservation"))
+    
+    @property
+    def character_reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("character_reasoning"))
+    
+    @property
+    def overall_score(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("overall_score"))
+    
+    @property
+    def overall_assessment(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("overall_assessment"))
+    
+    
+
 
 class IngredientAst:
     def __init__(self, tb: type_builder.TypeBuilder):

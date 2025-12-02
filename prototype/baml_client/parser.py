@@ -30,6 +30,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="request")
         return typing.cast(types.InventoryParsingResult, result)
 
+    def GeneratePitchFromRecipe(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.RecipePitch:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GeneratePitchFromRecipe", llm_response=llm_response, mode="request")
+        return typing.cast(types.RecipePitch, result)
+
     def GenerateRecipePitches(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> typing.List["types.RecipePitch"]:
@@ -41,6 +47,12 @@ class LlmResponseParser:
     ) -> types.Recipe:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateSingleRecipe", llm_response=llm_response, mode="request")
         return typing.cast(types.Recipe, result)
+
+    def JudgeFidelity(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.FidelityScore:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="JudgeFidelity", llm_response=llm_response, mode="request")
+        return typing.cast(types.FidelityScore, result)
 
     
 
@@ -56,6 +68,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.InventoryParsingResult, result)
 
+    def GeneratePitchFromRecipe(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.RecipePitch:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GeneratePitchFromRecipe", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.RecipePitch, result)
+
     def GenerateRecipePitches(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> typing.List["stream_types.RecipePitch"]:
@@ -67,5 +85,11 @@ class LlmStreamParser:
     ) -> stream_types.Recipe:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GenerateSingleRecipe", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.Recipe, result)
+
+    def JudgeFidelity(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.FidelityScore:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="JudgeFidelity", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.FidelityScore, result)
 
     

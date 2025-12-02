@@ -87,9 +87,24 @@ Suggests different views:
 3. **Prototype judge**: Can BAML evaluate if fleshed recipe matches pitch promise?
 4. **Explore recipe variants**: If user tweaks a recipe, is it a new recipe or same recipe modified?
 
-## Current Decision
+## Resolution
 
-**Defer** - Keep separate for now (Pitch and Recipe as distinct entities)
-- Works for current prototype
-- Low risk: can refactor later once we understand the relationship better
-- Gather more data on equivalence and session tracking needs
+**RESOLVED** (2025-12-02, pitch-recipe-identity experiment)
+
+**Conceptual Model**: Option C - Pitch as Projection
+- Recipe is the aggregate root (canonical, reusable, long-lived)
+- Pitch is an ephemeral projection/view of recipe concept
+- Multiple pitches can reference same underlying recipe concept
+- Don't need to track lineage (pitch → recipe history) for MVP
+
+**For MVP Implementation**: Keep separate for simplicity
+- Pitch and Recipe remain distinct entities in code
+- No shared state management needed
+- Simpler to implement, easier to understand
+- Can refactor later if recipe reuse/library becomes important
+
+**Key Insights**:
+- Bidirectional promise-keeping matters: pitch→recipe AND recipe→pitch must be faithful
+- POINTER vs GENERATIVE pitch distinction exists but is too complex for prototype
+- MVP focuses only on GENERATIVE pitches from inventory
+- Clipped recipes + mixed workflow deferred to post-MVP

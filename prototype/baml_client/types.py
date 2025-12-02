@@ -41,8 +41,20 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (5)
+# Generated classes (6)
 # #########################################################################
+
+class FidelityScore(BaseModel):
+    ingredient_alignment: int
+    ingredient_reasoning: str
+    effort_alignment: int
+    effort_reasoning: str
+    experience_alignment: int
+    experience_reasoning: str
+    character_preservation: int
+    character_reasoning: str
+    overall_score: int
+    overall_assessment: str
 
 class Ingredient(BaseModel):
     name: str

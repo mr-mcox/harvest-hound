@@ -105,6 +105,20 @@ class BamlSyncClient:
                 "text": text,"store_context": store_context,
             })
             return typing.cast(types.InventoryParsingResult, result.cast_to(types, types, stream_types, False, __runtime__))
+    def GeneratePitchFromRecipe(self, recipe_name: str,recipe_ingredients: str,recipe_instructions: str,recipe_description: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.RecipePitch:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            stream = self.stream.GeneratePitchFromRecipe(recipe_name=recipe_name,recipe_ingredients=recipe_ingredients,recipe_instructions=recipe_instructions,recipe_description=recipe_description,
+                baml_options=baml_options)
+            return stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = self.__options.merge_options(baml_options).call_function_sync(function_name="GeneratePitchFromRecipe", args={
+                "recipe_name": recipe_name,"recipe_ingredients": recipe_ingredients,"recipe_instructions": recipe_instructions,"recipe_description": recipe_description,
+            })
+            return typing.cast(types.RecipePitch, result.cast_to(types, types, stream_types, False, __runtime__))
     def GenerateRecipePitches(self, explicit_stores: str,definition_stores: str,additional_context: str,num_pitches: int,
         baml_options: BamlCallOptions = {},
     ) -> typing.List["types.RecipePitch"]:
@@ -133,6 +147,20 @@ class BamlSyncClient:
                 "explicit_stores": explicit_stores,"definition_stores": definition_stores,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,
             })
             return typing.cast(types.Recipe, result.cast_to(types, types, stream_types, False, __runtime__))
+    def JudgeFidelity(self, original_recipe_name: str,original_recipe_description: str,original_ingredients: str,original_instructions: str,pitch_name: str,pitch_blurb: str,pitch_why_make_this: str,generated_recipe_name: str,generated_ingredients: str,generated_instructions: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.FidelityScore:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            stream = self.stream.JudgeFidelity(original_recipe_name=original_recipe_name,original_recipe_description=original_recipe_description,original_ingredients=original_ingredients,original_instructions=original_instructions,pitch_name=pitch_name,pitch_blurb=pitch_blurb,pitch_why_make_this=pitch_why_make_this,generated_recipe_name=generated_recipe_name,generated_ingredients=generated_ingredients,generated_instructions=generated_instructions,
+                baml_options=baml_options)
+            return stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = self.__options.merge_options(baml_options).call_function_sync(function_name="JudgeFidelity", args={
+                "original_recipe_name": original_recipe_name,"original_recipe_description": original_recipe_description,"original_ingredients": original_ingredients,"original_instructions": original_instructions,"pitch_name": pitch_name,"pitch_blurb": pitch_blurb,"pitch_why_make_this": pitch_why_make_this,"generated_recipe_name": generated_recipe_name,"generated_ingredients": generated_ingredients,"generated_instructions": generated_instructions,
+            })
+            return typing.cast(types.FidelityScore, result.cast_to(types, types, stream_types, False, __runtime__))
     
 
 
@@ -152,6 +180,18 @@ class BamlStreamClient:
           result,
           lambda x: typing.cast(stream_types.InventoryParsingResult, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.InventoryParsingResult, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def GeneratePitchFromRecipe(self, recipe_name: str,recipe_ingredients: str,recipe_instructions: str,recipe_description: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlSyncStream[stream_types.RecipePitch, types.RecipePitch]:
+        ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="GeneratePitchFromRecipe", args={
+            "recipe_name": recipe_name,"recipe_ingredients": recipe_ingredients,"recipe_instructions": recipe_instructions,"recipe_description": recipe_description,
+        })
+        return baml_py.BamlSyncStream[stream_types.RecipePitch, types.RecipePitch](
+          result,
+          lambda x: typing.cast(stream_types.RecipePitch, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.RecipePitch, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def GenerateRecipePitches(self, explicit_stores: str,definition_stores: str,additional_context: str,num_pitches: int,
@@ -178,6 +218,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.Recipe, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def JudgeFidelity(self, original_recipe_name: str,original_recipe_description: str,original_ingredients: str,original_instructions: str,pitch_name: str,pitch_blurb: str,pitch_why_make_this: str,generated_recipe_name: str,generated_ingredients: str,generated_instructions: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlSyncStream[stream_types.FidelityScore, types.FidelityScore]:
+        ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="JudgeFidelity", args={
+            "original_recipe_name": original_recipe_name,"original_recipe_description": original_recipe_description,"original_ingredients": original_ingredients,"original_instructions": original_instructions,"pitch_name": pitch_name,"pitch_blurb": pitch_blurb,"pitch_why_make_this": pitch_why_make_this,"generated_recipe_name": generated_recipe_name,"generated_ingredients": generated_ingredients,"generated_instructions": generated_instructions,
+        })
+        return baml_py.BamlSyncStream[stream_types.FidelityScore, types.FidelityScore](
+          result,
+          lambda x: typing.cast(stream_types.FidelityScore, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.FidelityScore, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     
 
 class BamlHttpRequestClient:
@@ -193,6 +245,13 @@ class BamlHttpRequestClient:
             "text": text,"store_context": store_context,
         }, mode="request")
         return result
+    def GeneratePitchFromRecipe(self, recipe_name: str,recipe_ingredients: str,recipe_instructions: str,recipe_description: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GeneratePitchFromRecipe", args={
+            "recipe_name": recipe_name,"recipe_ingredients": recipe_ingredients,"recipe_instructions": recipe_instructions,"recipe_description": recipe_description,
+        }, mode="request")
+        return result
     def GenerateRecipePitches(self, explicit_stores: str,definition_stores: str,additional_context: str,num_pitches: int,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -205,6 +264,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSingleRecipe", args={
             "explicit_stores": explicit_stores,"definition_stores": definition_stores,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,
+        }, mode="request")
+        return result
+    def JudgeFidelity(self, original_recipe_name: str,original_recipe_description: str,original_ingredients: str,original_instructions: str,pitch_name: str,pitch_blurb: str,pitch_why_make_this: str,generated_recipe_name: str,generated_ingredients: str,generated_instructions: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="JudgeFidelity", args={
+            "original_recipe_name": original_recipe_name,"original_recipe_description": original_recipe_description,"original_ingredients": original_ingredients,"original_instructions": original_instructions,"pitch_name": pitch_name,"pitch_blurb": pitch_blurb,"pitch_why_make_this": pitch_why_make_this,"generated_recipe_name": generated_recipe_name,"generated_ingredients": generated_ingredients,"generated_instructions": generated_instructions,
         }, mode="request")
         return result
     
@@ -222,6 +288,13 @@ class BamlHttpStreamRequestClient:
             "text": text,"store_context": store_context,
         }, mode="stream")
         return result
+    def GeneratePitchFromRecipe(self, recipe_name: str,recipe_ingredients: str,recipe_instructions: str,recipe_description: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GeneratePitchFromRecipe", args={
+            "recipe_name": recipe_name,"recipe_ingredients": recipe_ingredients,"recipe_instructions": recipe_instructions,"recipe_description": recipe_description,
+        }, mode="stream")
+        return result
     def GenerateRecipePitches(self, explicit_stores: str,definition_stores: str,additional_context: str,num_pitches: int,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -234,6 +307,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateSingleRecipe", args={
             "explicit_stores": explicit_stores,"definition_stores": definition_stores,"additional_context": additional_context,"recipes_already_generated": recipes_already_generated,
+        }, mode="stream")
+        return result
+    def JudgeFidelity(self, original_recipe_name: str,original_recipe_description: str,original_ingredients: str,original_instructions: str,pitch_name: str,pitch_blurb: str,pitch_why_make_this: str,generated_recipe_name: str,generated_ingredients: str,generated_instructions: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="JudgeFidelity", args={
+            "original_recipe_name": original_recipe_name,"original_recipe_description": original_recipe_description,"original_ingredients": original_ingredients,"original_instructions": original_instructions,"pitch_name": pitch_name,"pitch_blurb": pitch_blurb,"pitch_why_make_this": pitch_why_make_this,"generated_recipe_name": generated_recipe_name,"generated_ingredients": generated_ingredients,"generated_instructions": generated_instructions,
         }, mode="stream")
         return result
     

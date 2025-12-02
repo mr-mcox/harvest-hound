@@ -23,8 +23,20 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (5)
+# Generated classes (6)
 # #########################################################################
+
+class FidelityScore(BaseModel):
+    ingredient_alignment: typing.Optional[int] = None
+    ingredient_reasoning: typing.Optional[str] = None
+    effort_alignment: typing.Optional[int] = None
+    effort_reasoning: typing.Optional[str] = None
+    experience_alignment: typing.Optional[int] = None
+    experience_reasoning: typing.Optional[str] = None
+    character_preservation: typing.Optional[int] = None
+    character_reasoning: typing.Optional[str] = None
+    overall_score: typing.Optional[int] = None
+    overall_assessment: typing.Optional[str] = None
 
 class Ingredient(BaseModel):
     name: typing.Optional[str] = None
