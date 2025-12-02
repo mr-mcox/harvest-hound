@@ -142,14 +142,62 @@ Planned Recipes:
 - `GET /api/ingredients/{name}/claims` - Which recipes claim this ingredient
 - Extend existing `/api/recipes/planned` to include claim details (already done)
 
+## Latest Exploration - Table View Emerging
+
+**Date**: 2025-12-01 (ingredient-priority experiment)
+
+### User Feedback on Visibility Needs
+
+User confirmed the need for claim visibility with specific requirements:
+
+> "We're probably going to want a table treatment in the long run with the ability to change inventory, location, what's unclaimed, links to recipes that are claiming it."
+
+**Current State**:
+- Flat ingredient list with priority implemented (60% of actual inventory already feels long)
+- Recipe list with claims exists in "My Planned Recipes" section
+- But no way to see which ingredients are unclaimed or filter by claim status
+
+**Emerging Solution: Option A Evolution → Inventory Management Table**
+
+Combines ingredient-centric view with filtering and editing capabilities:
+
+```
+Columns:
+- Ingredient name
+- Quantity (editable inline)
+- Location (e.g., chest freezer, refrigerator)
+- Priority (editable inline via dropdown)
+- Claims status (unclaimed / partially claimed / fully claimed)
+- Recipe links (clickable to see which recipes claim it)
+
+Filters:
+- By location (for audit: "show chest freezer items")
+- By claim status (unclaimed / claimed)
+- By priority (urgent / high / medium / low)
+
+Future enhancement:
+- Sort by priority, color code rows by location
+```
+
+**Why Table View**:
+- List is already long with 60% of inventory
+- Need structured layout for multiple dimensions (quantity, location, priority, claims)
+- Filtering essential for large inventories
+- Bidirectional linking (ingredients ↔ recipes) fits table paradigm
+
+**Implementation Note**: Post-prototype concern but validated as necessary direction
+
 ## Next Steps to Explore
 
-1. **Start with Option B** (Recipe list with claims) - already implemented in "My Planned Recipes"
-2. **Add unclaimed ingredient view** - simple list of ingredients with no claims
-3. **Test if that's sufficient** for the week-by-week n=5-7 use case
-4. **Iterate to Option A or D** if users need more granular ingredient visibility
+1. ~~**Start with Option B** (Recipe list with claims) - already implemented in "My Planned Recipes"~~ ✅ DONE
+2. ~~**Add unclaimed ingredient view** - simple list of ingredients with no claims~~ ❌ SKIP - table view more comprehensive
+3. **Prototype table view** with key columns (ingredient, quantity, priority, claims)
+4. **Add location filtering** for audit use case ("verify chest freezer")
+5. **Add claim filtering** for planning use case ("what's unclaimed this week?")
+6. **Test if table view is sufficient** for the week-by-week n=5-7 + full inventory management
 
 ## Related Questions
 
-- **UI organization** (`ui-organization.md`) - This ties into broader view management needs
+- **UI organization** (`ui-organization.md`) - Table view is a dedicated inventory management interface, separate from meal planning view
 - **Week planning criteria** - Unclaimed ingredients could feed back into "generate side dishes" flow
+- **store-claiming-semantics.md** - Location column in table aligns with location metadata direction

@@ -130,6 +130,33 @@
   - Helps system generate balanced variety for the week
   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
 
+- [x] **Location replaces Store concept**: Store evolved into location metadata
+  - "Store" concept successfully eliminated from user mental model
+  - Location is organizational metadata (chest freezer, refrigerator, cellar, pantry)
+  - User didn't even notice store selection existed (auto-created "My Inventory" worked invisibly)
+  - Location matters for audit/review ("verify chest freezer has all our meat")
+  - Location does NOT drive recipe generation - priority does
+  - LLM can guess location during parsing (frozen meat → chest freezer, bacon → refrigerator)
+  - User reaction: "The store concept fades away"
+  - (discovered: ingredient-priority experiment, 2025-12-01)
+
+- [x] **Priority drives recipe importance**: Location informs priority, priority drives recipes
+  - Priority values: low (pantry-level), medium (normal), high (use soon), urgent (spoiling)
+  - Location explains WHY something has a priority: frozen meat → low, fridge bacon → high
+  - Priority visible in UI, location is background metadata explaining the rating
+  - Normal distribution is healthy (lots in medium is expected and good)
+  - Low priority barely above pantry staples (not worth tracking oats, flour, etc.)
+  - User reaction: "Makes a lot of sense"
+  - (discovered: ingredient-priority experiment, 2025-12-01)
+
+- [x] **Ingredient dimensions are orthogonal**: Priority, location, optionality are independent
+  - Priority: How urgently should this be used (meal planning priority)
+  - Location: Where is it stored (audit/organization)
+  - Optionality: Is it required for recipe (not yet implemented)
+  - Each dimension serves different purpose, don't conflate them
+  - Validates separation of concerns in ingredient metadata
+  - (discovered: ingredient-priority experiment, 2025-12-01)
+
 - [ ] Ingredient complexity level:
 
 ### Workflows That Feel Natural
@@ -196,6 +223,21 @@
    - Page becomes central hub to return to throughout week
    - User reaction: "Feels a lot more authentic"
    - (discovered: recipe-persistence experiment, 2025-12-01)
+
+10. [x] **Flat ingredient view with priority**: Single list sorted by priority
+    - Reduces cognitive load vs store-centric organization
+    - User doesn't think about "which store?" when adding ingredients
+    - Auto-creates default store invisibly when needed
+    - Priority sorting surfaces urgent items at top
+    - User reaction: "Reduced cognitive load and number of steps"
+    - (discovered: ingredient-priority experiment, 2025-12-01)
+
+11. [x] **LLM-suggested priorities mostly right**: AI guesses are accurate
+    - LLM considers perishability when suggesting priority (frozen → low, fridge → high)
+    - Mostly accepts suggested priorities without adjustment
+    - Normal distribution (lots in medium) is healthy, not a problem
+    - Validates AI-assisted data entry approach
+    - (discovered: ingredient-priority experiment, 2025-12-01)
 
 ### Surprising Complexities
 
@@ -418,13 +460,37 @@
 
 ## UI/UX Discoveries
 
+### Interaction Patterns That Work
+- [x] **LLM-suggested priorities with manual adjustment**: AI + human collaboration
+  - LLM provides smart defaults based on perishability
+  - User adjusts when needed (but mostly accepts defaults)
+  - Reduces data entry burden while maintaining control
+  - (discovered: ingredient-priority experiment, 2025-12-01)
+
+### Interaction Patterns That Don't Work
+- [x] **Cycling badge UX in long sorted list**: Item disappears when clicked
+  - Problem: Clicking priority badge cycles it, item re-sorts to new position (jumps down list)
+  - Confusing in long lists - user loses track of what they just changed
+  - Better UX: Dropdown/menu that keeps item in place while changing priority
+  - Or: Debounced re-sort so item stays visible briefly after change
+  - (discovered: ingredient-priority experiment, 2025-12-01)
+
 ### Emerging Needs
 - [x] **Different views for different contexts**: Single page getting cluttered
   - Need planning view, cooking view, reviewing view as distinct modes
   - Compact recipe representation works for weekly hub
   - More detailed view needed for cooking
   - System needs thoughtful information architecture as features grow
-  - (discovered: recipe-persistence experiment, 2025-12-01) 
+  - (discovered: recipe-persistence experiment, 2025-12-01)
+
+- [x] **Inventory management table view**: List gets long, needs structured management
+  - Current: 60% of actual inventory already feels long
+  - Need: Table with columns for ingredient, quantity (editable), location, priority, claims, links to recipes
+  - Filtering by location for audit ("verify chest freezer inventory")
+  - Filtering by claimed/unclaimed status
+  - Post-prototype concern but emerging need is clear
+  - Future idea: Sort by priority, color code by location
+  - (discovered: ingredient-priority experiment, 2025-12-01) 
 
 ## Architecture Decisions for MVP
 

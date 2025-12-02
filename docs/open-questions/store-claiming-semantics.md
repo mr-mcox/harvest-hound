@@ -119,7 +119,60 @@ grocery_list = {ingredient: [recipe_ids]}  # Non-blocking, shared
 
 Don't conflate these concerns. See `ingredient-optionality.md` for that question.
 
-## Latest Exploration
+## Latest Exploration - Store Evolving to Location
+
+**Date**: 2025-12-01 (ingredient-priority experiment)
+
+### Major Insight: Store → Location Transformation
+
+**Discovery**: The "Store" concept successfully eliminated from user mental model, replaced by Location metadata.
+
+✅ **What Happened**:
+- User didn't even realize store selection was possible (auto-created "My Inventory" worked invisibly)
+- User reaction: "The store concept fades away"
+- Store evolved into **location** metadata for audit/organization purposes
+- Location examples: chest freezer, refrigerator, cellar, pantry, premade
+- LLM can guess location during ingredient parsing (frozen meat → chest freezer, bacon → refrigerator)
+
+✅ **Location vs Priority Relationship**:
+- Location does NOT drive recipe generation - **priority** does
+- Location informs priority suggestion: frozen meat → low priority, fridge bacon → high priority
+- Location is invisible in ingredient list but explains WHY something has that priority
+- Location matters for audit: "verify chest freezer has all our meat"
+- User wants location filtering for inventory review
+
+### Implications for Store Claiming Semantics
+
+**Refined Understanding**:
+
+The question "what does claiming mean for different store types?" is being replaced by:
+- **Inventory items** (explicit, trackable) → `reserve` claiming behavior
+- **Pantry staples** (definition, unlimited) → `unlimited` claiming behavior
+- **Grocery items** (need to buy) → `list_build` claiming behavior (not yet implemented)
+
+"Store" is no longer the right abstraction. It's really:
+1. **Location** - where it's physically stored (audit/organization)
+2. **Availability Type** - inventory (have it) vs pantry (assume it) vs grocery (need to buy)
+3. **Priority** - how urgently to use it (drives recipe generation)
+
+### Updated Architecture
+
+```python
+class InventoryItem:
+    name: str
+    quantity: float
+    unit: str
+    location: str  # chest_freezer, refrigerator, cellar, pantry
+    priority: str  # low, medium, high, urgent
+    availability_type: str  # inventory, pantry_staple, grocery
+
+# Claiming behavior determined by availability_type:
+availability_type == "inventory" → reserve (block other recipes)
+availability_type == "pantry_staple" → unlimited (never claim)
+availability_type == "grocery" → list_build (add to shopping list, non-blocking)
+```
+
+## Previous Exploration
 
 **Date**: 2025-12-01 (ingredient-claiming-cognitive-load experiment)
 

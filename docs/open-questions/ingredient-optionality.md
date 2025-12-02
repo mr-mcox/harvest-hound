@@ -140,16 +140,72 @@ Optional (nice to have):
 
 See `store-claiming-semantics.md` for how claiming behavior varies by store type. That's a separate concern from whether an ingredient is optional.
 
+## Latest Exploration - Orthogonal Dimensions Validated
+
+**Date**: 2025-12-01 (ingredient-priority experiment)
+
+### Key Insight: Ingredient Metadata Dimensions Are Independent
+
+**Discovery**: Priority, location, and optionality are separate, orthogonal ingredient dimensions.
+
+✅ **Validated Separation**:
+- **Priority**: How urgently should this be used (drives recipe generation)
+  - Values: low, medium, high, urgent
+  - Example: Frozen meat = low, fridge bacon = high
+
+- **Location**: Where is it physically stored (audit/organization)
+  - Values: chest_freezer, refrigerator, cellar, pantry, premade
+  - Example: Bacon in refrigerator (informs priority suggestion)
+
+- **Optionality**: Is it required for the recipe (NOT YET IMPLEMENTED)
+  - Values: required, optional
+  - Example: Sour cream topping = optional, ground beef = required
+
+**Each dimension serves a different purpose**:
+- Priority → Meal planning (what to use this week)
+- Location → Audit/organization (verify inventory)
+- Optionality → Recipe flexibility (required vs nice-to-have)
+
+**Don't conflate these**:
+- Optional ≠ low priority (optional cream could be high priority if it's about to spoil)
+- Location ≠ priority (refrigerator item could be low priority if not spoiling soon)
+- Optionality ≠ source (optional ingredients can come from inventory, grocery, or pantry)
+
+### Architectural Alignment
+
+This validates Option 1 (Binary Optional Flag) approach:
+
+```python
+class IngredientItem:  # For inventory management
+    name: str
+    quantity: float
+    unit: str
+    location: str  # chest_freezer, refrigerator, cellar, pantry
+    priority: str  # low, medium, high, urgent
+    # No optionality here - that's recipe-specific, not inventory property
+
+class IngredientRequirement:  # For recipes
+    name: str
+    quantity: float
+    unit: str
+    source_store_id: int  # Where it comes from
+    optional: bool  # Whether recipe needs it
+```
+
+**Why this matters**: Optionality is a RECIPE property (is this ingredient required for THIS recipe?), not an INVENTORY property. The same ingredient could be required in one recipe and optional in another.
+
 ## Success Criteria
 
 - Recipes can express optional ingredients naturally
 - Grocery list shows essential vs optional sections
 - User can decide which optional items to buy
 - Optional ingredients don't unnecessarily block other recipes (if from inventory)
+- Optionality remains orthogonal to location and priority
 
 ## Next Experiment
 
-1. Add `optional: bool` to IngredientRequirement schema
-2. Update BAML prompt to output optionality
+1. Add `optional: bool` to IngredientRequirement schema (recipe-level, not inventory-level)
+2. Update BAML prompt to output optionality per ingredient per recipe
 3. Test: Does LLM mark ingredients as optional appropriately?
 4. Mock grocery list view with essential/optional sections
+5. Validate: Optional inventory items don't block other recipes (claiming behavior)
