@@ -21,6 +21,7 @@ From `prototype/`, use `../` to reach project root files.
 ## Context Sources
 
 **Primary**:
+- `docs/MVP-CHARTER.md` - Scope, priorities, and architectural bets (if exists)
 - `docs/LEARNINGS.md` - Validated discoveries from prototype phase
 - `prototype/` - Current implementation to contrast against
 
@@ -38,6 +39,11 @@ From `prototype/`, use `../` to reach project root files.
 
 Let me gather context from our prototype learnings and current implementation..."
 
+Read `docs/MVP-CHARTER.md` (if exists) to understand:
+- Is this feature in scope for MVP (steel thread vs fidelity pass)?
+- What architectural bets apply?
+- Any explicit out-of-scope items to respect?
+
 Read `docs/LEARNINGS.md` to find relevant validated discoveries.
 
 Explore `prototype/` to understand current implementation state.
@@ -45,6 +51,11 @@ Explore `prototype/` to understand current implementation state.
 ### Step 2: Synthesize Relevant Learnings
 
 Present what you found:
+
+**From MVP-CHARTER.md** (if exists):
+- Scope alignment: [Steel thread / Fidelity pass / Out of scope]
+- Relevant architectural bets: [List any that apply]
+- Constraints to respect: [Any explicit boundaries]
 
 **From LEARNINGS.md** (discoveries that inform this feature):
 - [Specific learning with checkbox status]

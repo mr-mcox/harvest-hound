@@ -1,187 +1,244 @@
 # End Session Command
 
-Synthesize the current session's work and update backlog: $ARGUMENTS
+Wrap up the current session and triage insights: $ARGUMENTS
 
-This command helps close out a work session by:
-- Reviewing what was accomplished (via git diff)
-- Analyzing unstructured session notes or observations
-- Triaging insights into actionable next.md items
-- Capturing learnings for future reference
+## Purpose
 
-Usage: `/end-session` or `/end-session [path-to-session-notes.md]`
+Close out a work session by capturing learnings and preparing for the next session. Balances:
+- **What's obvious** (from git, completed work) - Claude synthesizes
+- **What needs reflection** (surprises, friction, insights) - User provides context
+
+**Key Principle**: Learnings inform the MVP workflow. Session insights feed into `frame-feature` decisions and `docs/MVP-CHARTER.md` evolution.
+
+---
+
+## Path Reference Note
+
+**IMPORTANT**: All file paths are relative to **project root** (`/Users/mcox/dev/harvest-hound/`), NOT current working directory.
+
+---
+
+## Target Files
+
+**Updates**:
+- `docs/MVP-CHARTER.md` - Scope, priorities, architectural bets (if learnings warrant)
+- `docs/LEARNINGS.md` - Validated discoveries
+
+**Cleanup candidates**:
+- `.scratch/frame-*.md` - Completed feature frames
+- `docs/development/tips/tip-*.md` - Completed TIPs
 
 ---
 
 ## Process
 
-### Step 1: Initial Message
+### Step 1: Gather Session Context
 
-I'll help you wrap up this session and triage insights into next.md.
+"Let me review what happened this session..."
 
-Let me review what happened during this session...
-
-Then continue immediately...
-
-### Step 2: Gather Session Context
-
-**Git Changes** (if in a git repository):
+**Git Changes** (run automatically):
 ```bash
-# Get changes made in this session
 git diff HEAD --stat
-git log --oneline --since="[session start time or reasonable default]"
+git log --oneline -10
 ```
 
 Summarize:
-- Files modified: [list key files]
-- Tests added/modified: [count]
-- New features/fixes: [brief list]
+- Files modified: [key files]
+- Features/fixes: [brief list]
+- Tests added: [if any]
 
-**Session Notes** (if provided as $ARGUMENTS):
-- Read the session scratchpad or notes file
-- Extract observations, questions, discoveries
+**Check for completed work**:
+- Any `.scratch/frame-*.md` files that were implemented?
+- Any `docs/development/tips/tip-*.md` that were completed?
 
-**Current State** (read if exists):
-- Check `docs/development/next.md` to understand current backlog
-- Note in-progress items
+Present: "Based on git, it looks like you worked on [summary]. Let me ask a few questions to capture insights."
 
-### Step 3: Analyze & Categorize
+### Step 2: Gather User Reflections
 
-Based on git changes and session notes, I've identified:
+Ask targeted questions, then WAIT for responses:
 
-**Accomplishments**:
-- [Completed work item] - [Impact]
-- [Completed work item] - [Impact]
+**About What Worked:**
+- What felt smooth or natural during this session?
+- Any "oh, that's nice" moments?
+- Patterns that paid off?
 
-**Key Learnings**:
-- [Technical discovery] - [Why it matters]
-- [Design insight] - [Implications]
-- [Pattern observed] - [Where it applies]
+**About Friction:**
+- Where did you get stuck or slow down?
+- Anything surprisingly hard?
+- Workarounds you had to use?
 
-**Observations to Triage**:
+**About Discoveries:**
+- Did you learn anything that changes how you think about the MVP?
+- Any scope creep you had to resist (or gave into)?
+- Technical approaches that worked better/worse than expected?
 
-#### → Domain Questions
-[Design questions or tensions that need exploration]
-- [Question/pain point] - [Context]
+**About Next Session:**
+- What's the most valuable next step?
+- Anything you want to make sure doesn't get lost?
 
-#### → Features Ready to Build
-[Where domain is clear, just need implementation]
-- [Feature idea] - [Domain coverage] - [Rough effort]
+Then WAIT for user responses before proceeding.
 
-#### → Technical Discoveries
-[Patterns, libraries, approaches learned]
-- [Discovery] - [Relevance]
+### Step 3: Categorize Insights
 
-#### → Open Questions
-[Things to investigate later]
-- [Question] - [Why it matters]
+Based on git changes AND user reflections, categorize:
 
-#### → Future Considerations
-[Ideas not ready to prioritize yet]
-- [Idea] - [Why interesting]
+**Charter-Relevant** (affects `docs/MVP-CHARTER.md`):
+- Scope changes: Features that should move in/out of MVP
+- Architectural learnings: Patterns better/worse than expected
+- Success criteria: Definition of "done" needs refinement
 
-### Step 4: Update next.md
+**LEARNINGS.md-Relevant** (validated discoveries):
+- Domain insights: Concepts, workflows, boundaries
+- Technical discoveries: BAML, API, performance
+- Use case validation: Essential, nice-to-have, not needed
 
-Now I'll update `docs/development/next.md` with these insights.
+**Next Session Prep**:
+- Ready for `frame-feature`: [Features clear enough to frame]
+- Needs exploration: [Questions requiring investigation]
+- Blocked on: [External dependencies or decisions]
 
-**Changes to make**:
-- Move [completed item] from "In Progress" to "Recently Completed"
-- Add [X] domain questions to "Domain Questions to Explore"
-- Add [Y] features to "Features Ready to Build"
-- Add [Z] considerations to "Future Considerations"
-- Update "Last updated" timestamp
+### Step 4: Update MVP Charter (if applicable)
 
-[Make the specific updates to docs/development/next.md]
+Only update charter for significant learnings:
 
-### Step 5: Present Summary
+**Scope changes**:
+- Features essential that weren't listed
+- Features that should be deferred
+- New out-of-scope items
 
-Session wrapped up! Here's what I captured:
+**Architectural learnings**:
+- Patterns that worked better/worse
+- Technical debt decisions to update
+- New constraints discovered
+
+**Success criteria**:
+- Steel thread complete criteria changed
+- Definition of "done" refined
+
+If changes needed, update `docs/MVP-CHARTER.md`:
+- Update relevant section
+- Update "Last Updated" date
+- Note: "Changed: [Section] - [What] - [Why]"
+
+### Step 5: Update LEARNINGS.md (if applicable)
+
+For validated discoveries, update `docs/LEARNINGS.md`:
+
+**Format**:
+```markdown
+- [x] **[Discovery]**: [Specific insight]
+  - [Supporting detail]
+  - (discovered: [context], [date])
+```
+
+**DO Document**:
+- Actual user reactions
+- Surprise discoveries
+- Workflow preferences
+- Complexity assessments
+- Domain boundaries
+
+**DON'T Document**:
+- Code structure details
+- Implementation specifics
+- Speculative improvements
+- Things not validated by use
+
+### Step 6: Cleanup Completed Artifacts
+
+Check for completed work to clean up:
+
+**Feature Frames** (`.scratch/frame-*.md`):
+- If feature implemented: "Frame for [feature] can be deleted - code is source of truth now"
+- Don't auto-delete; note for user
+
+**TIPs** (`docs/development/tips/tip-*.md`):
+- If implementation complete: "TIP for [feature] can be deleted"
+- Don't auto-delete; note for user
+
+### Step 7: Present Summary
+
+"Session wrapped up! Here's what I captured:
 
 **Completed This Session**:
-- [Item] - now in "Recently Completed"
-- [Item] - now in "Recently Completed"
+- [Item] - [Impact/outcome]
 
-**Added to Backlog**:
-- **[X] Domain Questions** - ready for `explore-domain-design`
-  - [Question 1]
-  - [Question 2]
-- **[Y] Features Ready** - ready for `create-tip`
-  - [Feature 1]
-  - [Feature 2]
-- **[Z] Future Ideas** - in "Future Considerations"
-  - [Idea 1]
+**Charter Updates**:
+- [Section changed] - [Brief description]
+- Or: "No charter changes needed"
 
-**Key Learnings Captured**:
-- [Learning] - [Where captured]
-- [Learning] - [Where captured]
+**LEARNINGS.md Updates**:
+- [Section]: [Key insight added]
+- Or: "No new learnings to document"
 
-**Current Backlog State**:
-- Domain questions: [count]
-- Features ready: [count]
-- In progress: [count]
-- Future considerations: [count]
+**Cleanup Ready**:
+- [Files that can be deleted]
 
-**Suggested Next Actions**:
-[Based on what was accomplished and what's in the backlog]
-1. [Specific next step based on momentum]
-2. [Alternative if switching contexts]
+**Suggested Next Session**:
+- **If continuing current work**: [Specific next step]
+- **If starting fresh**: [Most valuable `frame-feature` candidate]
+- **If exploring**: [Question worth investigating]
 
-Updated: `docs/development/next.md`
-
-[If session notes were provided]:
-Session notes preserved at: `[path]` (can archive if desired)
+Ready to pick up here next time!"
 
 ---
 
 ## Quality Guidelines
 
-**Good Session Triaging**:
-- Specific, actionable items added to next.md
-- Learnings captured with enough context to be useful later
-- Questions are well-framed (not just "look into X")
-- Features have rough effort and domain coverage noted
-- Completed items show impact, not just mechanics
+**Good Session Wrap-ups**:
+- Capture user context that git can't show
+- Connect insights to MVP workflow (charter, learnings)
+- Set up clear next session starting point
+- Don't over-document routine work
+
+**When to Update Charter**:
+- Scope boundary was tested and needs adjustment
+- Architectural bet proved right/wrong
+- Success criteria need refinement
+- NOT for minor implementation details
+
+**When to Update LEARNINGS.md**:
+- Something was validated through actual use
+- A discovery changes how you think about domain
+- NOT for code patterns (those live in code)
 
 **Categorization Wisdom**:
-- **Domain Question**: Design tension, uncertain modeling, multiple viable approaches
-- **Feature Ready**: Domain is clear, implementation is tractable, just needs planning
-- **Future Consideration**: Interesting but not ready (missing dependencies, unclear priority)
-- **Open Question**: Technical investigation needed before deciding
-
-**Context Preservation**:
-- Enough detail that "future you" understands the observation
-- References to files, commits, or docs where relevant
-- "Why it matters" captured alongside "what it is"
-
-**Backlog Hygiene**:
-- Keep "In Progress" small (1-3 items max)
-- Move completed items to "Recently Completed" (keep last 5)
-- Archive old items periodically
-- Add effort estimates when clear
+- **Charter-relevant**: Changes strategic direction
+- **LEARNINGS-relevant**: Validated discovery about domain/workflow
+- **Neither**: Routine implementation (no documentation needed)
 
 ---
 
-## Notes
+## Integration with MVP Workflow
 
-**When to Use This**:
-- End of a focused work session
-- After implementing a feature
-- When switching contexts and want to capture state
-- After an exploration/spike session
+**This command connects**:
+- FROM: Implementation work guided by TIPs
+- TO: Next `frame-feature` or continued implementation
 
-**What Gets Triaged**:
-- Observations from session notes
-- Implications from code changes
-- Questions that emerged
-- Design insights
-- Technical discoveries
-- Follow-up ideas
+**Session insights feed**:
+- `docs/MVP-CHARTER.md` - Strategic scope/architecture updates
+- `docs/LEARNINGS.md` - Validated discoveries
+- Next `frame-feature` - Features ready to frame
 
-**What Doesn't Need Triaging**:
-- Routine commits without insights
-- Minor bug fixes
-- Mechanical refactoring
-- Standard maintenance work
+**Don't capture here** (other commands handle):
+- Feature framing → `frame-feature`
+- Technical planning → `create-tip`
+- Domain exploration → `explore-domain-design`
 
 ---
 
-Remember: This command helps you stop without losing context. Good triaging means "future you" can quickly pick up the most valuable next action.
+## Remember
+
+**Balance obvious and reflective**:
+- Git tells WHAT changed
+- User tells WHY it matters
+
+**Keep it lightweight**:
+- Not every session needs charter updates
+- Not every session has learnings worth documenting
+- Some sessions are just "made progress, moving on"
+
+**Set up next session**:
+- Clear starting point
+- No lost context
+- Ready to `frame-feature` or continue
