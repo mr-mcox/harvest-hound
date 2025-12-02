@@ -145,6 +145,20 @@
   - For MVP: Only GENERATIVE pitches from inventory
   - (discovered: pitch-recipe-identity experiment, 2025-12-02)
 
+- [x] **Recipes exist independently of store assignments**: Architectural principle validated
+  - Store assignment is PLANNING-TIME context, not storage-time intrinsic property
+  - Recipe concept: "Kimchi Carbonara needs butter and kimchi" (no stores mentioned)
+  - Planning context: "I'll get butter from pantry, kimchi from fridge" (or "buy from Cub")
+  - Applies to BOTH generative and canonical recipes:
+    - Generative: LLM assigns stores during generation (current MVP flow)
+    - Canonical: System assigns stores when recipe selected for planning (future)
+  - Both create `IngredientClaim` at planning time, different resolution mechanisms
+  - Enables recipe reusability across different inventory states
+  - Enables recipe library import without pre-computing store assignments
+  - Store assignment changes with context: pantry restocked, grocery stores available this week
+  - **Architectural win**: Can add canonical recipe library without breaking current model
+  - (discovered: recipe-context-sources architectural pressure test, 2025-12-02)
+
 - [x] **Time representation needs refinement**: Both active AND total time matter
   - Current: only shows active time in pitches
   - Want: active + total time visible
@@ -627,10 +641,21 @@
 ## Architecture Decisions for MVP
 
 ### Keep Simple
-- [ ] 
+- [x] **Recipes as reusable entities, stores as planning context**
+  - Recipe schema: ingredients without store assignments
+  - Store resolution happens at planning time (when recipe selected)
+  - Don't conflate recipe identity with ephemeral planning context
+  - Temporal separation: recipe persists (long-lived), store assignments are session/week scoped
+  - **Key insight**: In prototype, BAML generation and store assignment happen together (efficient), but they're separate CONCEPTS that shouldn't be architecturally coupled
+  - Enables future: import recipes, reuse across different inventory states, regenerate with different stores
+  - (discovered: recipe-context-sources architectural pressure test, 2025-12-02)
 
-### Still Don't Need  
-- [ ] 
+### Still Don't Need
+- [x] **Recipe library / canonical recipes**: Defer to post-MVP
+  - Architectural pressure test passed: no constraints created by deferring
+  - Store assignment independence enables clean addition later
+  - For MVP: generative recipes only
+  - (discovered: recipe-context-sources architectural pressure test, 2025-12-02)
 
 ### Consider Adding
 - [ ] 
