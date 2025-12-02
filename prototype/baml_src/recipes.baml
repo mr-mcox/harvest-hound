@@ -2,9 +2,11 @@ class RecipeIngredient {
   name string
   quantity float
   unit string
+  store string @description("Which store this ingredient comes from (exact store name)")
 
   @@assert(quantity_positive, {{ this.quantity > 0 }})
   @@assert(name_not_empty, {{ this.name|length > 0 }})
+  @@assert(store_not_empty, {{ this.store|length > 0 }})
 }
 
 class Recipe {
@@ -157,6 +159,15 @@ function GenerateSingleRecipe(
     5. Is DIFFERENT from any recipes already generated
     6. Minimizes active cooking time while maximizing flavor
     7. Is appropriate for young children (not spicy)
+
+    CRITICAL - Store Assignment for EVERY Ingredient:
+    You MUST assign a store to EVERY ingredient in the recipe. Use these rules:
+    - If ingredient is in explicit stores → use that exact store name
+    - If ingredient is in definition stores → use that exact store name
+    - If ingredient is NOT in any listed store → use "Cub foods" (the grocery store)
+
+    Example: If recipe needs goat cheese and it's not listed in any store, set store="Cub foods"
+    This ensures we can generate complete shopping lists.
 
     {{ ctx.output_format }}
   "#

@@ -157,6 +157,46 @@
   - Validates separation of concerns in ingredient metadata
   - (discovered: ingredient-priority experiment, 2025-12-01)
 
+- [x] **Complete ingredient claiming is critical**: EVERY ingredient must be claimed against a store
+  - Discovery: Initial implementation only claimed inventory items, grocery items disappeared
+  - Problem: Beet risotto needed goat cheese, but no claim created → shopping list empty
+  - Solution: LLM assigns every ingredient to a store (inventory, pantry, or grocery)
+  - Enables complete shopping list generation and pantry verification
+  - User reaction: "That's insufficient for this use case" (before fix)
+  - (discovered: store-based-claiming experiment, 2025-12-01)
+
+- [x] **Pantry definition emerges from LLM behavior**: System reveals assumptions
+  - LLM assigned honey, walnuts, onion to grocery store
+  - User considers these pantry staples (always have on hand)
+  - Gap reveals pantry definition is fuzzy, user-specific
+  - Opportunity: Use grocery assignments to refine pantry definition over time
+  - Question: How does system learn what user considers pantry?
+  - (discovered: store-based-claiming experiment, 2025-12-01)
+
+- [x] **Multiple grocery stores, not singleton**: Different stores for different rhythms
+  - Not "the grocery store" but: Cub (regular), Costco (bulk runs), Co-op, Asian grocery
+  - Store availability varies by week rhythm ("making a Costco run this week")
+  - User may select which grocery stores are available for meal planning
+  - Changes architecture: Grocery not a single definition store, but multiple options
+  - (discovered: store-based-claiming experiment, 2025-12-01)
+
+- [x] **Three-tier store architecture**: Explicit, Pantry (singleton), Grocery stores (multiple)
+  - Explicit stores (CSA, Freezer): Itemized inventory we definitely have
+  - Pantry (singleton): Assumed staples, verify before cooking
+  - Grocery stores (multiple): Where we buy things, user selects available stores
+  - Claiming logic: If explicitly stated → use it. If not → judge likelihood of needing to buy.
+  - Replaces rigid grocery/pantry split with flexible judgment
+  - (discovered: store-based-claiming experiment, 2025-12-01)
+
+- [x] **Likelihood-based ingredient sourcing**: Replace binary grocery/pantry with probability
+  - Instead of "is this pantry or grocery?", ask "how likely do we need to buy this?"
+  - High likelihood: Definitely buy (unusual items, large quantities)
+  - Medium likelihood: Review/verify (grey area for user decision)
+  - Low likelihood: Assume pantry (salt, common spices under threshold)
+  - Enables smarter grocery list ordering (high confidence items first)
+  - Example: "2.5 tsp salt" = silly to verify, but "8 oz goat cheese" = need to buy
+  - (discovered: store-based-claiming experiment, 2025-12-01)
+
 - [ ] Ingredient complexity level:
 
 ### Workflows That Feel Natural
@@ -239,7 +279,24 @@
     - Validates AI-assisted data entry approach
     - (discovered: ingredient-priority experiment, 2025-12-01)
 
+12. [x] **Shopping list view fills workflow gap**: Planning → Shop → Cook flow complete
+    - Shopping list aggregates claims by store (grocery vs pantry)
+    - Format: "2 onions - used in: Recipe A, Recipe B"
+    - Copy-paste button for transferring to shopping app
+    - Pantry verification checklist ("Check you have 2c polenta for Recipe X")
+    - User reaction: "This works great"
+    - Fills missing step between meal planning and actual shopping
+    - (discovered: store-based-claiming experiment, 2025-12-01)
+
 ### Surprising Complexities
+- [x] **Ingredient representation mixes shopping and preparation**: Blurry boundary
+  - Problem: Shopping list shows "0.75 cup walnuts, roughly chopped"
+  - User doesn't buy pre-chopped walnuts - preparation instruction leaked into ingredient
+  - Reveals question: What fields are part of an ingredient?
+  - Shopping needs: "walnuts" (the thing to buy)
+  - Recipe needs: "walnuts, roughly chopped" (how to prepare)
+  - May need separation: ingredient base + preparation modifier
+  - (discovered: store-based-claiming experiment, 2025-12-01)
 
 ### Things Simpler Than Expected
 - [x] **Single-page prototype goes far**: One page with progressive disclosure may be sufficient
@@ -334,6 +391,13 @@
   - Query params for simple inputs (context, num_recipes) feels clean
   - (discovered: recipe-generation experiment, 2025-11-29)
 
+- [x] **Claims aggregation endpoint**: GET /api/claims/by-store
+  - Groups claims by store, aggregates quantities across recipes
+  - Returns: {store_name: {ingredients: {name: {total_qty, unit, recipes[]}}}}
+  - Enables shopping list view and pantry verification
+  - Structure supports multiple grocery stores (not just singleton)
+  - (discovered: store-based-claiming experiment, 2025-12-01)
+
 - [x] **Bulk operations via single endpoint**: POST /stores/{id}/inventory/bulk
   - Free text input → BAML parsing → bulk insert
   - Returns added items + parsing notes + skipped items
@@ -410,6 +474,15 @@
    - Not blocking for MVP, abandoning is low-effort workaround
    - (discovered: recipe-persistence experiment, 2025-12-01)
 
+9. [x] **Shopping list generation from claims**: Aggregated view by store
+   - Essential: Can't go shopping without knowing what to buy
+   - Validated: Fills workflow gap (plan → shop → cook)
+   - Format works: "2 onions - used in: Recipe A, Recipe B"
+   - Copy-paste to shopping app successful
+   - Pantry verification checklist reduces anxiety
+   - User reaction: "This works great"
+   - (discovered: store-based-claiming experiment, 2025-12-01)
+
 ### Nice to Have
 - [x] **Week-level planning criteria**: Structured constraints for balanced variety
   - Example: "1 weekend meal, 1 guest meal (weeknight), 2 quick meals, 1 leftovers meal"
@@ -466,6 +539,13 @@
   - User adjusts when needed (but mostly accepts defaults)
   - Reduces data entry burden while maintaining control
   - (discovered: ingredient-priority experiment, 2025-12-01)
+
+- [x] **Progressive disclosure for recipe context**: Hide details until needed
+  - Shopping list shows "2 onions - used in: Recipe A, Recipe B"
+  - Recipe context ("why am I buying this?") useful but optional
+  - Could be hidden/collapsed, revealed on hover or click
+  - Reduces visual noise while keeping sanity-check info accessible
+  - (discovered: store-based-claiming experiment, 2025-12-01)
 
 ### Interaction Patterns That Don't Work
 - [x] **Cycling badge UX in long sorted list**: Item disappears when clicked

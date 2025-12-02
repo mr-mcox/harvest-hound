@@ -23,6 +23,7 @@ window.addEventListener('load', () => {
     loadStores();
     loadPlannedRecipes();
     loadFlatInventory();
+    loadShoppingList();
 });
 
 async function loadStores() {
@@ -759,6 +760,7 @@ async function cookRecipe(recipeId) {
             // Reload planned recipes and inventory display
             loadPlannedRecipes();
             loadFlatInventory();  // Refresh flat view
+            loadShoppingList();  // Refresh shopping list
             if (currentStoreId) {
                 loadInventory();
             }
@@ -793,6 +795,7 @@ async function abandonRecipe(recipeId) {
             // Reload planned recipes
             loadPlannedRecipes();
             loadFlatInventory();  // Refresh flat view
+            loadShoppingList();  // Refresh shopping list
         } else {
             updateStatus('Failed to abandon: ' + result.error, 'error');
         }
@@ -841,6 +844,111 @@ async function loadFlatInventory() {
         console.error('Failed to load flat inventory:', error);
         updateStatus('Failed to load flat inventory', 'error');
     }
+}
+
+async function loadShoppingList() {
+    try {
+        const response = await fetch('/api/claims/by-store');
+        const data = await response.json();
+
+        const shoppingSection = document.getElementById('shoppingListSection');
+        const groceryList = document.getElementById('groceryList');
+        const pantryList = document.getElementById('pantryList');
+
+        // Check if there are any claims
+        if (!data.stores || Object.keys(data.stores).length === 0) {
+            shoppingSection.style.display = 'none';
+            return;
+        }
+
+        // Show the shopping list
+        shoppingSection.style.display = 'block';
+
+        // Separate stores by type
+        const groceryStores = {};
+        const pantryStores = {};
+        const otherStores = {};
+
+        for (const [storeName, storeData] of Object.entries(data.stores)) {
+            if (storeData.type === 'definition' && storeName.toLowerCase().includes('pantry')) {
+                pantryStores[storeName] = storeData;
+            } else if (storeData.type === 'explicit') {
+                // Skip explicit stores (CSA, Freezer) - those are handled via inventory
+                continue;
+            } else {
+                // Grocery or other stores
+                groceryStores[storeName] = storeData;
+            }
+        }
+
+        // Render grocery stores
+        if (Object.keys(groceryStores).length > 0) {
+            groceryList.innerHTML = Object.entries(groceryStores).map(([storeName, storeData]) => {
+                const ingredientsList = Object.entries(storeData.ingredients)
+                    .map(([ingName, ingData]) => {
+                        const recipesList = ingData.recipes.join(', ');
+                        return `
+                            <div class="shopping-item">
+                                <div>${ingData.total_quantity} ${ingData.unit} ${ingName}</div>
+                                <div class="recipes">used in: ${recipesList}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                // Create plain text version for copying
+                const plainText = Object.entries(storeData.ingredients)
+                    .map(([ingName, ingData]) => `${ingData.total_quantity} ${ingData.unit} ${ingName}`)
+                    .join('\n');
+
+                return `
+                    <div class="store-section">
+                        <h4>${storeName}</h4>
+                        <button class="copy-btn" onclick="copyToClipboard(\`${plainText}\`, '${storeName}')">Copy List</button>
+                        ${ingredientsList}
+                    </div>
+                `;
+            }).join('');
+        } else {
+            groceryList.innerHTML = '<p style="color: #999; font-style: italic;">No grocery items needed</p>';
+        }
+
+        // Render pantry verification
+        if (Object.keys(pantryStores).length > 0) {
+            pantryList.innerHTML = Object.entries(pantryStores).map(([storeName, storeData]) => {
+                const ingredientsList = Object.entries(storeData.ingredients)
+                    .map(([ingName, ingData]) => {
+                        const recipesList = ingData.recipes.join(', ');
+                        return `
+                            <div class="shopping-item">
+                                <div>Check you have ${ingData.total_quantity} ${ingData.unit} ${ingName}</div>
+                                <div class="recipes">for: ${recipesList}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                return `
+                    <div class="store-section">
+                        <h4>${storeName}</h4>
+                        ${ingredientsList}
+                    </div>
+                `;
+            }).join('');
+        } else {
+            pantryList.innerHTML = '<p style="color: #999; font-style: italic;">No pantry items to verify</p>';
+        }
+
+    } catch (error) {
+        console.error('Failed to load shopping list:', error);
+        updateStatus('Failed to load shopping list', 'error');
+    }
+}
+
+function copyToClipboard(text, storeName) {
+    navigator.clipboard.writeText(text).then(() => {
+        updateStatus(`${storeName} list copied to clipboard!`, 'success');
+    }).catch(err => {
+        updateStatus('Failed to copy to clipboard', 'error');
+    });
 }
 
 async function cyclePriority(itemId, currentPriority) {

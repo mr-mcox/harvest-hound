@@ -246,6 +246,44 @@
             background: #9E9E9E;
             color: white;
         }
+        .shopping-list {
+            background: #fff9e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffa726;
+        }
+        .shopping-list h3 {
+            margin-top: 0;
+        }
+        .store-section {
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+        .store-section h4 {
+            margin: 0 0 10px 0;
+            color: #ff9800;
+        }
+        .shopping-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .shopping-item .recipes {
+            font-size: 0.85em;
+            color: #666;
+            font-style: italic;
+            margin-top: 4px;
+        }
+        .copy-btn {
+            background: #ff9800 !important;
+            font-size: 0.9em;
+            padding: 6px 12px;
+        }
     </style>
 </head>
 <body>
@@ -302,6 +340,21 @@
             <div style="margin-bottom: 30px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
                 <h3>My Planned Recipes</h3>
                 <div id="plannedRecipesList"></div>
+            </div>
+
+            <!-- Shopping List Section -->
+            <div class="shopping-list" id="shoppingListSection" style="display:none;">
+                <h3>🛒 Shopping List</h3>
+
+                <div id="groceryStores">
+                    <h4>Grocery Stores</h4>
+                    <div id="groceryList"></div>
+                </div>
+
+                <div id="pantryChecks" style="margin-top: 20px;">
+                    <h4>Verify Pantry</h4>
+                    <div id="pantryList"></div>
+                </div>
             </div>
 
             <div style="margin-bottom: 20px;">

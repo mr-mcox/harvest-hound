@@ -560,44 +560,51 @@ async def flesh_out_pitch(request: FleshOutRequest):
 
             recipe_id = db_recipe.id
 
-            # Create ingredient claims for explicit ingredients
-            for claimed_ing in request.explicit_ingredients:
-                ing_name = claimed_ing["name"]
-                ing_qty = claimed_ing["quantity"]
-                ing_unit = claimed_ing["unit"]
+            # Create ingredient claims for ALL ingredients
+            # LLM assigns every ingredient to a store (inventory, pantry, or grocery)
+            for ing in baml_recipe.ingredients:
+                ing_name = ing.name
+                ing_qty = ing.quantity
+                ing_unit = ing.unit
+                store_name = ing.store
 
-                # Find which store this ingredient came from
-                store_name = None
-                for s_name, items in updated_inventory.items():
-                    if ing_name in items:
-                        store_name = s_name
-                        current_qty, current_unit = items[ing_name]
-                        # Simple subtraction (assuming units match)
-                        new_qty = max(0, current_qty - ing_qty)
-                        updated_inventory[s_name][ing_name] = (new_qty, current_unit)
-                        break
+                # If this ingredient is from explicit inventory, decrement it
+                if store_name in updated_inventory and ing_name in updated_inventory[store_name]:
+                    current_qty, current_unit = updated_inventory[store_name][ing_name]
+                    new_qty = max(0, current_qty - ing_qty)
+                    updated_inventory[store_name][ing_name] = (new_qty, current_unit)
 
-                # Create claim record
-                if store_name:
-                    claim = IngredientClaim(
-                        recipe_id=recipe_id,
-                        ingredient_name=ing_name,
-                        store_name=store_name,
-                        quantity=ing_qty,
-                        unit=ing_unit,
-                        state="reserved"
-                    )
-                    session.add(claim)
+                # Create claim record for ALL ingredients (inventory, grocery, pantry)
+                claim = IngredientClaim(
+                    recipe_id=recipe_id,
+                    ingredient_name=ing_name,
+                    store_name=store_name,
+                    quantity=ing_qty,
+                    unit=ing_unit,
+                    state="reserved"
+                )
+                session.add(claim)
 
             session.commit()
 
         recipe_dict["id"] = str(recipe_id)  # Include ID for frontend
 
+        # Build claimed ingredients list from ALL ingredients
+        claimed_ingredients = [
+            {
+                "name": ing.name,
+                "quantity": ing.quantity,
+                "unit": ing.unit,
+                "store": ing.store
+            }
+            for ing in baml_recipe.ingredients
+        ]
+
         return {
             "success": True,
             "recipe": recipe_dict,
             "updated_inventory": updated_inventory,
-            "claimed_ingredients": request.explicit_ingredients
+            "claimed_ingredients": claimed_ingredients
         }
 
     except Exception as e:
@@ -790,6 +797,56 @@ async def get_planned_recipes():
             })
 
         return {"recipes": result}
+
+@app.get("/api/claims/by-store")
+async def get_claims_by_store():
+    """
+    Get all reserved ingredient claims grouped by store, aggregated across recipes.
+    Returns stores with their ingredients and which recipes use them.
+    """
+    with Session(engine) as session:
+        # Get all reserved claims from planned recipes
+        claims = session.exec(
+            select(IngredientClaim).where(IngredientClaim.state == "reserved")
+        ).all()
+
+        # Get recipes for claim context
+        recipes = session.exec(
+            select(Recipe).where(Recipe.state == "planned")
+        ).all()
+        recipe_map = {str(r.id): r.name for r in recipes}
+
+        # Get stores for type info
+        stores = session.exec(select(Store)).all()
+        store_type_map = {s.name: s.store_type for s in stores}
+
+        # Group claims by store, then by ingredient
+        store_claims = {}
+        for claim in claims:
+            store_name = claim.store_name
+            if store_name not in store_claims:
+                store_claims[store_name] = {
+                    "type": store_type_map.get(store_name, "unknown"),
+                    "ingredients": {}
+                }
+
+            ing_name = claim.ingredient_name
+            if ing_name not in store_claims[store_name]["ingredients"]:
+                store_claims[store_name]["ingredients"][ing_name] = {
+                    "total_quantity": 0,
+                    "unit": claim.unit,
+                    "recipes": []
+                }
+
+            # Aggregate quantities
+            store_claims[store_name]["ingredients"][ing_name]["total_quantity"] += claim.quantity
+
+            # Track which recipe uses this ingredient
+            recipe_name = recipe_map.get(str(claim.recipe_id), "Unknown Recipe")
+            if recipe_name not in store_claims[store_name]["ingredients"][ing_name]["recipes"]:
+                store_claims[store_name]["ingredients"][ing_name]["recipes"].append(recipe_name)
+
+        return {"stores": store_claims}
 
 @app.post("/api/recipes/{recipe_id}/cook")
 async def cook_recipe(recipe_id: str):

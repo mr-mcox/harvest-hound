@@ -67,6 +67,7 @@ class RecipeIngredient(BaseModel):
     name: str
     quantity: float
     unit: str
+    store: str
 
 class RecipePitch(BaseModel):
     name: str
