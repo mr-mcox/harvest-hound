@@ -7,7 +7,9 @@
     let ingredient = $state("");
     let dishes = $state<Dish[]>([]);
     let loading = $state(false);
+    let streaming = $state(false);
     let error = $state<string | null>(null);
+    let eventSource: EventSource | null = null;
 
     async function getDishes() {
         if (!ingredient.trim()) {
@@ -33,6 +35,49 @@
             loading = false;
         }
     }
+
+    function streamDishes() {
+        if (!ingredient.trim()) {
+            error = "Please enter an ingredient";
+            return;
+        }
+
+        if (eventSource) {
+            eventSource.close();
+        }
+
+        streaming = true;
+        error = null;
+        dishes = [];
+
+        eventSource = new EventSource(
+            `/api/dishes/stream?ingredient=${encodeURIComponent(ingredient)}`,
+        );
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.complete) {
+                eventSource?.close();
+                eventSource = null;
+                streaming = false;
+            } else if (data.error) {
+                error = data.message;
+                eventSource?.close();
+                eventSource = null;
+                streaming = false;
+            } else {
+                dishes = [...dishes, data];
+            }
+        };
+
+        eventSource.onerror = () => {
+            error = "Connection lost";
+            eventSource?.close();
+            eventSource = null;
+            streaming = false;
+        };
+    }
 </script>
 
 <main class="p-10 space-y-6 max-w-2xl mx-auto">
@@ -47,15 +92,23 @@
             class="input px-4 py-2 flex-1"
             placeholder="e.g., carrot, potato, kale..."
             bind:value={ingredient}
-            onkeydown={(e) => e.key === "Enter" && getDishes()}
+            onkeydown={(e) => e.key === "Enter" && streamDishes()}
         />
         <button
             type="button"
             class="btn preset-filled-primary-500"
             onclick={getDishes}
-            disabled={loading}
+            disabled={loading || streaming}
         >
-            {loading ? "Loading..." : "Get Dishes"}
+            {loading ? "Loading..." : "Get All"}
+        </button>
+        <button
+            type="button"
+            class="btn preset-filled-secondary-500"
+            onclick={streamDishes}
+            disabled={loading || streaming}
+        >
+            {streaming ? "Streaming..." : "Stream"}
         </button>
     </div>
 

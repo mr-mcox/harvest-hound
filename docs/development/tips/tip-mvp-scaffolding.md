@@ -505,26 +505,26 @@ Before building any steel thread features, we need a runnable project structure 
 **Verification**: See dishes appear progressively (not all at once)
 
 ### 5.1 Streaming Endpoint - **NEW BEHAVIOR**
-- [ ] Add to `src/backend/routes.py`:
+- [x] Add to `src/backend/routes.py`:
   - `GET /api/dishes/stream?ingredient=X` endpoint
   - Returns `StreamingResponse` with `text/event-stream` media type
-- [ ] Reference pattern: `prototype/app.py:418-493`
+- [x] Reference pattern: `prototype/app.py:418-493`
 
 ### 5.2 BAML Streaming Function - **NEW BEHAVIOR**
-- [ ] Update `src/backend/baml_functions.py`:
+- [x] Update `src/backend/baml_functions.py`:
   - Add `async def stream_dishes(ingredient: str)` generator
   - Yields dishes one at a time as SSE events
-- [ ] Format: `data: {"name": "...", "description": "..."}\n\n`
+- [x] Format: `data: {"name": "...", "description": "..."}\n\n`
 
 ### 5.3 EventSource in Svelte - **NEW BEHAVIOR**
-- [ ] Update `src/frontend/src/routes/+page.svelte`:
+- [x] Update `src/frontend/src/routes/+page.svelte`:
   - Add "Stream Dishes" button
   - Use `EventSource` API to connect to `/api/dishes/stream`
   - Append each dish to list as it arrives
   - Close connection on completion event
 
 ### 5.4 Verification Checkpoint
-- [ ] Verify: Click "Stream Dishes", see dishes appear one by one with visible delay
+- [x] Verify: Click "Stream Dishes", see dishes appear one by one with visible delay
 
 ---
 
