@@ -483,20 +483,20 @@ Before building any steel thread features, we need a runnable project structure 
 **Verification**: Click button, see dishes appear in UI
 
 ### 4.1 API Fetch in Svelte - **NEW BEHAVIOR**
-- [ ] Update `src/frontend/src/routes/+page.svelte`:
+- [x] Update `src/frontend/src/routes/+page.svelte`:
   - Add text input for ingredient
   - Add "Get Dishes" button
   - On click: fetch `/api/dishes?ingredient=X`
   - Display returned dishes in a Skeleton-styled list/cards
 
 ### 4.2 Loading State - **NEW BEHAVIOR**
-- [ ] Add loading indicator while fetching
-- [ ] Display error message if API call fails
+- [x] Add loading indicator while fetching
+- [x] Display error message if API call fails
 
 ### 4.3 Verification Checkpoint
-- [ ] Run backend: `cd src/backend && uv run uvicorn app:app --reload`
-- [ ] Run frontend: `cd src/frontend && npm run dev`
-- [ ] Verify: Enter "carrot", click button, see 3 dishes appear
+- [x] Run backend: `cd src/backend && uv run uvicorn app:app --reload`
+- [x] Run frontend: `cd src/frontend && npm run dev`
+- [x] Verify: Enter "carrot", click button, see 3 dishes appear
 
 ---
 
