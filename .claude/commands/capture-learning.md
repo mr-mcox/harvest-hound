@@ -10,14 +10,27 @@ Extract and preserve domain discoveries from implementation experiments. Focus o
 
 ---
 
+## Path Reference Note
+
+**IMPORTANT**: All file paths in this command are relative to the **project root** (`/Users/mcox/dev/harvest-hound/`), NOT the current working directory (which is usually `prototype/`).
+
+When referencing files, use paths relative to project root:
+- `docs/LEARNINGS.md` = `/Users/mcox/dev/harvest-hound/docs/LEARNINGS.md`
+- `docs/open-questions/` = `/Users/mcox/dev/harvest-hound/docs/open-questions/`
+- `.scratch/` = `/Users/mcox/dev/harvest-hound/.scratch/`
+
+From `prototype/` directory, use `../` to reach project root files (e.g., `../docs/LEARNINGS.md`).
+
+---
+
 ## Target Files
 
 **Primary Output**:
-- `docs/LEARNINGS.md` - Accumulated prototype discoveries
+- `docs/LEARNINGS.md` - Accumulated prototype discoveries (relative to project root)
 
 **Context Sources**:
-- `.scratch/pain-[topic].md` - The pain analysis that drove this experiment
-- `docs/domain-model-reference.md` - Domain vocabulary for connecting insights
+- `.scratch/pain-[topic].md` - The pain analysis that drove this experiment (relative to project root)
+- `docs/domain-model-reference.md` - Domain vocabulary for connecting insights (relative to project root)
 
 ---
 
@@ -100,7 +113,92 @@ Organize discoveries into LEARNINGS.md sections:
 - What we can definitively skip
 - What might be worth adding
 
-### Step 5: Update LEARNINGS.md
+### Step 5: Evaluate Open Questions
+
+Check if this experiment answered any open questions:
+
+1. **Read pain analysis** for "Related Open Questions" section (if exists)
+
+2. **Use thoughts-analyzer agent** to evaluate which questions were answered:
+
+**Agent Task**: "Given the learnings from this experiment, analyze which open questions in `docs/open-questions/` were:
+- Fully answered (ready to close)
+- Partially answered (update with new insights)
+- Still open (no change needed)
+
+For each question, provide:
+- Current state (answered/partial/open)
+- Key insights learned
+- Recommended action (delete/update/keep)"
+
+3. **For each answered question**:
+   - Extract key insights to LEARNINGS.md (if not already captured)
+   - Delete the question file: `rm docs/open-questions/[question].md`
+   - Inform user: "Closed out question: [name] - insights captured in LEARNINGS.md"
+
+4. **For partially answered questions**:
+   - Update question file with new insights
+   - Add "## Latest Exploration" section with date and findings
+   - Keep file for future exploration
+
+5. **For still-open questions**:
+   - No changes needed
+   - Note in summary which questions remain open
+
+### Step 6: Create New Open Questions
+
+Ask: "Did this experiment surface any new uncertainties or design questions we should track?"
+
+**Look for**:
+- Low-confidence learnings ("uncertain if worth it")
+- Multiple valid approaches with unclear tradeoffs
+- Domain concepts needing more exploration
+- Patterns that need validation across experiments
+
+**For each new open question identified**:
+- Create a question file in `docs/open-questions/[question-name].md`
+- Document the uncertainty, options considered, and what would help resolve it
+- **Include uncertainty/architectural impact assessment**:
+  - **Uncertainty**: Low/Medium/High (how much do we know?)
+  - **Architectural Impact**: Low/Medium/High (does this affect data model, persistence, or core abstractions?)
+  - **One-Way Door**: Yes/No (is this expensive to change later?)
+- Reference from LEARNINGS.md where relevant
+
+**Template for new open question files**:
+```markdown
+# [Question Title]
+
+**Discovered**: [experiment name], [date]
+**Uncertainty**: Low/Medium/High
+**Architectural Impact**: Low/Medium/High
+**One-Way Door**: Yes/No
+
+## The Question
+
+[Clear statement of what's uncertain]
+
+## Context
+
+[Why this matters, what triggered the question]
+
+## Options Considered
+
+[Different approaches with pros/cons]
+
+## Architectural Implications
+
+[What parts of the system does this affect?]
+- Data model changes?
+- Persistence strategy?
+- Core abstractions?
+- Generation flow?
+
+## Next Steps to Explore
+
+[What experiments would help resolve this]
+```
+
+### Step 7: Update LEARNINGS.md
 
 Make specific updates to `docs/LEARNINGS.md`:
 
@@ -143,23 +241,20 @@ Make specific updates to `docs/LEARNINGS.md`:
 - Add specific, concrete insights - not vague notes
 - Include context ("discovered during recipe overload experiment")
 
-### Step 6: Identify Patterns
+### Step 8: Identify Patterns
 
 Look for emerging patterns across learnings:
 - Repeated pain points → fundamental domain need
 - Consistent preferences → design principle
 - Domain boundaries → context separation
 
-### Step 7: Clean Up (Optional)
+### Step 9: Note Cleanup Opportunity
 
-Ask user about ephemeral files:
+"The pain analysis file `.scratch/pain-[topic].md` can now be deleted manually if you're done with this exploration cycle."
 
-"Would you like me to delete the pain analysis file?
-`.scratch/pain-[topic].md` - No longer needed now that learning is captured.
+(Don't automate deletion - user will handle this)
 
-[Delete / Keep for reference]"
-
-### Step 8: Next Experiment
+### Step 10: Next Experiment
 
 Based on learnings, suggest:
 

@@ -40,9 +40,35 @@
             background: #f8f8f8;
             border-radius: 4px;
             cursor: pointer;
+            position: relative;
         }
         .store-item:hover {
             background: #e8e8e8;
+        }
+        .store-item button {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .delete-btn {
+            background: #f44336 !important;
+        }
+        .delete-btn:hover {
+            background: #da190b !important;
+        }
+        .inventory-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f8f8f8;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .inventory-item button {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 0 2px;
         }
         .recipe-card {
             padding: 15px;
@@ -59,6 +85,49 @@
             0% { opacity: 0.7; }
             50% { opacity: 1; }
             100% { opacity: 0.7; }
+        }
+        .pitch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .pitch-card {
+            padding: 15px;
+            background: #fff3e0;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pitch-card:hover {
+            background: #ffe0b2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .pitch-card.selected {
+            background: #c8e6c9;
+            border-left-color: #4CAF50;
+        }
+        .pitch-card h4 {
+            margin: 0 0 8px 0;
+        }
+        .pitch-card .blurb {
+            font-style: italic;
+            color: #333;
+            margin: 8px 0;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        .pitch-card .key-ingredients {
+            font-size: 0.9em;
+            color: #666;
+            margin: 8px 0;
+        }
+        .pitch-actions {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
         }
         button {
             background: #4CAF50;
@@ -87,6 +156,134 @@
             background: #e8f5e9;
             color: #2e7d32;
         }
+        .planned-recipe {
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #2196F3;
+            cursor: pointer;
+        }
+        .planned-recipe:hover {
+            background: #f5f5f5;
+        }
+        .planned-recipe.expanded {
+            background: #fff;
+            border-left-color: #4CAF50;
+        }
+        .planned-recipe-details {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        .planned-recipe.expanded .planned-recipe-details {
+            display: block;
+        }
+        .recipe-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        .btn-cook {
+            background: #4CAF50 !important;
+        }
+        .btn-abandon {
+            background: #ff9800 !important;
+        }
+        .flat-inventory-item {
+            padding: 12px;
+            margin: 6px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .flat-inventory-item.urgent {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .flat-inventory-item.high {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+        .flat-inventory-item.medium {
+            border-left-color: #4CAF50;
+            background: #f1f8f4;
+        }
+        .flat-inventory-item.low {
+            border-left-color: #9E9E9E;
+            background: #fafafa;
+        }
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .priority-badge:hover {
+            transform: scale(1.1);
+        }
+        .priority-badge.urgent {
+            background: #f44336;
+            color: white;
+        }
+        .priority-badge.high {
+            background: #ff9800;
+            color: white;
+        }
+        .priority-badge.medium {
+            background: #4CAF50;
+            color: white;
+        }
+        .priority-badge.low {
+            background: #9E9E9E;
+            color: white;
+        }
+        .shopping-list {
+            background: #fff9e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffa726;
+        }
+        .shopping-list h3 {
+            margin-top: 0;
+        }
+        .store-section {
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+        .store-section h4 {
+            margin: 0 0 10px 0;
+            color: #ff9800;
+        }
+        .shopping-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .shopping-item .recipes {
+            font-size: 0.85em;
+            color: #666;
+            font-style: italic;
+            margin-top: 4px;
+        }
+        .copy-btn {
+            background: #ff9800 !important;
+            font-size: 0.9em;
+            padding: 6px 12px;
+        }
     </style>
 </head>
 <body>
@@ -97,47 +294,86 @@
     </div>
 
     <div class="container">
-        <!-- Left Panel - Stores & Inventory -->
+        <!-- Left Panel - Inventory -->
         <div class="panel">
-            <h2>Stores & Inventory</h2>
-            
-            <div style="margin-bottom: 20px;">
-                <h3>Create Store</h3>
-                <input type="text" id="storeName" placeholder="Store name">
-                <select id="storeType">
-                    <option value="explicit">Explicit (CSA, Freezer)</option>
-                    <option value="definition">Definition (Grocery, Pantry)</option>
-                </select>
-                <textarea id="storeDefinition" placeholder="Definition (for LLM-inferred stores)" style="display:none;"></textarea>
-                <button onclick="createStore()">Create Store</button>
+            <h2>My Ingredients</h2>
+            <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px; font-size: 0.9em;">
+                <strong>💡 Tip:</strong> Click priority badges to adjust. Higher priority = used more in recipes.
             </div>
 
-            <h3>Your Stores</h3>
-            <div id="storesList" class="stores-list"></div>
+            <div id="flatInventoryList"></div>
 
-            <div id="inventorySection" style="display:none;">
-                <h3>Add Inventory</h3>
-                <input type="text" id="ingredientName" placeholder="Ingredient">
-                <input type="number" id="quantity" placeholder="Quantity" step="0.1">
-                <input type="text" id="unit" placeholder="Unit (lbs, bunch, etc)">
-                <button onclick="addInventory()">Add Item</button>
-                
-                <h4>Current Inventory</h4>
-                <div id="inventoryList"></div>
-            </div>
+            <details style="margin-top: 30px;">
+                <summary style="cursor: pointer; padding: 10px; background: #f5f5f5; border-radius: 4px; font-weight: 500;">
+                    ➕ Add Ingredients
+                </summary>
+                <div style="margin-top: 15px; padding: 15px; background: #fafafa; border-radius: 4px;">
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                        Paste your CSA delivery list or fridge contents:
+                    </p>
+                    <textarea id="bulkIngredients" placeholder="2 lbs carrots&#10;1 bunch kale&#10;1/2 lb bacon (in fridge)" rows="5"></textarea>
+                    <button onclick="addBulkInventory()">Parse and Add</button>
+                    <div id="parseResults" style="margin: 10px 0; padding: 10px; background: #fff; border-radius: 4px; display: none;"></div>
+
+                    <details style="margin-top: 15px;">
+                        <summary style="cursor: pointer; font-size: 0.85em; color: #666;">Advanced: Manage Stores</summary>
+                        <div style="margin-top: 10px; font-size: 0.9em;">
+                            <input type="text" id="storeName" placeholder="Store name" style="font-size: 0.9em;">
+                            <select id="storeType" style="font-size: 0.9em;">
+                                <option value="explicit">Explicit (CSA, Freezer)</option>
+                                <option value="definition">Definition (Grocery, Pantry)</option>
+                            </select>
+                            <textarea id="storeDefinition" placeholder="Definition (for LLM-inferred stores)" style="display:none; font-size: 0.9em;"></textarea>
+                            <button onclick="createStore()" style="font-size: 0.9em;">Create Store</button>
+                            <div id="storesList" class="stores-list" style="max-height: 200px; margin-top: 10px;"></div>
+                        </div>
+                    </details>
+                </div>
+            </details>
         </div>
 
         <!-- Right Panel - Recipe Generation -->
         <div class="panel">
             <h2>Recipe Planning</h2>
-            
-            <div style="margin-bottom: 20px;">
-                <h3>What's in your CSA?</h3>
-                <textarea id="csaContents" placeholder="kale, carrots, beets, potatoes..." rows="3"></textarea>
-                <button onclick="generateRecipes()">Generate Recipes (SSE Stream)</button>
+
+            <!-- My Planned Recipes Section -->
+            <div style="margin-bottom: 30px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+                <h3>My Planned Recipes</h3>
+                <div id="plannedRecipesList"></div>
             </div>
 
-            <h3>Recipe Suggestions</h3>
+            <!-- Shopping List Section -->
+            <div class="shopping-list" id="shoppingListSection" style="display:none;">
+                <h3>🛒 Shopping List</h3>
+
+                <div id="groceryStores">
+                    <h4>Grocery Stores</h4>
+                    <div id="groceryList"></div>
+                </div>
+
+                <div id="pantryChecks" style="margin-top: 20px;">
+                    <h4>Verify Pantry</h4>
+                    <div id="pantryList"></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3>Additional Context (optional)</h3>
+                <textarea id="additionalContext" placeholder="e.g., 'It's cold so soup would feel good' or 'Busy week, want something quick'" rows="3"></textarea>
+                <button onclick="generatePitches()">Browse Recipe Ideas</button>
+                <button onclick="generateRecipes()">Generate Full Recipes (old)</button>
+            </div>
+
+            <div id="pitchSection" style="display:none;">
+                <h3>Recipe Pitches - Click to Select</h3>
+                <div class="pitch-actions">
+                    <button onclick="fleshOutSelected()">Flesh Out Selected</button>
+                    <button onclick="generatePitches()">Generate More Pitches</button>
+                </div>
+                <div id="pitchesList" class="pitch-grid"></div>
+            </div>
+
+            <h3>Full Recipes</h3>
             <div id="recipesList"></div>
 
             <h3>Meal Plan</h3>

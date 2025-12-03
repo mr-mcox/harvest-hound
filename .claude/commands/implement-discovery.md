@@ -10,18 +10,27 @@ Rapid implementation of experiments to test pain point solutions. Speed over per
 
 ---
 
+## Path Reference Note
+
+**IMPORTANT**: File paths reference the **project root** (`/Users/mcox/dev/harvest-hound/`). Since we work in `prototype/`, use `../` to reach project root files.
+
+Example: `.scratch/pain-[topic].md` means `../.scratch/pain-[topic].md` from the prototype directory.
+
+---
+
 ## Background Context
 
 **Pain Analysis** (if exists):
-- Check `.scratch/pain-[topic].md` for structured context from `/discover-pain`
+- Check `.scratch/pain-[topic].md` for structured context from `/discover-pain` (use `../.scratch/` from prototype)
 
-**Prototype Structure**:
-- `prototype/app.py` - FastAPI backend
-- `prototype/templates/` - HTML templates (if exists)
-- `prototype/static/` - JS/CSS (if exists)
+**Prototype Structure** (current working directory):
+- `app.py` - FastAPI backend (in current dir)
+- `templates/` - HTML templates (if exists, in current dir)
+- `static/` - JS/CSS (if exists, in current dir)
+- `baml_src/` - BAML prompts (in current dir)
 
 **Domain Vocabulary** (for reference only):
-- `docs/domain-model-reference.md` - Don't constrain implementation, but use consistent terms
+- `docs/domain-model-reference.md` - Don't constrain implementation, but use consistent terms (use `../docs/` from prototype)
 
 ---
 

@@ -10,11 +10,22 @@ Help the user articulate and understand pain points in the meal planning workflo
 
 ---
 
+## Path Reference Note
+
+**IMPORTANT**: All file paths in this command are relative to the **project root** (`/Users/mcox/dev/harvest-hound/`), NOT the current working directory (which is usually `prototype/`).
+
+When referencing files from `prototype/` directory, use `../` to reach project root:
+- `../docs/LEARNINGS.md`
+- `../docs/open-questions/`
+- `../.scratch/`
+
+---
+
 ## Background Context
 
 When relevant, reference these for domain vocabulary (not as constraints):
-- `docs/domain-model-reference.md` - Domain concepts and terminology
-- `docs/LEARNINGS.md` - Previous discoveries (check for related insights)
+- `docs/domain-model-reference.md` - Domain concepts and terminology (relative to project root)
+- `docs/LEARNINGS.md` - Previous discoveries (check for related insights) (relative to project root)
 
 ---
 
@@ -31,7 +42,26 @@ Let me explore the current prototype to understand the context..."
 - Scope: Surface scan (enough to understand current behavior)
 - Stop when: Can describe what the prototype currently does for this topic
 
-### Step 2: Understand the Pain
+### Step 2: Check for Related Open Questions
+
+Use the `thoughts-locator` agent to search for related open questions:
+
+**Agent Task**: "Search `docs/open-questions/` for questions related to: [pain point topic]
+
+Return relevant question files with brief summaries."
+
+If related questions found, inform user:
+
+"I found related open questions we're already tracking:
+- [question file]: [summary]
+
+I'll read these for context and reference them in the pain analysis.
+After we implement and test, `/capture-learning` will update or close
+these questions based on what we discover."
+
+Then READ the related question files for context to inform the pain analysis.
+
+### Step 3: Understand the Pain
 
 After exploration completes, ask 2-3 targeted questions:
 
@@ -43,7 +73,7 @@ After exploration completes, ask 2-3 targeted questions:
 
 Then WAIT for user responses.
 
-### Step 3: Connect to Domain (Light Touch)
+### Step 4: Connect to Domain (Light Touch)
 
 After user responds, map the pain to domain concepts (using domain-model-reference.md vocabulary if helpful):
 
@@ -53,7 +83,7 @@ After user responds, map the pain to domain concepts (using domain-model-referen
 
 **Note**: Don't force-fit into existing domain model. New concepts are valid discoveries!
 
-### Step 4: Propose Experiment
+### Step 5: Propose Experiment
 
 Suggest a minimal implementation to test:
 
@@ -64,14 +94,14 @@ Suggest a minimal implementation to test:
 - Minimal files touched (ideally 1-2)
 - Observable outcome for user to evaluate
 
-### Step 5: Set Success Criteria
+### Step 6: Set Success Criteria
 
 Define what success looks like:
 - How will we know if this helps?
 - What would we observe if it works?
 - What might we learn even if it doesn't?
 
-### Step 6: Create Pain Analysis Document
+### Step 7: Create Pain Analysis Document
 
 Save structured analysis to `.scratch/pain-[sanitized-topic].md`:
 
@@ -105,11 +135,22 @@ Save structured analysis to `.scratch/pain-[sanitized-topic].md`:
 - Observable outcome: [what user will see/do]
 - Learning opportunity: [what we'll discover either way]
 
+## Related Open Questions
+(Optional - if this exploration relates to existing questions)
+
+**This exploration extends/relates to**:
+- `docs/open-questions/[relevant-question].md` - [brief context of how they relate]
+
+**Workflow**: After implementing this experiment, use `/capture-learning [topic]` to:
+- Update open questions with new insights
+- Close questions that are fully answered
+- Create new questions for uncertainties that surface
+
 ## Notes
 [Any additional context]
 ```
 
-### Step 7: Handoff
+### Step 8: Handoff
 
 "I've saved the pain analysis to `.scratch/pain-[topic].md`.
 
