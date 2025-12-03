@@ -402,38 +402,39 @@ Before building any steel thread features, we need a runnable project structure 
 **Verification**: `curl "http://localhost:8000/api/dishes?ingredient=potato"` returns LLM-generated dishes
 
 ### 2.1 BAML Directory - **SETUP ONLY**
-- [ ] Create `src/backend/baml_src/` directory
+- [x] Create `src/backend/baml_src/` directory
 
 ### 2.2 BAML Client Config - **SETUP ONLY**
-- [ ] Create `src/backend/baml_src/clients.baml` with Anthropic client
+- [x] Create `src/backend/baml_src/clients.baml` with Anthropic client
   - Model: `claude-sonnet-4-5`
   - API key: `env.ANTHROPIC_HH_API_KEY`
-- [ ] Reference pattern: `prototype/baml_src/clients.baml`
+- [x] Reference pattern: `prototype/baml_src/clients.baml`
 
 ### 2.3 BAML Generator Config - **SETUP ONLY**
-- [ ] Create `src/backend/baml_src/generators.baml` with Python output config
-  - Output directory: `../baml_client`
+- [x] Create `src/backend/baml_src/generators.baml` with Python output config
+  - Output directory: `../` (generates `baml_client/` at backend root)
 
 ### 2.4 Dish Namer Function - **NEW BEHAVIOR**
-- [ ] Create `src/backend/baml_src/dishes.baml` with:
+- [x] Create `src/backend/baml_src/dishes.baml` with:
   - `class Dish { name: string, description: string }`
   - `function NameDishes(ingredient: string) -> Dish[]`
   - Prompt: "Name three creative dishes that feature {ingredient} as a key ingredient"
-- [ ] Run `uv run baml-cli generate` to create Python client
+- [x] Run `uv run baml-cli generate` to create Python client
 
 ### 2.5 BAML Wrapper - **SETUP ONLY**
-- [ ] Create `src/backend/baml_functions.py` with:
-  - `async def get_dishes(ingredient: str) -> list[dict]`
+- [x] Create `src/backend/baml_functions.py` with:
+  - `async def get_dishes(ingredient: str) -> list[Dish]`
   - Calls BAML client and returns dishes
 
 ### 2.6 Dishes Endpoint - **NEW BEHAVIOR**
-- [ ] Add to `src/backend/routes.py`:
+- [x] Add to `src/backend/routes.py`:
   - `GET /api/dishes?ingredient=X` endpoint
   - Calls `get_dishes()` and returns JSON array
-- [ ] Add `baml-py` to `pyproject.toml` dependencies
+- [x] Add `baml-py` to `pyproject.toml` dependencies
 
 ### 2.7 Verification Checkpoint
-- [ ] Verify: `curl "http://localhost:8000/api/dishes?ingredient=potato"` returns 3 dishes from LLM
+- [x] Verify: BAML imports work, endpoint returns appropriate error when API key not set
+- Note: Full LLM verification requires `ANTHROPIC_HH_API_KEY` environment variable
 
 ---
 
