@@ -29,10 +29,22 @@ See `prototype/CLAUDE.md` for discovery methodology.
 ## Project Structure
 
 ```
-/prototype       # Current focus - rapid discovery phase
+/src             # MVP application (FastAPI + SvelteKit)
+/prototype       # Rapid discovery phase
 /old            # Archived over-engineered attempt
 /docs           # Learnings and documentation
 /.claude        # Development commands
+```
+
+## Code Quality
+
+Pre-commit hooks enforce:
+- **Python**: ruff (lint + format, line-length 88, complexity 10)
+- **Frontend**: prettier + svelte-check
+
+Run at end of each implementation phase:
+```bash
+pre-commit run --all-files
 ```
 
 ## After Discovery
