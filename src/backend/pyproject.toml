@@ -1,0 +1,10 @@
+[project]
+name = "harvest-hound"
+version = "0.1.0"
+description = "Agentic meal planning for CSA deliveries"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "sqlmodel>=0.0.22",
+]

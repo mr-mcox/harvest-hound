@@ -351,3 +351,238 @@ Before building any steel thread features, we need a runnable project structure 
 - Six small phases with clear boundaries
 - Single developer, no coordination overhead
 - Steering unlikely beyond theme/tooling preferences
+
+---
+
+## Implementation Tasks
+
+**TIP Reference**: Phases 1-6 above
+**Task Sequencing**: Tasks follow TIP phase order. Each task should result in runnable/testable state.
+
+---
+
+## Task 1: Backend Foundation (TIP Phase 1)
+**Goal**: FastAPI backend with SQLite connectivity and hello world endpoint
+**Verification**: `curl http://localhost:8000/api/hello` returns JSON
+
+### 1.1 Directory Structure - **SETUP ONLY**
+- [x] Create `src/backend/` directory
+- [x] Create `src/backend/static/` directory (empty, for future frontend build)
+- [x] Create `src/backend/__init__.py` (empty)
+
+### 1.2 SQLModel Setup - **SETUP ONLY**
+- [x] Create `src/backend/models.py` with:
+  - SQLite engine: `sqlite:///harvest.db`
+  - `get_session()` dependency for FastAPI
+  - Health check function: `def db_health() -> bool` that runs `SELECT 1`
+
+### 1.3 FastAPI App - **SETUP ONLY**
+- [x] Create `src/backend/app.py` with:
+  - FastAPI app instance
+  - CORS middleware (permissive: `allow_origins=["*"]`)
+  - Static files mount at `/static` pointing to `static/` directory
+  - Import and include router from `routes.py`
+- [x] Reference pattern: `prototype/app.py:85-97`
+
+### 1.4 Hello World Route - **NEW BEHAVIOR**
+- [x] Create `src/backend/routes.py` with:
+  - APIRouter instance
+  - `GET /api/hello` endpoint returning `{"message": "Hello from Harvest Hound!", "db_ok": true}`
+  - Call `db_health()` to verify SQLite works
+- [x] Create `src/backend/pyproject.toml` with dependencies: fastapi, uvicorn, sqlmodel
+
+### 1.5 Verification Checkpoint
+- [x] Run: `cd src/backend && uv sync && uv run uvicorn app:app --reload`
+- [x] Verify: `curl http://localhost:8000/api/hello` returns JSON with `db_ok: true`
+
+---
+
+## Task 2: BAML Integration (TIP Phase 2)
+**Goal**: Working BAML function that names dishes using an ingredient
+**Verification**: `curl "http://localhost:8000/api/dishes?ingredient=potato"` returns LLM-generated dishes
+
+### 2.1 BAML Directory - **SETUP ONLY**
+- [ ] Create `src/backend/baml_src/` directory
+
+### 2.2 BAML Client Config - **SETUP ONLY**
+- [ ] Create `src/backend/baml_src/clients.baml` with Anthropic client
+  - Model: `claude-sonnet-4-5`
+  - API key: `env.ANTHROPIC_HH_API_KEY`
+- [ ] Reference pattern: `prototype/baml_src/clients.baml`
+
+### 2.3 BAML Generator Config - **SETUP ONLY**
+- [ ] Create `src/backend/baml_src/generators.baml` with Python output config
+  - Output directory: `../baml_client`
+
+### 2.4 Dish Namer Function - **NEW BEHAVIOR**
+- [ ] Create `src/backend/baml_src/dishes.baml` with:
+  - `class Dish { name: string, description: string }`
+  - `function NameDishes(ingredient: string) -> Dish[]`
+  - Prompt: "Name three creative dishes that feature {ingredient} as a key ingredient"
+- [ ] Run `uv run baml-cli generate` to create Python client
+
+### 2.5 BAML Wrapper - **SETUP ONLY**
+- [ ] Create `src/backend/baml_functions.py` with:
+  - `async def get_dishes(ingredient: str) -> list[dict]`
+  - Calls BAML client and returns dishes
+
+### 2.6 Dishes Endpoint - **NEW BEHAVIOR**
+- [ ] Add to `src/backend/routes.py`:
+  - `GET /api/dishes?ingredient=X` endpoint
+  - Calls `get_dishes()` and returns JSON array
+- [ ] Add `baml-py` to `pyproject.toml` dependencies
+
+### 2.7 Verification Checkpoint
+- [ ] Verify: `curl "http://localhost:8000/api/dishes?ingredient=potato"` returns 3 dishes from LLM
+
+---
+
+## Task 3: Frontend Scaffolding (TIP Phase 3)
+**Goal**: SvelteKit + Skeleton v4 rendering with styled button
+**Verification**: Browser shows Skeleton-styled page at `http://localhost:5173`
+
+### 3.1 SvelteKit Project - **SETUP ONLY**
+- [ ] Run: `cd src && npx sv create --types ts frontend`
+  - Select: SvelteKit minimal, TypeScript
+- [ ] Verify: `cd src/frontend && npm install && npm run dev` shows default page
+
+### 3.2 Skeleton v4 Installation - **SETUP ONLY**
+- [ ] Run: `cd src/frontend && npm i -D @skeletonlabs/skeleton @skeletonlabs/skeleton-svelte`
+- [ ] Install Tailwind 4 if not present: `npm i -D tailwindcss`
+
+### 3.3 Tailwind + Skeleton CSS Config - **SETUP ONLY**
+- [ ] Update `src/frontend/src/app.css`:
+  ```css
+  @import 'tailwindcss';
+  @import '@skeletonlabs/skeleton';
+  @import '@skeletonlabs/skeleton-svelte';
+  @import '@skeletonlabs/skeleton/themes/cerberus';
+  ```
+- [ ] Ensure `app.css` is imported in `+layout.svelte`
+
+### 3.4 Hello World Page - **NEW BEHAVIOR**
+- [ ] Update `src/frontend/src/routes/+page.svelte`:
+  - Add Skeleton button component
+  - Display "Harvest Hound" heading with Skeleton typography
+  - Simple layout proving Skeleton styling works
+
+### 3.5 Vite Proxy Config - **SETUP ONLY**
+- [ ] Update `src/frontend/vite.config.ts`:
+  - Add proxy for `/api/*` to `http://localhost:8000`
+  - This avoids CORS issues in development
+
+### 3.6 Verification Checkpoint
+- [ ] Run frontend: `cd src/frontend && npm run dev`
+- [ ] Verify: Browser shows Skeleton-styled button at `http://localhost:5173`
+
+---
+
+## Task 4: Frontend-Backend Integration (TIP Phase 4)
+**Goal**: Frontend calls backend API and displays result
+**Verification**: Click button, see dishes appear in UI
+
+### 4.1 API Fetch in Svelte - **NEW BEHAVIOR**
+- [ ] Update `src/frontend/src/routes/+page.svelte`:
+  - Add text input for ingredient
+  - Add "Get Dishes" button
+  - On click: fetch `/api/dishes?ingredient=X`
+  - Display returned dishes in a Skeleton-styled list/cards
+
+### 4.2 Loading State - **NEW BEHAVIOR**
+- [ ] Add loading indicator while fetching
+- [ ] Display error message if API call fails
+
+### 4.3 Verification Checkpoint
+- [ ] Run backend: `cd src/backend && uv run uvicorn app:app --reload`
+- [ ] Run frontend: `cd src/frontend && npm run dev`
+- [ ] Verify: Enter "carrot", click button, see 3 dishes appear
+
+---
+
+## Task 5: SSE Streaming Proof (TIP Phase 5)
+**Goal**: Dishes stream in one at a time
+**Verification**: See dishes appear progressively (not all at once)
+
+### 5.1 Streaming Endpoint - **NEW BEHAVIOR**
+- [ ] Add to `src/backend/routes.py`:
+  - `GET /api/dishes/stream?ingredient=X` endpoint
+  - Returns `StreamingResponse` with `text/event-stream` media type
+- [ ] Reference pattern: `prototype/app.py:418-493`
+
+### 5.2 BAML Streaming Function - **NEW BEHAVIOR**
+- [ ] Update `src/backend/baml_functions.py`:
+  - Add `async def stream_dishes(ingredient: str)` generator
+  - Yields dishes one at a time as SSE events
+- [ ] Format: `data: {"name": "...", "description": "..."}\n\n`
+
+### 5.3 EventSource in Svelte - **NEW BEHAVIOR**
+- [ ] Update `src/frontend/src/routes/+page.svelte`:
+  - Add "Stream Dishes" button
+  - Use `EventSource` API to connect to `/api/dishes/stream`
+  - Append each dish to list as it arrives
+  - Close connection on completion event
+
+### 5.4 Verification Checkpoint
+- [ ] Verify: Click "Stream Dishes", see dishes appear one by one with visible delay
+
+---
+
+## Task 6: Dev Script & Build (TIP Phase 6)
+**Goal**: Single `./dev` command, plus built frontend served by uvicorn
+**Verification**: `./dev` starts everything, hot reload works
+
+### 6.1 Vite Build Config - **SETUP ONLY**
+- [ ] Update `src/frontend/vite.config.ts`:
+  - Set build output to `../backend/static`
+  - Configure base path for production
+
+### 6.2 Dev Script - **SETUP ONLY**
+- [ ] Create `src/dev` (executable shell script):
+  ```bash
+  #!/bin/bash
+  npx concurrently \
+    --names "api,web" \
+    --prefix-colors "cyan,magenta" \
+    "cd backend && uv run uvicorn app:app --reload" \
+    "cd frontend && npm run dev"
+  ```
+- [ ] Run: `chmod +x src/dev`
+
+### 6.3 Root Index Route - **SETUP ONLY**
+- [ ] Update `src/backend/app.py`:
+  - Add route for `/` that serves `static/index.html` (built frontend)
+  - Only needed when running without Vite dev server
+
+### 6.4 Build and Run Mode - **NEW BEHAVIOR**
+- [ ] Test build: `cd src/frontend && npm run build`
+- [ ] Verify files appear in `src/backend/static/`
+- [ ] Test run mode: `cd src/backend && uv run uvicorn app:app`
+- [ ] Verify: `http://localhost:8000` serves built frontend
+
+### 6.5 Documentation - **SETUP ONLY**
+- [ ] Update `src/CLAUDE.md` (create if needed):
+  - Development: `./dev`
+  - Build: `cd frontend && npm run build`
+  - Run: `cd backend && uv run uvicorn app:app`
+
+### 6.6 Verification Checkpoint
+- [ ] Run `./dev` from `src/` directory
+- [ ] Verify: Both outputs visible with colors
+- [ ] Verify: Change Python file → backend reloads
+- [ ] Verify: Change Svelte file → frontend reloads
+
+---
+
+## Success Criteria for Implementation
+
+- [ ] All tasks completed and marked as done
+- [ ] Manual verification passed for each checkpoint
+- [ ] Integration points validated:
+  - [ ] Vite proxy works (frontend → backend)
+  - [ ] BAML client generates correctly
+  - [ ] Static files serve from backend
+- [ ] Risk mitigations confirmed:
+  - [ ] Skeleton v4 renders properly
+  - [ ] SSE streaming works end-to-end
+
+**Implementation Note**: Tasks may be reordered, skipped, or added during implementation as reality requires. This task plan is a guide, not a script. Use `implement-tasks` to begin implementation.
