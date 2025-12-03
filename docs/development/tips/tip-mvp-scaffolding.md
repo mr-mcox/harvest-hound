@@ -443,38 +443,38 @@ Before building any steel thread features, we need a runnable project structure 
 **Verification**: Browser shows Skeleton-styled page at `http://localhost:5173`
 
 ### 3.1 SvelteKit Project - **SETUP ONLY**
-- [ ] Run: `cd src && npx sv create --types ts frontend`
+- [x] Run: `cd src && npx sv create --types ts frontend`
   - Select: SvelteKit minimal, TypeScript
-- [ ] Verify: `cd src/frontend && npm install && npm run dev` shows default page
+- [x] Verify: `cd src/frontend && npm install && npm run dev` shows default page
 
 ### 3.2 Skeleton v4 Installation - **SETUP ONLY**
-- [ ] Run: `cd src/frontend && npm i -D @skeletonlabs/skeleton @skeletonlabs/skeleton-svelte`
-- [ ] Install Tailwind 4 if not present: `npm i -D tailwindcss`
+- [x] Run: `cd src/frontend && npm i -D @skeletonlabs/skeleton @skeletonlabs/skeleton-svelte`
+- [x] Install Tailwind 4 if not present: `npm i -D tailwindcss`
 
 ### 3.3 Tailwind + Skeleton CSS Config - **SETUP ONLY**
-- [ ] Update `src/frontend/src/app.css`:
+- [x] Update `src/frontend/src/app.css`:
   ```css
   @import 'tailwindcss';
   @import '@skeletonlabs/skeleton';
   @import '@skeletonlabs/skeleton-svelte';
   @import '@skeletonlabs/skeleton/themes/cerberus';
   ```
-- [ ] Ensure `app.css` is imported in `+layout.svelte`
+- [x] Ensure `app.css` is imported in `+layout.svelte`
 
 ### 3.4 Hello World Page - **NEW BEHAVIOR**
-- [ ] Update `src/frontend/src/routes/+page.svelte`:
+- [x] Update `src/frontend/src/routes/+page.svelte`:
   - Add Skeleton button component
   - Display "Harvest Hound" heading with Skeleton typography
   - Simple layout proving Skeleton styling works
 
 ### 3.5 Vite Proxy Config - **SETUP ONLY**
-- [ ] Update `src/frontend/vite.config.ts`:
+- [x] Update `src/frontend/vite.config.ts`:
   - Add proxy for `/api/*` to `http://localhost:8000`
   - This avoids CORS issues in development
 
 ### 3.6 Verification Checkpoint
-- [ ] Run frontend: `cd src/frontend && npm run dev`
-- [ ] Verify: Browser shows Skeleton-styled button at `http://localhost:5173`
+- [x] Run frontend: `cd src/frontend && npm run dev`
+- [x] Verify: Browser shows Skeleton-styled button at `http://localhost:5173`
 
 ---
 
