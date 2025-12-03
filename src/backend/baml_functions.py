@@ -19,15 +19,15 @@ async def stream_dishes(ingredient: str) -> AsyncGenerator[str, None]:
         last_count = 0
 
         async for partial in stream:
-                for dish in partial[last_count:]:
-                    dish_data = json.dumps(
-                        {
-                            "name": dish.name,
-                            "description": dish.description,
-                        }
-                    )
-                    yield f"data: {dish_data}\n\n"
-                last_count = len(partial)
+            for dish in partial[last_count:]:
+                dish_data = json.dumps(
+                    {
+                        "name": dish.name,
+                        "description": dish.description,
+                    }
+                )
+                yield f"data: {dish_data}\n\n"
+            last_count = len(partial)
 
         yield f"data: {json.dumps({'complete': True})}\n\n"
 

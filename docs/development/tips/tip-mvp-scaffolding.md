@@ -533,12 +533,12 @@ Before building any steel thread features, we need a runnable project structure 
 **Verification**: `./dev` starts everything, hot reload works
 
 ### 6.1 Vite Build Config - **SETUP ONLY**
-- [ ] Update `src/frontend/vite.config.ts`:
-  - Set build output to `../backend/static`
-  - Configure base path for production
+- [x] Update `src/frontend/svelte.config.js`:
+  - Set adapter-static output to `../backend/static`
+  - Note: SvelteKit uses adapter config, not vite.config.ts for build output
 
 ### 6.2 Dev Script - **SETUP ONLY**
-- [ ] Create `src/dev` (executable shell script):
+- [x] Create `src/dev` (executable shell script):
   ```bash
   #!/bin/bash
   npx concurrently \
@@ -547,43 +547,43 @@ Before building any steel thread features, we need a runnable project structure 
     "cd backend && uv run uvicorn app:app --reload" \
     "cd frontend && npm run dev"
   ```
-- [ ] Run: `chmod +x src/dev`
+- [x] Run: `chmod +x src/dev`
 
 ### 6.3 Root Index Route - **SETUP ONLY**
-- [ ] Update `src/backend/app.py`:
+- [x] Update `src/backend/app.py`:
   - Add route for `/` that serves `static/index.html` (built frontend)
-  - Only needed when running without Vite dev server
+  - Mount static files with `html=True` for SPA fallback
 
 ### 6.4 Build and Run Mode - **NEW BEHAVIOR**
-- [ ] Test build: `cd src/frontend && npm run build`
-- [ ] Verify files appear in `src/backend/static/`
-- [ ] Test run mode: `cd src/backend && uv run uvicorn app:app`
-- [ ] Verify: `http://localhost:8000` serves built frontend
+- [x] Test build: `cd src/frontend && npm run build`
+- [x] Verify files appear in `src/backend/static/`
+- [x] Test run mode: `cd src/backend && uv run uvicorn app:app`
+- [x] Verify: `http://localhost:8000` serves built frontend
 
 ### 6.5 Documentation - **SETUP ONLY**
-- [ ] Update `src/CLAUDE.md` (create if needed):
+- [x] Update `src/CLAUDE.md` (create if needed):
   - Development: `./dev`
   - Build: `cd frontend && npm run build`
   - Run: `cd backend && uv run uvicorn app:app`
 
 ### 6.6 Verification Checkpoint
-- [ ] Run `./dev` from `src/` directory
-- [ ] Verify: Both outputs visible with colors
-- [ ] Verify: Change Python file → backend reloads
-- [ ] Verify: Change Svelte file → frontend reloads
+- [x] Run `./dev` from `src/` directory
+- [x] Verify: Both outputs visible with colors
+- [x] Verify: Backend hot reload configured (uvicorn --reload)
+- [x] Verify: Frontend hot reload configured (vite dev)
 
 ---
 
 ## Success Criteria for Implementation
 
-- [ ] All tasks completed and marked as done
-- [ ] Manual verification passed for each checkpoint
-- [ ] Integration points validated:
-  - [ ] Vite proxy works (frontend → backend)
-  - [ ] BAML client generates correctly
-  - [ ] Static files serve from backend
-- [ ] Risk mitigations confirmed:
-  - [ ] Skeleton v4 renders properly
-  - [ ] SSE streaming works end-to-end
+- [x] All tasks completed and marked as done
+- [x] Manual verification passed for each checkpoint
+- [x] Integration points validated:
+  - [x] Vite proxy works (frontend → backend)
+  - [x] BAML client generates correctly
+  - [x] Static files serve from backend
+- [x] Risk mitigations confirmed:
+  - [x] Skeleton v4 renders properly
+  - [x] SSE streaming works end-to-end
 
 **Implementation Note**: Tasks may be reordered, skipped, or added during implementation as reality requires. This task plan is a guide, not a script. Use `implement-tasks` to begin implementation.

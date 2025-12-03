@@ -10,25 +10,35 @@
 # BAML files and re-generate this code using: baml-cli generate
 # baml-cli is available with the baml package.
 
-import typing
-from baml_py import type_builder
-from baml_py import baml_py
+
+from baml_py import baml_py, type_builder
+
 # These are exports, not used here, hence the linter is disabled
-from baml_py.baml_py import FieldType, EnumValueBuilder, EnumBuilder, ClassBuilder # noqa: F401 # pylint: disable=unused-import
+from baml_py.baml_py import (  # noqa: F401 # pylint: disable=unused-import
+    ClassBuilder,
+    EnumBuilder,
+    EnumValueBuilder,
+    FieldType,
+)
+
 from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME
+
 
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
-        super().__init__(classes=set(
-          ["Dish",]
-        ), enums=set(
-          []
-        ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
+        super().__init__(
+            classes=set(
+                [
+                    "Dish",
+                ]
+            ),
+            enums=set([]),
+            runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME,
+        )
 
     # #########################################################################
     # Generated enums 0
     # #########################################################################
-
 
     # #########################################################################
     # Generated classes 1
@@ -37,7 +47,6 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def Dish(self) -> "DishViewer":
         return DishViewer(self)
-
 
 
 # #########################################################################
@@ -49,11 +58,17 @@ class TypeBuilder(type_builder.TypeBuilder):
 # Generated classes 1
 # #########################################################################
 
+
 class DishAst:
     def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        _tb = tb._tb  # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("Dish")
-        self._properties: typing.Set[str] = set([  "name",  "description",  ])
+        self._properties: set[str] = set(
+            [
+                "name",
+                "description",
+            ]
+        )
         self._props = DishProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -68,26 +83,22 @@ class DishViewer(DishAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
-    
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-    
+    def list_properties(self) -> list[tuple[str, type_builder.ClassPropertyViewer]]:
+        return [
+            (name, type_builder.ClassPropertyViewer(self._bldr.property(name)))
+            for name in self._properties
+        ]
 
 
 class DishProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: set[str]):
         self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+        self.__properties = properties  # type: ignore (we know how to use this private attribute) # noqa: F821
 
-    
-    
     @property
     def name(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("name"))
-    
+
     @property
     def description(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
-    
-    
-

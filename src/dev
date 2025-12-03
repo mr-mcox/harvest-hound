@@ -1,0 +1,10 @@
+#!/bin/bash
+# Start both backend and frontend for development
+
+cd "$(dirname "$0")"
+
+npx concurrently \
+  --names "api,web" \
+  --prefix-colors "cyan,magenta" \
+  "cd backend && uv run uvicorn app:app --reload" \
+  "cd frontend && npm run dev"

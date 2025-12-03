@@ -11,11 +11,11 @@
 # baml-cli is available with the baml package.
 
 _file_map = {
-
-    "clients.baml": "client<llm> Anthropic {\n  provider anthropic\n  options {\n    model \"claude-sonnet-4-5\"\n    api_key env.ANTHROPIC_HH_API_KEY\n    max_tokens 1024\n  }\n}\n",
-    "dishes.baml": "class Dish {\n    name string\n    description string\n}\n\nfunction NameDishes(ingredient: string) -> Dish[] {\n    client Anthropic\n    prompt #\"\n        Name three creative dishes that feature {{ ingredient }} as a key ingredient.\n\n        For each dish, provide:\n        - A catchy name\n        - A brief description (1-2 sentences)\n\n        {{ ctx.output_format }}\n    \"#\n}\n",
-    "generators.baml": "generator target {\n    output_type \"python/pydantic\"\n    output_dir \"../\"\n    version \"0.214.0\"\n    default_client_mode async\n}\n",
+    "clients.baml": 'client<llm> Anthropic {\n  provider anthropic\n  options {\n    model "claude-sonnet-4-5"\n    api_key env.ANTHROPIC_HH_API_KEY\n    max_tokens 1024\n  }\n}\n',
+    "dishes.baml": 'class Dish {\n    name string\n    description string\n}\n\nfunction NameDishes(ingredient: string) -> Dish[] {\n    client Anthropic\n    prompt #"\n        Name three creative dishes that feature {{ ingredient }} as a key ingredient.\n\n        For each dish, provide:\n        - A catchy name\n        - A brief description (1-2 sentences)\n\n        {{ ctx.output_format }}\n    "#\n}\n',
+    "generators.baml": 'generator target {\n    output_type "python/pydantic"\n    output_dir "../"\n    version "0.214.0"\n    default_client_mode async\n}\n',
 }
+
 
 def get_baml_files():
     return _file_map

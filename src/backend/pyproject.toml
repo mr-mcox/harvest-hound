@@ -9,3 +9,21 @@ dependencies = [
     "uvicorn>=0.32.0",
     "sqlmodel>=0.0.22",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = ["baml_client"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "C90",    # mccabe complexity
+    "UP",     # pyupgrade
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10

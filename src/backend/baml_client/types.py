@@ -11,31 +11,33 @@
 # baml-cli is available with the baml package.
 
 import typing
+
 import typing_extensions
-from enum import Enum
+from pydantic import BaseModel
 
+CheckT = typing_extensions.TypeVar("CheckT")
+CheckName = typing_extensions.TypeVar("CheckName", bound=str)
 
-from pydantic import BaseModel, ConfigDict
-
-
-import baml_py
-
-CheckT = typing_extensions.TypeVar('CheckT')
-CheckName = typing_extensions.TypeVar('CheckName', bound=str)
 
 class Check(BaseModel):
     name: str
     expression: str
     status: str
+
+
 class Checked(BaseModel, typing.Generic[CheckT, CheckName]):
     value: CheckT
-    checks: typing.Dict[CheckName, Check]
+    checks: dict[CheckName, Check]
 
-def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
+
+def get_checks(checks: dict[CheckName, Check]) -> list[Check]:
     return list(checks.values())
 
-def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
+
+def all_succeeded(checks: dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
+
+
 # #########################################################################
 # Generated enums (0)
 # #########################################################################
@@ -44,9 +46,11 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # Generated classes (1)
 # #########################################################################
 
+
 class Dish(BaseModel):
     name: str
     description: str
+
 
 # #########################################################################
 # Generated type aliases (0)

@@ -1,0 +1,27 @@
+repos:
+  # Python - ruff for linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.2
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^src/backend/
+      - id: ruff-format
+        files: ^src/backend/
+
+  # Frontend - prettier for formatting
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd src/frontend && npx prettier --write --ignore-unknown .'
+        language: system
+        files: ^src/frontend/
+        pass_filenames: false
+
+      - id: svelte-check
+        name: svelte-check
+        entry: bash -c 'cd src/frontend && npm run check'
+        language: system
+        files: ^src/frontend/
+        pass_filenames: false

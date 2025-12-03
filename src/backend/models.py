@@ -2,7 +2,7 @@
 Database setup and models for Harvest Hound
 """
 
-from typing import Generator
+from collections.abc import Generator
 
 from sqlmodel import Session, SQLModel, create_engine, text
 
