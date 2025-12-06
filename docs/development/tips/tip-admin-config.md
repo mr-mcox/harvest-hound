@@ -361,25 +361,25 @@ From codebase exploration:
 **TIP Context**: Phase 2 - depends on Phase 1 models
 
 ### 2.1 Config Router Setup - **🏗️ SETUP ONLY**
-- [ ] **Create config routes file** - `src/backend/config_routes.py` with `APIRouter(prefix="/api/config")`
-- [ ] **Include in app** - Import and include router in `src/backend/app.py:25`
-- [ ] **Create Pydantic schemas** - `src/backend/schemas.py` with:
+- [x] **Create config routes file** - `src/backend/config_routes.py` with `APIRouter(prefix="/api/config")`
+- [x] **Include in app** - Import and include router in `src/backend/app.py:25`
+- [x] **Create Pydantic schemas** - `src/backend/schemas.py` with:
   - `SingletonConfigResponse`: `content: str`, `updated_at: datetime`
   - `SingletonConfigUpdate`: `content: str`
 
 ### 2.2 Household Profile API - **🧪 NEW BEHAVIOR**
-- [ ] **Write test** - `src/backend/tests/test_config_api.py::test_get_household_profile_returns_seeded_default`
-- [ ] **Write test** - `test_put_household_profile_updates_content`
-- [ ] **Write test** - `test_put_household_profile_allows_empty_content`
-- [ ] **Implement GET** - `GET /api/config/household-profile` in `config_routes.py`
-- [ ] **Implement PUT** - `PUT /api/config/household-profile` with upsert logic
+- [x] **Write test** - `src/backend/tests/test_config_api.py::test_get_household_profile_returns_seeded_default`
+- [x] **Write test** - `test_put_household_profile_updates_content`
+- [x] **Write test** - `test_put_household_profile_allows_empty_content`
+- [x] **Implement GET** - `GET /api/config/household-profile` in `config_routes.py`
+- [x] **Implement PUT** - `PUT /api/config/household-profile` with upsert logic
 
 ### 2.3 Pantry API - **🧪 NEW BEHAVIOR**
-- [ ] **Write test** - `test_get_pantry_returns_seeded_default`
-- [ ] **Write test** - `test_put_pantry_updates_content`
-- [ ] **Write test** - `test_put_pantry_allows_empty_content`
-- [ ] **Implement GET** - `GET /api/config/pantry` in `config_routes.py`
-- [ ] **Implement PUT** - `PUT /api/config/pantry` with upsert logic
+- [x] **Write test** - `test_get_pantry_returns_seeded_default`
+- [x] **Write test** - `test_put_pantry_updates_content`
+- [x] **Write test** - `test_put_pantry_allows_empty_content`
+- [x] **Implement GET** - `GET /api/config/pantry` in `config_routes.py`
+- [x] **Implement PUT** - `PUT /api/config/pantry` with upsert logic
 
 ---
 
