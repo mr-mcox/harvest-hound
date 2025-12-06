@@ -460,36 +460,37 @@ From codebase exploration:
 **TIP Context**: Phase 5 - do last, depends on Phases 2-4
 
 ### 5.1 Backend Cleanup - **🔄 REFACTOR**
-- [ ] **Remove dishes endpoints** - Delete lines 23-40 in `src/backend/routes.py` (dishes and dishes/stream)
-- [ ] **Remove hello endpoint** - Delete lines 14-20 in `src/backend/routes.py`
-- [ ] **Remove baml_functions import** - Remove `from baml_functions import get_dishes, stream_dishes` from routes.py
-- [ ] **Delete baml_functions.py** - Remove `src/backend/baml_functions.py` entirely
-- [ ] **Delete dishes.baml** - Remove `src/backend/baml_src/dishes.baml`
-- [ ] **Regenerate BAML client** - Run `cd src/backend && uv run baml-cli generate`
+- [x] **Remove dishes endpoints** - Delete lines 23-40 in `src/backend/routes.py` (dishes and dishes/stream)
+- [x] **Remove hello endpoint** - Delete lines 14-20 in `src/backend/routes.py` (replaced with /api/health)
+- [x] **Remove baml_functions import** - Remove `from baml_functions import get_dishes, stream_dishes` from routes.py
+- [x] **Delete baml_functions.py** - Remove `src/backend/baml_functions.py` entirely
+- [x] **Delete dishes.baml** - Remove `src/backend/baml_src/dishes.baml`
+- [x] **Regenerate BAML client** - Run `cd src/backend && uv run baml-cli generate`
 
 ### 5.2 Frontend Cleanup - **🔄 REFACTOR**
-- [ ] **Replace main page** - Update `src/frontend/src/routes/+page.svelte` with:
+- [x] **Replace main page** - Update `src/frontend/src/routes/+page.svelte` with:
   - Welcome message: "Harvest Hound - Meal Planning for CSA Deliveries"
   - Link to settings: "Get started by configuring your settings"
   - Placeholder for future features
-- [ ] **Remove demo interfaces** - Remove Dish interface and related state from main page
+- [x] **Remove demo interfaces** - Remove Dish interface and related state from main page
 
 ### 5.3 Verification - **🧪 NEW BEHAVIOR**
-- [ ] **Write smoke test** - `src/backend/tests/test_smoke.py::test_app_starts_and_serves_frontend`
+- [x] **Write smoke test** - `src/backend/tests/test_smoke.py::test_app_starts_and_serves_frontend`
   - Verify app starts without errors
   - Verify `/` returns HTML
   - Verify `/api/config/household-profile` returns 200
+  - Also verifies `/api/dishes` and `/api/hello` return 404 (scaffolding removed)
 - [ ] **Manual verification** - Start app, visit settings, save config, refresh to confirm persistence
 
 ---
 
 ## Success Criteria for Implementation
 
-- [ ] All tasks completed and marked as done
-- [ ] All tests passing: `cd src/backend && uv run pytest`
-- [ ] Frontend builds: `cd src/frontend && npm run build`
-- [ ] Pre-commit passes: `pre-commit run --all-files`
+- [x] All tasks completed and marked as done
+- [x] All tests passing: `cd src/backend && uv run pytest` (24 tests)
+- [x] Frontend builds: `cd src/frontend && npm run build`
+- [x] Pre-commit passes: `pre-commit run --all-files`
 - [ ] Manual smoke test: settings page loads, saves work, persists across refresh
-- [ ] Scaffolding removed: `/api/dishes` returns 404, `/api/hello` returns 404
+- [x] Scaffolding removed: `/api/dishes` returns 404, `/api/hello` returns 404 (verified by smoke tests)
 
 **Implementation Note**: Tasks may be reordered, skipped, or added during implementation as reality requires. This task plan is a guide, not a script. Use `implement-tasks` to begin implementation.
