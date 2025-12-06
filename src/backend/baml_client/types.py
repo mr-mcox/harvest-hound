@@ -37,12 +37,29 @@ def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
 def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
 # #########################################################################
-# Generated enums (0)
+# Generated enums (1)
 # #########################################################################
 
+class Priority(str, Enum):
+    Low = "Low"
+    Medium = "Medium"
+    High = "High"
+    Urgent = "Urgent"
+
 # #########################################################################
-# Generated classes (0)
+# Generated classes (2)
 # #########################################################################
+
+class Ingredient(BaseModel):
+    name: str
+    quantity: float
+    unit: str
+    priority: Priority
+    portion_size: typing.Optional[str] = None
+
+class InventoryParsingResult(BaseModel):
+    ingredients: typing.List["Ingredient"]
+    parsing_notes: typing.Optional[str] = None
 
 # #########################################################################
 # Generated type aliases (0)

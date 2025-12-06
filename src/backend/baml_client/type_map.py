@@ -16,5 +16,13 @@ from . import stream_types
 
 type_map = {
 
+    "types.Ingredient": types.Ingredient,
+    "stream_types.Ingredient": stream_types.Ingredient,
+
+    "types.InventoryParsingResult": types.InventoryParsingResult,
+    "stream_types.InventoryParsingResult": stream_types.InventoryParsingResult,
+
+
+    "types.Priority": types.Priority,
 
 }

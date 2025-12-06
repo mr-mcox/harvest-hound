@@ -20,9 +20,17 @@
   </div>
 
   <div class="card preset-outlined-surface-500 p-6 space-y-4">
+    <h2 class="h3">Inventory</h2>
+    <p class="text-surface-600-400">
+      Track your CSA deliveries and pantry items. Import ingredients in bulk and manage
+      what you have on hand.
+    </p>
+    <a href="/inventory" class="btn preset-filled-primary-500">View Inventory</a>
+  </div>
+
+  <div class="card preset-outlined-surface-500 p-6 space-y-4">
     <h2 class="h3">Coming Soon</h2>
     <ul class="list-disc list-inside text-surface-600-400 space-y-2">
-      <li>CSA delivery intake and inventory tracking</li>
       <li>AI-powered meal planning based on your ingredients</li>
       <li>Shopping list generation with store assignments</li>
     </ul>
