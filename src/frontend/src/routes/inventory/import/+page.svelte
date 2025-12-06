@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Inventory Import - pending state workflow for bulk ingredient entry
+  import { goto } from "$app/navigation";
 
   type Priority = "Low" | "Medium" | "High" | "Urgent";
 
@@ -11,14 +11,9 @@
     portion_size: string | null;
   }
 
-  // Form state
   let freeText = $state("");
   let configurationInstructions = $state("");
-
-  // Pending items state (client-side only, lost on refresh)
-  let pendingItems = $state<ParsedIngredient[]>([]);
-
-  // UI state
+  let pendingItems = $state<ParsedIngredient[]>([]); // Lost on refresh
   let parsing = $state(false);
   let approving = $state(false);
   let error = $state<string | null>(null);
@@ -45,10 +40,7 @@
 
       const data = await response.json();
 
-      // Append new items to pending list (don't replace)
       pendingItems = [...pendingItems, ...data.ingredients];
-
-      // Clear the text input for next paste
       freeText = "";
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to parse ingredients";
@@ -80,8 +72,8 @@
         throw new Error(`Failed to save: ${response.status}`);
       }
 
-      // Clear pending items after successful save
       pendingItems = [];
+      goto("/inventory");
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to save inventory";
     } finally {

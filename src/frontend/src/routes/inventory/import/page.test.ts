@@ -1,11 +1,13 @@
 import { render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { goto } from "$app/navigation";
 import ImportPage from "./+page.svelte";
 
 describe("Inventory Import Page", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.mocked(goto).mockClear();
   });
 
   it("renders the import form with textarea and parse button", () => {
@@ -305,5 +307,57 @@ describe("Inventory Import Page", () => {
 
     const backLink = screen.getByRole("link", { name: /back to inventory/i });
     expect(backLink).toHaveAttribute("href", "/inventory");
+  });
+
+  it("redirects to inventory list after successful approval", async () => {
+    const user = userEvent.setup();
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/parse")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ingredients: [
+                {
+                  ingredient_name: "Tomatoes",
+                  quantity: 3,
+                  unit: "lb",
+                  priority: "High",
+                  portion_size: null,
+                },
+              ],
+              parsing_notes: null,
+            }),
+        });
+      }
+      if (url.includes("/bulk")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ saved_count: 1 }),
+        });
+      }
+      return Promise.reject(new Error("Unknown URL"));
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(ImportPage);
+
+    // Parse first
+    const textarea = screen.getByPlaceholderText(/paste your csa delivery/i);
+    await user.type(textarea, "3 lbs tomatoes");
+    await user.click(screen.getByRole("button", { name: /parse ingredients/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Approve all
+    const approveButton = screen.getByRole("button", { name: /approve all/i });
+    await user.click(approveButton);
+
+    // Verify redirect was called
+    await waitFor(() => {
+      expect(goto).toHaveBeenCalledWith("/inventory");
+    });
   });
 });
