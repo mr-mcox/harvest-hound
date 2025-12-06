@@ -11,10 +11,12 @@
 # baml-cli is available with the baml package.
 
 import typing
+import typing_extensions
+
+import baml_py
 
 from . import stream_types, types
-from .runtime import BamlCallOptions, DoNotUseDirectlyCallManager
-
+from .runtime import DoNotUseDirectlyCallManager, BamlCallOptions
 
 class LlmResponseParser:
     __options: DoNotUseDirectlyCallManager
@@ -22,16 +24,7 @@ class LlmResponseParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def NameDishes(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> list["types.Dish"]:
-        result = self.__options.merge_options(baml_options).parse_response(
-            function_name="NameDishes", llm_response=llm_response, mode="request"
-        )
-        return typing.cast(list["types.Dish"], result)
-
+    
 
 class LlmStreamParser:
     __options: DoNotUseDirectlyCallManager
@@ -39,12 +32,4 @@ class LlmStreamParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def NameDishes(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> list["stream_types.Dish"]:
-        result = self.__options.merge_options(baml_options).parse_response(
-            function_name="NameDishes", llm_response=llm_response, mode="stream"
-        )
-        return typing.cast(list["stream_types.Dish"], result)
+    
