@@ -1,332 +1,459 @@
 # Implement Tasks Command
 
-You are implementing tasks from the TIP implementation plan using category-specific workflows.
+Implement features from the TIP at: $ARGUMENTS
 
-**Development Model**: This is spec-based development where you (Claude) write the code with human oversight and steering. The human engineer reviews your work, provides direction, and makes key decisions.
+**Development Model**: Spec-based development where you (Claude) write code with human oversight. The TIP provides strategic direction; you make tactical decisions just-in-time with user approval at phase boundaries.
 
-**Core Principle**: Plans are carefully designed, but reality can be messy. Follow the plan's direction while adapting to what you discover during implementation.
-
----
-
-## Finding Your Task Plan
-
-The task plan is appended to the TIP at the path specified in the TIP metadata or design decision.
-
-**Common locations**:
-- `docs/development/tips/tip-[feature-name].md` (scroll to bottom for "Implementation Tasks" section)
-- Check TIP metadata for exact path
-
-The task plan contains sub-tasks formatted as: `### [N.X] [Name] - **[CATEGORY]**`
+**Core Principles**:
+1. Strategic alignment comes from the TIP (phases, sequencing, risks)
+2. Tactical decisions happen at the start of each phase (files, tests, sequence)
+3. TDD intensity matches the work: thorough for domain, basic for frontend/integration, none for scaffolding
+4. Plans are guides - adapt when reality requires, communicate changes
 
 ---
 
-## Process for Each Sub-Task
+## Implementation Loop
 
-1. **Find next uncompleted sub-task** in the Implementation Tasks section
+For each TIP phase:
 
-2. **Identify task category**: **[SETUP ONLY|NEW BEHAVIOR|REFACTOR]**
-
-3. **Work through checkboxes** using the category-specific workflow below
-
-4. **After completing each sub-task:**
-   - Mark checkboxes as completed in the TIP
-   - Run appropriate tests to ensure no regressions
-   - Run pre-commit checks and fix any issues
-   - **PAUSE for human oversight** - This is a checkpoint for the human engineer to:
-     - Review your approach and implementation
-     - Validate code quality and test coverage
-     - Provide steering or course correction if needed
-     - Approve proceeding to the next sub-task
+```
+1. PLAN PHASE    → Identify work items, test intensity, files
+2. USER APPROVAL → Present plan, wait for OK
+3. EXECUTE       → Implement with category-appropriate workflow
+4. CHECKPOINT    → Verify, update TIP, pause for feedback
+```
 
 ---
 
-## 🏗️ SETUP ONLY Workflow
+## Step 1: Find Next Phase
 
-**Purpose**: Create scaffolding that enables other code to import/reference
+Read the TIP and identify the next incomplete phase. Phases should be marked as you complete them:
 
-**Implementation Rules:**
-- **NO BUSINESS LOGIC**: If it requires domain knowledge or complex logic, it's miscategorized
-- **Stubs Only**: Create empty classes, methods that raise NotImplementedError, basic schemas
-- **Import/Reference Focused**: Goal is to enable other code to import and reference
+```markdown
+### Phase 1: Database Models ✓
+### Phase 2: Config APIs ← current
+### Phase 3: Settings UI
+```
 
-**Process:**
-1. Create the minimal structure specified in the task
-2. For class methods: `raise NotImplementedError("TODO: implement in NEW BEHAVIOR task")`
-3. For schemas: Include only field definitions, no computed properties or validators
-4. For routes: Basic signature with `raise NotImplementedError("TODO: implement endpoint logic")`
-5. Run pre-commit to verify code quality
-
-**Red Flags - Stop and Re-categorize if:**
-- You're writing business rules or domain logic
-- You're making decisions about data processing
-- You're implementing actual functionality beyond basic structure
+If resuming, check which phase is current.
 
 ---
 
-## 🧪 NEW BEHAVIOR Workflow
+## Step 2: Phase Planning (Just-in-Time Tactical Decisions)
 
-**Purpose**: Implement new business logic through test-driven development
+Before implementing, analyze the phase and create a lightweight plan.
 
-**RED Phase**: Write failing test(s) that describe the exact behavior
-- Test should fail for the right reason (not syntax errors)
-- Use the test case guidance from the task description
-- Run tests to confirm failure
-- Run pre-commit to ensure test code quality
+### 2.1 Read Phase Scope
 
-**GREEN Phase**: Write minimal implementation to make test pass
-- Focus on making tests pass, not perfect code
-- Use existing SETUP scaffolding where possible
-- Run tests to confirm they pass
-- Run pre-commit to ensure implementation code quality
+From the TIP, extract:
+- What this phase accomplishes
+- Key considerations mentioned
+- Dependencies satisfied
 
-**REFACTOR Phase** (if needed): Clean up code while keeping tests green
-- Extract methods, improve names, remove duplication
-- Run tests after each change to ensure they stay green
-- Run pre-commit to ensure refactored code quality
+### 2.2 Explore Code Context
+
+Use Glob/Grep/Read to find:
+- Exact files to modify or create
+- Existing patterns to follow
+- Current state of relevant code
+
+### 2.3 Determine Test Intensity
+
+For each work item, apply the Test Intensity Framework (see below) to decide:
+- **No tests** (SETUP scaffolding)
+- **Basic tests** (frontend, integration, config CRUD)
+- **Thorough tests** (domain logic, business rules)
+
+### 2.4 Identify Work Sequence
+
+Break the phase into work items:
+- What order minimizes friction?
+- Which items are SETUP vs NEW BEHAVIOR vs REFACTOR?
+- What test intensity for each?
+
+### 2.5 Present Phase Plan
+
+Output a concise plan for user approval:
+
+```markdown
+## Phase N: [Name]
+
+**TIP scope**: [1-2 sentence summary from TIP]
+
+**Work sequence**:
+1. [SETUP] Create X scaffolding in file.py
+2. [NEW BEHAVIOR - thorough] Implement Y with domain tests
+3. [NEW BEHAVIOR - basic] Wire up Z endpoint
+4. [REFACTOR] Clean up existing W code
+
+**Test intensity rationale**: [Why thorough/basic/none for key items]
+
+**Files**: [List of files to touch]
+
+Proceed with Phase N?
+```
+
+**Keep it under 15 lines.** This is a checkpoint, not a detailed spec.
+
+### 2.6 Wait for User Approval
+
+User may:
+- Approve as-is → proceed
+- Adjust test intensity → update and proceed
+- Request changes → revise plan
+- Ask questions → clarify and re-present
 
 ---
 
-## 🔄 REFACTOR Workflow
+## Step 3: Execute Phase
 
-**Purpose**: Improve existing code while preserving behavior
+After approval, implement using TodoWrite to track progress.
 
-**Implementation Rules:**
-- **Behavior Preservation**: Existing functionality must work exactly the same
-- **Test-Guided**: Let existing tests guide your changes
-- **Small Steps**: Make tiny changes, run tests frequently
+### 3.1 Create Todo List
 
-**Process:**
-1. Run existing tests to establish baseline (must be green)
-2. Make small improvement while preserving behavior
-3. Run tests to ensure no regressions
-4. Run pre-commit to ensure code quality
-5. If tests or pre-commit fail, revert and try smaller change
+Add work items from phase plan to TodoWrite:
 
-**Safe Refactoring Patterns:**
-- Extract method/function from larger code block
-- Rename variables/methods for clarity
-- Move code between modules without changing interface
-- Optimize performance while maintaining same outputs
+```
+- [ ] Create X scaffolding
+- [ ] Implement Y with tests
+- [ ] Wire up Z endpoint
+```
+
+### 3.2 Execute Each Work Item
+
+Use the appropriate workflow based on category:
+
+- **SETUP ONLY** → Scaffolding workflow (no tests)
+- **NEW BEHAVIOR** → TDD workflow (intensity per plan)
+- **REFACTOR** → Behavior-preserving workflow
+
+Mark items complete in TodoWrite as you finish.
+
+### 3.3 After Each Work Item
+
+- Run relevant tests
+- Run pre-commit
+- Fix any issues before proceeding
+
+---
+
+## Step 4: Phase Checkpoint
+
+After completing all work items in the phase:
+
+1. **Verify phase is complete**:
+   - All tests passing
+   - Pre-commit clean
+   - Phase goals met
+
+2. **Update TIP**:
+   - Mark phase complete with ✓
+   - Note any deviations or discoveries
+
+3. **Pause for user feedback**:
+   ```
+   Phase N complete.
+
+   **Implemented**: [brief summary]
+   **Tests**: [X passing]
+   **Deviations**: [any changes from plan, or "none"]
+
+   Ready for Phase N+1, or would you like to review?
+   ```
+
+4. **Proceed or address feedback** before next phase
+
+---
+
+## Test Intensity Framework
+
+Use these signals to decide test depth for each work item.
+
+### No Tests (SETUP ONLY)
+
+**Signals**:
+- Creating empty classes, interfaces, schemas
+- File/directory structure
+- Stubs with `NotImplementedError`
+- Import-enabling code
+- No decisions or logic
+
+**The question**: "Does this code make decisions, or just enable other code to exist?"
+→ If just enabling, no tests needed.
+
+### Basic Tests (Light TDD)
+
+**Signals**:
+- Frontend components (renders, responds to interaction)
+- API endpoint wiring (calls service, returns response)
+- Configuration CRUD (save/load without complex rules)
+- Integration glue between systems
+- SSE/streaming plumbing
+
+**What to test**:
+- Happy path works
+- Basic error handling
+- One or two key interactions
+
+**What NOT to test**:
+- Every edge case
+- Boundary conditions
+- Complex scenarios
+
+**TDD rhythm**: RED (1-2 tests) → GREEN → light REFACTOR
+
+### Thorough Tests (Full TDD)
+
+**Signals**:
+- Domain models with invariants
+- Business rules and logic
+- Calculations, transformations, validations
+- State management with rules
+- Anything in domain/core layer
+- "Smart" behavior (optimization, generation, planning)
+
+**What to test**:
+- Happy paths
+- Edge cases and boundaries
+- Invalid inputs and error conditions
+- State transitions
+- Invariant preservation
+
+**TDD rhythm**: RED (comprehensive cases) → GREEN → REFACTOR (extract abstractions)
+
+### Project-Specific Guidance (Harvest Hound)
+
+| Area | Test Intensity | Rationale |
+|------|---------------|-----------|
+| Recipe generation/optimization | Thorough | Core domain logic |
+| Inventory calculations | Thorough | Business rules |
+| Meal planning constraints | Thorough | Domain invariants |
+| Settings/config CRUD | Basic | Thin logic, mostly plumbing |
+| UI components | Basic | Render and interaction |
+| API endpoint wiring | Basic | Integration glue |
+| Model definitions | None | Pure structure |
+| Route scaffolding | None | Stubs only |
+
+**When unsure**, ask: "If this has a bug, is it a minor inconvenience or a fundamental problem?" Fundamental → thorough. Inconvenience → basic.
+
+---
+
+## Category Workflows
+
+### SETUP ONLY Workflow
+
+**Purpose**: Create scaffolding that enables other code
+
+**Process**:
+1. Create minimal structure (classes, files, stubs)
+2. For methods: `raise NotImplementedError("TODO")`
+3. For schemas: Field definitions only
+4. Run pre-commit
+5. Verify imports work
+
+**No tests. No logic. Just structure.**
+
+**Red flag**: If you're writing business rules, stop and recategorize as NEW BEHAVIOR.
+
+---
+
+### NEW BEHAVIOR Workflow
+
+**Purpose**: Implement functionality through TDD
+
+#### For Basic Tests:
+
+**RED**: Write 1-2 focused tests
+- Happy path
+- One error/edge case
+- Keep tests simple and obvious
+
+**GREEN**: Make tests pass
+- Direct, simple implementation
+- Don't over-engineer
+
+**REFACTOR** (optional): Quick cleanup only
+- Extract if obviously cleaner
+- Don't gold-plate
+
+#### For Thorough Tests:
+
+**RED**: Write comprehensive tests
+- Start with happy path
+- Add edge cases
+- Add invalid input handling
+- Consider boundary conditions
+- Think about invariants
+
+**GREEN**: Make tests pass
+- Focus on correctness
+- Let tests guide design
+- Okay to be ugly initially
+
+**REFACTOR**: Clean up properly
+- Remove duplication
+- Extract meaningful abstractions
+- Improve naming
+- Keep tests green throughout
+
+---
+
+### REFACTOR Workflow
+
+**Purpose**: Improve code while preserving behavior
+
+**Process**:
+1. Confirm existing tests are green (baseline)
+2. Make small improvement
+3. Run tests - must stay green
+4. Run pre-commit
+5. If tests fail, revert and try smaller change
+6. Repeat
+
+**Safe patterns**:
+- Extract method/function
+- Rename for clarity
+- Move between modules (same interface)
+- Performance optimization (same outputs)
+
+**If behavior must change**: Stop. This is NEW BEHAVIOR, not REFACTOR.
 
 ---
 
 ## When Reality Diverges from Plan
 
-**Plans are guides, not scripts.** Adapt as needed while maintaining quality and communicating changes.
+### Phase is Larger Than Expected
 
-### If You Discover a Task is Unnecessary
+If phase planning reveals >6 work items:
+1. Explain the scope
+2. Propose splitting into sub-phases
+3. Wait for user decision
 
-**Example**: "After implementing Phase 1, I realize this validation is already handled elsewhere"
+### Work Item Needs Different Test Intensity
 
-**Process**:
-1. Explain why the task isn't needed
-2. Mark the task as skipped with rationale: `- [x] ~~[Task]~~ - SKIPPED: [Reason]`
-3. Update task plan in TIP with note
-4. Continue with next task
+If during implementation you realize:
+- "This SETUP actually has logic" → promote to NEW BEHAVIOR
+- "This basic test revealed complex edge cases" → promote to thorough
+- "This thorough testing is overkill for simple CRUD" → can demote, but ask first
 
-### If You Discover Blocking Dependencies
+### Discovery Requires New Work
 
-**Example**: "Task 3 needs the database schema from Task 5 to work"
+1. Explain what's needed and why
+2. Propose where it fits in sequence
+3. Wait for user approval
+4. Add to current phase or create new phase
 
-**Process**:
-1. Explain the dependency you discovered
-2. Propose reordering: "I'll do Task 5 before Task 3 because..."
+### Better Approach Found
+
+1. Explain the improvement
+2. Impact on remaining work
 3. Wait for user confirmation
-4. Update task sequence in TIP with note about reordering
-5. Proceed with new sequence
+4. Proceed with improved approach
 
-### If You Discover New Work is Needed
+### Blocked
 
-**Example**: "To implement this feature, we also need to add error handling that wasn't in the plan"
-
-**Process**:
-1. Explain what's needed and why you discovered it now
-2. Propose where it fits: "I'll add this as Task 3.5 because..."
-3. Write the new task/sub-task with appropriate category
-4. Wait for user approval
-5. Add to task plan in TIP
-6. Implement the new work
-
-### If You Find a Better Approach
-
-**Example**: "The plan suggests creating a new service, but I can extend the existing one more cleanly"
-
-**Process**:
-1. Explain the improvement you've identified
-2. Describe impact on remaining tasks
-3. Propose the adjustment
-4. Wait for user confirmation
-5. Update affected tasks in TIP
-6. Proceed with improved approach
-
-### If Implementation is More Complex Than Expected
-
-**Example**: "This task requires more decisions and context coordination than the complexity estimate suggested"
-
-**Process**:
-1. Explain what's more complex than anticipated (novel patterns, more integration points, unclear requirements)
-2. Identify if you need: more human decisions, clearer direction, or task breakdown
-3. Discuss with user: Continue with more steering, or break down the task?
-4. Update complexity assessment in TIP if pattern emerges
-5. Proceed with agreed approach
+1. Explain the blocker clearly
+2. Propose 2-3 alternatives
+3. Wait for user decision
 
 ---
 
 ## Quality Gates
 
-**Before Completing Each Sub-Task**:
-- [ ] Category workflow followed appropriately
-- [ ] Tests written and passing (for NEW BEHAVIOR)
-- [ ] Existing tests still passing (for REFACTOR)
-- [ ] Pre-commit checks passing
-- [ ] Code follows architectural patterns from TIP
-- [ ] Changes marked in task plan
+### Per Work Item:
+- [ ] Appropriate workflow followed
+- [ ] Tests written and passing (if applicable)
+- [ ] Pre-commit passing
+- [ ] TodoWrite updated
 
-**SETUP ONLY**:
-- [ ] Scaffolding is importable without errors
-- [ ] No business logic implemented
-- [ ] NotImplementedError stubs in place
-
-**NEW BEHAVIOR**:
-- [ ] Tests written first (RED)
-- [ ] Implementation makes tests pass (GREEN)
-- [ ] Code refactored if needed (REFACTOR)
-- [ ] Behavior matches task description
-
-**REFACTOR**:
-- [ ] All existing tests remain green
-- [ ] Behavior unchanged
-- [ ] Code quality improved
+### Per Phase:
+- [ ] All work items complete
+- [ ] All tests passing
+- [ ] TIP updated with ✓
+- [ ] User checkpoint completed
 
 ---
 
-## Sub-Task Categories Quick Reference
+## Implementation Complete
 
-| Category | Tests | Implementation | When to Adapt |
-|----------|-------|----------------|---------------|
-| **SETUP ONLY** | None needed | Stubs + NotImplementedError | If business logic needed, re-categorize |
-| **NEW BEHAVIOR** | TDD (RED/GREEN) | Full implementation | If test approach needs adjustment, explain and adapt |
-| **REFACTOR** | Keep existing green | Preserve behavior | If behavior must change, it's NEW BEHAVIOR instead |
+When all phases are done:
 
----
+### Final Verification
 
-## Error Recovery
+```bash
+cd src/backend && uv run pytest  # All tests pass
+cd src/frontend && npm run build  # Frontend builds
+pre-commit run --all-files  # Code quality
+```
 
-### If You Realize a Sub-Task is Miscategorized
-
-**Example**: "This SETUP task actually requires complex validation logic"
-
-1. Stop current work
-2. Explain the category mismatch: "This task involves business rules for X, so it should be NEW BEHAVIOR"
-3. Suggest correct category and approach
-4. Wait for user confirmation
-5. Update task category in TIP
-6. Proceed with correct workflow
-
-### If Checkboxes Are Too Complex
-
-**Example**: "This checkbox says 'implement authentication' which is actually 10 different things"
-
-1. Identify the complexity: "This breaks down into: session management, token validation, user lookup..."
-2. Propose breaking it into sub-tasks
-3. Wait for user agreement
-4. Update task plan in TIP with breakdown
-5. Implement step by step
-
-### If You Get Blocked
-
-**Example**: "This task requires a library we don't have, and I'm not sure which one to use"
-
-1. Explain the blocker clearly
-2. Propose 2-3 alternatives if possible
-3. Ask for user decision or guidance
-4. Wait for response
-5. Update task plan with decision
-6. Continue with selected approach
-
----
-
-## Implementation Complete - Cleanup Scaffolding
-
-**When ALL tasks are complete:**
-
-1. **Run final verification**:
-   - All tests passing: `[command from TIP quality gates]`
-   - Pre-commit checks clean
-   - Integration points working
-   - Code matches domain model documentation
-
-2. **Prompt user for scaffolding cleanup**:
+### Prompt for Cleanup
 
 ```
-✅ All tasks implemented and tested!
+All phases complete!
 
-Implementation is complete. Time to clean up scaffolding documents.
-
-**Verify implementation matches design**:
-- [ ] Implementation files exist as specified
-- [ ] Domain model reflects actual implementation
-- [ ] All tests pass and behavior matches design
-- [ ] Integration points validated
+**Summary**:
+- Phases implemented: [N]
+- Tests: [X passing]
+- Key deliverables: [list]
 
 **Ready to clean up scaffolding**:
-- Design decision: `[path]`
-- TIP (including task plan): `[path]`
+- TIP: `[path]`
+- Design decision: `[path if exists]`
 
-The code is now the authoritative source of truth. Scaffolding served its purpose and can be deleted.
-
-Would you like me to delete these scaffolding files now, or would you prefer to review first?
+The code is now the source of truth. Delete scaffolding files?
 ```
 
-3. **If user approves deletion**:
-   - Delete the design decision file (if exists)
-   - Delete the TIP file (including appended task plan)
-   - Confirm: "Scaffolding cleaned up. Implementation complete!"
+### After User Confirms
 
-4. **If user wants to review**:
-   - Wait for user confirmation before deleting
+- Delete TIP file
+- Delete design decision file (if exists)
+- Confirm: "Scaffolding cleaned up. Implementation complete!"
 
 ---
 
 ## Important Principles
 
-### Follow the Plan's Direction
-- Use the task plan as your guide
-- Understand the strategic intent behind each phase
-- Let the plan inform your approach
+### TDD Keeps Code Focused
 
-### Adapt to Reality
-- Plans can't anticipate everything
-- You'll discover things during implementation
-- Communicate changes and adjust intelligently
+Writing tests first clarifies *what behavior we need*. This prevents scope creep, over-engineering, and "just in case" features. Let tests drive the implementation - no more, no less.
 
-### Maintain Quality
-- **NEVER** skip tests for NEW BEHAVIOR
-- **NEVER** break existing tests during REFACTOR
-- **ALWAYS** run pre-commit before marking tasks complete
-- **ALWAYS** pause for user feedback after sub-tasks
+### Test Intensity Matches Stakes
+
+Domain logic with bugs = broken app. Spend the testing effort there.
+Config CRUD with bugs = minor annoyance. Basic tests suffice.
+Scaffolding with bugs = won't compile. No tests needed.
+
+### Just-in-Time > Just-in-Case
+
+Tactical decisions (which files, which tests) are better made with current context than planned in advance. The TIP provides direction; you provide the navigation.
 
 ### Communicate Adaptations
-- Explain why you're deviating from the plan
-- Propose the adjustment clearly
-- Wait for confirmation on significant changes
-- Update the task plan to reflect reality
 
-### Trust the Process
-- The plan provides valuable structure
-- Your judgment during implementation is equally valuable
-- The combination of planned direction + adaptive execution produces the best results
+When you deviate from the plan:
+- Explain why
+- Propose the change
+- Wait for significant changes
+- Note in TIP what changed
+
+### Maintain Quality Throughout
+
+- **NEVER** skip tests for NEW BEHAVIOR
+- **NEVER** break existing tests during REFACTOR
+- **ALWAYS** run pre-commit before marking complete
+- **ALWAYS** pause at phase boundaries
 
 ---
 
 ## Remember
 
-**The task plan is a guide, not a script.**
+**The TIP is your strategic guide. You make tactical decisions.**
 
-- Follow it when it makes sense
-- Adapt it when reality requires
+- Read the phase, understand its purpose
+- Plan the work just before doing it
+- Match test intensity to the stakes
+- Execute with discipline (TDD, pre-commit)
+- Checkpoint with the user
+- Adapt when reality requires
 - Communicate changes clearly
-- Maintain quality throughout
-- Trust your judgment while respecting the strategic direction
 
-Good implementation balances planned structure with adaptive intelligence.
+Good implementation balances planned direction with adaptive intelligence.
