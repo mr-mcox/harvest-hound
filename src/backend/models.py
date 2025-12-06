@@ -41,6 +41,19 @@ class GroceryStore(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_utc_now)
 
 
+class InventoryItem(SQLModel, table=True):
+    """Tracked inventory item from CSA delivery or other source"""
+
+    id: int | None = Field(default=None, primary_key=True)
+    store_id: int = Field(foreign_key="grocerystore.id")
+    ingredient_name: str = Field()
+    quantity: float = Field()
+    unit: str = Field()
+    priority: str = Field(default="medium")  # low, medium, high, urgent
+    portion_size: str | None = Field(default=None)  # e.g., "1 pound", "16 ounce"
+    added_at: datetime = Field(default_factory=_utc_now)
+
+
 def get_session() -> Generator[Session, None, None]:
     """FastAPI dependency for database sessions"""
     with Session(engine) as session:

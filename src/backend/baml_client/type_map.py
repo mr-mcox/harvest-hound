@@ -23,4 +23,6 @@ type_map = {
     "stream_types.InventoryParsingResult": stream_types.InventoryParsingResult,
 
 
+    "types.Priority": types.Priority,
+
 }

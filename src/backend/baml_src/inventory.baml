@@ -1,8 +1,15 @@
+enum Priority {
+    Low
+    Medium
+    High
+    Urgent
+}
+
 class Ingredient {
     name string
     quantity float
     unit string
-    priority string
+    priority Priority
     portion_size string?
 
     @@assert(positive_quantity, {{ this.quantity > 0 }})
@@ -42,10 +49,10 @@ function ExtractIngredients(text: string, configuration_instructions: string?) -
           - When you see "xN" notation (e.g., "x3"), N is the quantity and the item type is the unit
           - Avoid generic units like "piece", "each", "item" - be specific to what it is
         - priority: infer based on perishability (how quickly it will spoil)
-          - "urgent": fresh items that spoil quickly (leafy greens, herbs, berries, fresh cream)
-          - "high": items to use relatively soon (other fresh vegetables, fresh meat)
-          - "medium": default for most items (root vegetables, frozen meat, pantry staples)
-          - "low": long shelf life (dried goods, canned items, frozen vegetables)
+          - Urgent: fresh items that spoil quickly (leafy greens, herbs, berries, fresh cream)
+          - High: items to use relatively soon (other fresh vegetables, fresh meat)
+          - Medium: default for most items (root vegetables, frozen meat, pantry staples)
+          - Low: long shelf life (dried goods, canned items, frozen vegetables)
         - portion_size: extract if specified in text or configuration instructions
           - From text: "3 16oz cans" → "16 ounce"
           - From config: if config says "all in 1 pound portions", apply to relevant items
@@ -131,14 +138,14 @@ test priority_inference_perishability {
         configuration_instructions null
     }
     @@assert({{ this.ingredients|length == 4 }})
-    // spinach is leafy green -> urgent
-    @@assert({{ this.ingredients[0].priority == "urgent" }})
-    // carrots are root vegetables -> medium or high
-    @@assert({{ this.ingredients[1].priority in ["medium", "high"] }})
-    // canned beans -> low
-    @@assert({{ this.ingredients[2].priority == "low" }})
-    // fresh chicken -> high
-    @@assert({{ this.ingredients[3].priority == "high" }})
+    // spinach is leafy green -> Urgent
+    @@assert({{ this.ingredients[0].priority == "Urgent" }})
+    // carrots are root vegetables -> Medium or High
+    @@assert({{ this.ingredients[1].priority in ["Medium", "High"] }})
+    // canned beans -> Low
+    @@assert({{ this.ingredients[2].priority == "Low" }})
+    // fresh chicken -> High
+    @@assert({{ this.ingredients[3].priority == "High" }})
 }
 
 test portion_size_from_text {

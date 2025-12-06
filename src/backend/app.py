@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from config_routes import router as config_router
+from inventory_routes import router as inventory_router
 from routes import router
 
 app = FastAPI(title="Harvest Hound")
@@ -25,6 +26,7 @@ app.add_middleware(
 # Include API routes first (so /api/* takes precedence)
 app.include_router(router)
 app.include_router(config_router)
+app.include_router(inventory_router)
 
 # Static directory for built frontend
 STATIC_DIR = Path(__file__).parent / "static"
