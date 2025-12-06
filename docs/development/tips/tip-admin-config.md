@@ -388,27 +388,27 @@ From codebase exploration:
 **TIP Context**: Phase 3 - depends on Phase 1 models
 
 ### 3.1 Grocery Store Schemas - **🏗️ SETUP ONLY**
-- [ ] **Add schemas** - Add to `src/backend/schemas.py`:
+- [x] **Add schemas** - Add to `src/backend/schemas.py`:
   - `GroceryStoreCreate`: `name: str`, `description: str`
   - `GroceryStoreUpdate`: `name: str | None`, `description: str | None`
   - `GroceryStoreResponse`: `id: int`, `name: str`, `description: str`, `created_at: datetime`
 
 ### 3.2 List and Create - **🧪 NEW BEHAVIOR**
-- [ ] **Write test** - `src/backend/tests/test_grocery_store_api.py::test_list_grocery_stores_returns_seeded_default`
-- [ ] **Write test** - `test_create_grocery_store_returns_new_store_with_id`
-- [ ] **Write test** - `test_list_grocery_stores_ordered_by_created_at`
-- [ ] **Implement GET list** - `GET /api/config/grocery-stores` in `config_routes.py`
-- [ ] **Implement POST** - `POST /api/config/grocery-stores`
+- [x] **Write test** - `src/backend/tests/test_grocery_store_api.py::test_list_grocery_stores_returns_seeded_default`
+- [x] **Write test** - `test_create_grocery_store_returns_new_store_with_id`
+- [x] **Write test** - `test_list_grocery_stores_ordered_by_created_at`
+- [x] **Implement GET list** - `GET /api/config/grocery-stores` in `config_routes.py`
+- [x] **Implement POST** - `POST /api/config/grocery-stores`
 
 ### 3.3 Read, Update, Delete - **🧪 NEW BEHAVIOR**
-- [ ] **Write test** - `test_get_grocery_store_by_id`
-- [ ] **Write test** - `test_get_grocery_store_not_found_returns_404`
-- [ ] **Write test** - `test_update_grocery_store_modifies_fields`
-- [ ] **Write test** - `test_delete_grocery_store_removes_record`
-- [ ] **Write test** - `test_delete_last_grocery_store_returns_400` (at least one must exist)
-- [ ] **Implement GET by id** - `GET /api/config/grocery-stores/{id}`
-- [ ] **Implement PUT** - `PUT /api/config/grocery-stores/{id}`
-- [ ] **Implement DELETE** - `DELETE /api/config/grocery-stores/{id}` with last-store validation
+- [x] **Write test** - `test_get_grocery_store_by_id`
+- [x] **Write test** - `test_get_grocery_store_not_found_returns_404`
+- [x] **Write test** - `test_update_grocery_store_modifies_fields`
+- [x] **Write test** - `test_delete_grocery_store_removes_record`
+- [x] **Write test** - `test_delete_last_grocery_store_returns_400` (at least one must exist)
+- [x] **Implement GET by id** - `GET /api/config/grocery-stores/{id}`
+- [x] **Implement PUT** - `PUT /api/config/grocery-stores/{id}`
+- [x] **Implement DELETE** - `DELETE /api/config/grocery-stores/{id}` with last-store validation
 
 ---
 
