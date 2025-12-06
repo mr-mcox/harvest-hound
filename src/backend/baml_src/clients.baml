@@ -6,3 +6,11 @@ client<llm> Anthropic {
     max_tokens 1024
   }
 }
+
+client<llm> OpenAI {
+  provider openai
+  options {
+    model "gpt-4o"
+    api_key env.OPENAI_API_KEY
+  }
+}

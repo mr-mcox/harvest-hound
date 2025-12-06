@@ -24,6 +24,12 @@ class LlmResponseParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    def ExtractIngredients(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.InventoryParsingResult:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="request")
+        return typing.cast(types.InventoryParsingResult, result)
+
     
 
 class LlmStreamParser:
@@ -31,5 +37,11 @@ class LlmStreamParser:
 
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
+
+    def ExtractIngredients(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.InventoryParsingResult:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.InventoryParsingResult, result)
 
     
