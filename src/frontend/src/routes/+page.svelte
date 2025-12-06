@@ -81,7 +81,10 @@
 </script>
 
 <main class="p-10 space-y-6 max-w-2xl mx-auto">
-  <h1 class="h1">Harvest Hound</h1>
+  <div class="flex items-center justify-between">
+    <h1 class="h1">Harvest Hound</h1>
+    <a href="/settings" class="btn preset-outlined-surface-500">Settings</a>
+  </div>
   <p class="text-lg text-surface-600-400">
     Enter an ingredient to discover creative dish ideas.
   </p>

@@ -417,40 +417,41 @@ From codebase exploration:
 **TIP Context**: Phase 4 - depends on Phases 2 & 3 APIs
 
 ### 4.1 Settings Route Setup - **🏗️ SETUP ONLY**
-- [ ] **Create settings route** - `src/frontend/src/routes/settings/+page.svelte` with basic structure
-- [ ] **Add navigation** - Link from main page to `/settings` (button or link in header area)
-- [ ] **Page layout** - Three sections with headers: "Household Profile", "Pantry", "Grocery Stores"
+- [x] **Create settings route** - `src/frontend/src/routes/settings/+page.svelte` with basic structure
+- [x] **Add navigation** - Link from main page to `/settings` (button or link in header area)
+- [x] **Page layout** - Three sections with headers: "Household Profile", "Pantry", "Grocery Stores"
 
 ### 4.2 Singleton Config Components - **🧪 NEW BEHAVIOR**
-- [ ] **Create ConfigTextArea component** - `src/frontend/src/lib/components/ConfigTextArea.svelte`
+- [x] **Create ConfigTextArea component** - `src/frontend/src/lib/components/ConfigTextArea.svelte`
   - Props: `label: string`, `apiEndpoint: string`, `initialContent: string`
   - Features: text area, save button, loading/success/error states
-- [ ] **Write component test** - `src/frontend/src/lib/components/ConfigTextArea.svelte.test.ts`
+- [x] **Write component test** - `src/frontend/src/lib/components/ConfigTextArea.test.ts`
   - Test: renders with initial content
   - Test: save button calls API and shows success feedback
-- [ ] **Integrate HouseholdProfile** - Use ConfigTextArea with `/api/config/household-profile`
-- [ ] **Integrate Pantry** - Use ConfigTextArea with `/api/config/pantry`
+  - Note: Added vitest + @testing-library/svelte infrastructure (vitest.config.ts, setupTests.ts)
+- [x] **Integrate HouseholdProfile** - Use ConfigTextArea with `/api/config/household-profile`
+- [x] **Integrate Pantry** - Use ConfigTextArea with `/api/config/pantry`
 
 ### 4.3 Grocery Store Table - **🧪 NEW BEHAVIOR**
-- [ ] **Create GroceryStoreTable component** - `src/frontend/src/lib/components/GroceryStoreTable.svelte`
+- [x] **Create GroceryStoreTable component** - `src/frontend/src/lib/components/GroceryStoreTable.svelte`
   - Features: table view, add button, inline edit, delete with confirmation
   - Svelte 5 runes for state management
-- [ ] **Write component test** - `src/frontend/src/lib/components/GroceryStoreTable.svelte.test.ts`
+- [x] **Write component test** - `src/frontend/src/lib/components/GroceryStoreTable.test.ts`
   - Test: renders list of stores
   - Test: add button opens form
   - Test: delete shows confirmation
-- [ ] **Load stores on mount** - Fetch from `/api/config/grocery-stores`
-- [ ] **Add store flow** - Form with name/description, POST to API
-- [ ] **Edit store flow** - Inline editing or modal, PUT to API
-- [ ] **Delete store flow** - Confirmation dialog, DELETE to API, handle last-store error
+- [x] **Load stores on mount** - Fetch from `/api/config/grocery-stores` (in settings page)
+- [x] **Add store flow** - Form with name/description, POST to API
+- [x] **Edit store flow** - Inline editing, PUT to API
+- [x] **Delete store flow** - Confirmation dialog, DELETE to API, handle last-store error
 
 ### 4.4 Settings Page Integration - **🧪 NEW BEHAVIOR**
-- [ ] **Write page test** - `src/frontend/src/routes/settings/page.svelte.test.ts`
+- [x] **Write page test** - `src/frontend/src/routes/settings/page.test.ts`
   - Test: page renders all three sections
   - Test: back navigation works
-- [ ] **Load initial data** - Fetch household profile, pantry, and grocery stores on mount
-- [ ] **Error handling** - Show error states if API calls fail
-- [ ] **Back navigation** - "Back to Home" link/button
+- [x] **Load initial data** - Fetch household profile, pantry, and grocery stores on mount (done in 4.2/4.3)
+- [x] **Error handling** - Show error states if API calls fail (done in 4.2)
+- [x] **Back navigation** - "Back to Home" link/button (done in 4.1)
 
 ---
 
