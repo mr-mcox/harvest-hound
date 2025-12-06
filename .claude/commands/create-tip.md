@@ -7,7 +7,7 @@ This command creates a strategic implementation plan focused on sequencing, inte
 - You have a domain design proposal from `explore-domain-design`
 - Or you have a clear, small feature that doesn't need framing (quick feature mode)
 
-**Purpose**: Establish strategic direction for implementation. The TIP provides high-level phases and integration awareness - detailed file changes and specific tests come later in `plan-tasks`.
+**Purpose**: Establish strategic direction for implementation. The TIP provides high-level phases and integration awareness. Tactical details (specific files, tests) are decided just-in-time at the start of each phase during `implement-tasks`.
 
 ---
 
@@ -285,12 +285,12 @@ Then WAIT for user feedback and approval.
 
 ### Step 10: After Approval
 
-Great! The strategic plan is approved and ready for detailed task breakdown.
+Great! The strategic plan is approved and ready for implementation.
 
-**Next steps**:
-- Use `plan-tasks "docs/development/tips/tip-[feature-name].md"` to add detailed task breakdown
-- `plan-tasks` will interpret this strategic direction and add specific file changes, test cases, and deliverables
-- The TIP will be updated in place with the tactical details
+**Next step**:
+- Use `implement-tasks "docs/development/tips/tip-[feature-name].md"` to begin implementation
+- Implementation happens phase-by-phase with just-in-time tactical planning
+- Each phase gets planned right before execution (files, tests, sequence)
 
 ---
 
@@ -388,7 +388,7 @@ Complexity is per-phase; overall complexity considers how phases build on each o
 - `explore-domain-design` (`docs/development/design-decisions/decision-[name].md`) - for architectural decisions
 - Direct (LEARNINGS.md + prototype) - for quick features
 
-**Output to**: `plan-tasks` reads TIP and adds detailed tasks
+**Output to**: `implement-tasks` uses TIP for phase-by-phase implementation
 
 **If architectural uncertainty surfaces**: Use `explore-domain-design` before continuing
 
@@ -405,10 +405,10 @@ Complexity is per-phase; overall complexity considers how phases build on each o
 - WHAT risks need mitigation
 - HOW MUCH effort is involved
 
-**The TIP does NOT answer** (plan-tasks handles these):
+**The TIP does NOT answer** (decided just-in-time during implementation):
 - WHICH specific files to modify
 - EXACTLY what tests to write
 - HOW to implement specific features
 - WHAT specific code changes to make
 
-Trust `plan-tasks` to interpret your strategic direction and make it concrete with file paths, test names, and specific deliverables.
+Tactical decisions are made at the start of each phase during `implement-tasks`, with the freshest context about what previous phases actually produced.
