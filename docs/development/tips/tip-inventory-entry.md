@@ -110,7 +110,7 @@ Mental overhead of CSA delivery entry is the first friction point in the meal pl
 
 ---
 
-### Phase 3: Svelte Import View with Pending State
+### Phase 3: Svelte Import View with Pending State ✓
 
 **Purpose**: Build import UI with pending state management, enabling iterative parsing workflow (paste → review → delete bad ones → re-paste → approve).
 
