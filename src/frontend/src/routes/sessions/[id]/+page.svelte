@@ -25,6 +25,11 @@
   let newSlots = $state(1);
   let submitting = $state(false);
 
+  // Generation state
+  let generating = $state(false);
+  let generationProgress = $state("");
+  let generationError = $state("");
+
   async function loadSession() {
     const id = $page.params.id;
     const response = await fetch(`/api/sessions/${id}`);
@@ -76,6 +81,47 @@
     if (response.ok) {
       await loadCriteria();
     }
+  }
+
+  async function generatePitches() {
+    if (generating) return;
+
+    generating = true;
+    generationProgress = "Starting generation...";
+    generationError = "";
+
+    const id = $page.params.id;
+    const eventSource = new EventSource(`/api/sessions/${id}/generate-pitches`);
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.error) {
+        generationError = data.message;
+        generationProgress = "";
+        generating = false;
+        eventSource.close();
+      } else if (data.complete) {
+        generationProgress = "Generation complete!";
+        generating = false;
+        eventSource.close();
+        // Reload criteria to show pitches (Phase 6 will add pitch display)
+        setTimeout(() => {
+          generationProgress = "";
+        }, 2000);
+      } else if (data.progress) {
+        generationProgress = `Generating for "${data.criterion_description}" (${data.criterion_index} of ${data.total_criteria}) - ${data.generating_count} pitches...`;
+      } else if (data.pitch) {
+        generationProgress = `Generated pitch ${data.pitch_index} of ${data.total_for_criterion} for this criterion`;
+      }
+    };
+
+    eventSource.onerror = () => {
+      generationError = "Connection lost. Please try again.";
+      generationProgress = "";
+      generating = false;
+      eventSource.close();
+    };
   }
 
   onMount(async () => {
@@ -179,7 +225,7 @@
       {/if}
     </div>
 
-    <!-- Placeholder for Phase 5: Generate Pitches -->
+    <!-- Recipe Pitch Generation -->
     <div class="card preset-outlined-surface-500 p-6 space-y-4">
       <h2 class="h3">Recipe Pitches</h2>
       {#if criteria.length === 0}
@@ -191,9 +237,27 @@
           Ready to generate pitches for {criteria.length}
           {criteria.length === 1 ? "criterion" : "criteria"}.
         </p>
-        <button class="btn preset-filled-secondary-500" disabled>
-          Generate Pitches (Phase 5)
+        <button
+          class="btn preset-filled-secondary-500"
+          disabled={generating}
+          onclick={generatePitches}
+        >
+          {generating ? "Generating..." : "Generate Pitches"}
         </button>
+
+        {#if generationProgress}
+          <div class="card preset-outlined-primary-500 p-4">
+            <p class="text-sm">{generationProgress}</p>
+          </div>
+        {/if}
+
+        {#if generationError}
+          <div class="card preset-outlined-error-500 p-4">
+            <p class="text-sm text-error-500">{generationError}</p>
+          </div>
+        {/if}
+
+        <!-- Phase 6 will add pitch display here -->
       {/if}
     </div>
   {/if}

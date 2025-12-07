@@ -213,7 +213,7 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 
 ---
 
-### Phase 5: SSE Streaming & Pitch Persistence
+### Phase 5: SSE Streaming & Pitch Persistence ✓
 
 **Purpose**: Stream pitch generation results incrementally to frontend, saving to database as they arrive. Enables progress feedback during generation.
 
@@ -242,6 +242,19 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 **Dependencies**: Phase 3 (need criteria), Phase 4 (need BAML function)
 
 **Complexity**: M
+
+**Implementation notes**:
+- Created GET `/api/sessions/{session_id}/generate-pitches` endpoint with SSE streaming
+- Loads household profile, pantry, grocery stores, and inventory from DB
+- Formats inventory grouped by store with priority labels
+- Sequential BAML calls per criterion (one call generating 3*slots pitches)
+- Streams progress events (criterion start) and pitch events (each pitch saved)
+- Saves pitches to DB immediately with inventory_ingredients JSON field
+- Frontend EventSource handling with real-time progress display
+- Error handling for connection loss and backend errors
+- Extracted `_format_inventory_text` helper to meet complexity limits
+- All 48 Python tests passing, all 10 BAML tests passing
+- Manual browser testing confirms streaming works end-to-end
 
 ---
 

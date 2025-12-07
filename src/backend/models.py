@@ -1,7 +1,13 @@
 """
 Database setup and models for Harvest Hound
+
+Database location is controlled by DATABASE_URL environment variable:
+- Default: sqlite:///dev.db (safe for testing/Claude)
+- Live mode: ./dev script sets DATABASE_URL=sqlite:///harvest.db
+- Tests: Uses in-memory database via conftest.py fixtures
 """
 
+import os
 from collections.abc import Generator
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -16,8 +22,10 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///dev.db")
+
 engine = create_engine(
-    "sqlite:///harvest.db",
+    DATABASE_URL,
     connect_args={"check_same_thread": False},
     echo=False,
 )
