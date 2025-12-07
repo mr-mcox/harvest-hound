@@ -168,7 +168,7 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 
 ---
 
-### Phase 4: BAML Recipe Pitch Generation
+### Phase 4: BAML Recipe Pitch Generation ✓
 
 **Purpose**: Port and adapt prototype BAML prompts to generate pitches per criterion with household context and technique diversity.
 
@@ -195,6 +195,21 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 **Dependencies**: Phase 1 (need Pitch model structure)
 
 **Complexity**: M
+
+**Implementation notes**:
+- Created recipes.baml with RecipePitch and PitchIngredient classes
+- RecipePitch fields: name, blurb, why_make_this, inventory_ingredients (PitchIngredient[]), active_time_minutes
+- PitchIngredient has name, quantity, unit - supports future ingredient claiming
+- Updated Pitch model to store inventory_ingredients as list[dict] with {name, quantity, unit}
+- GenerateRecipePitches function takes: inventory, pantry_staples, grocery_stores, household_profile, additional_context, num_pitches
+- Grocery stores parameter constrains recipes to ingredients obtainable from listed stores (prevents sushi-grade tuna if only Cub available)
+- Household profile passed as parameter (loaded from DB settings, not baked in)
+- Simplified diversity guidance: ingredients can repeat, focus on technique variety without forcing it
+- Inventory format includes source grouping for context
+- Priority-based guidance instead of "spoil soon" language
+- Added 3 BAML tests: basic generation, num_pitches respect, inventory ingredients with quantities validation
+- Increased Anthropic max_tokens from 1024 to 4096 for multi-pitch generation
+- All 48 Python tests passing, all 10 BAML tests passing
 
 ---
 

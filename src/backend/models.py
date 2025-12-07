@@ -94,6 +94,14 @@ class MealCriterion(SQLModel, table=True):
         return v
 
 
+class PitchIngredient:
+    """Ingredient claimed by a pitch with quantity for inventory tracking"""
+
+    name: str
+    quantity: float
+    unit: str
+
+
 class Pitch(SQLModel, table=True):
     """Lightweight recipe pitch generated for a specific meal criterion"""
 
@@ -102,9 +110,9 @@ class Pitch(SQLModel, table=True):
     name: str = Field()
     blurb: str = Field()  # Emotional hook
     why_make_this: str = Field()  # Justification (CSA usage, etc.)
-    inventory_ingredients: list[str] = Field(
+    inventory_ingredients: list[dict] = Field(
         default_factory=list, sa_column=Column(JSON)
-    )
+    )  # List of {name, quantity, unit} dicts
     active_time_minutes: int = Field()
     created_at: datetime = Field(default_factory=_utc_now)
 

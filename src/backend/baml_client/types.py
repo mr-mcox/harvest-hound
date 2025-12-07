@@ -47,7 +47,7 @@ class Priority(str, Enum):
     Urgent = "Urgent"
 
 # #########################################################################
-# Generated classes (2)
+# Generated classes (4)
 # #########################################################################
 
 class Ingredient(BaseModel):
@@ -60,6 +60,18 @@ class Ingredient(BaseModel):
 class InventoryParsingResult(BaseModel):
     ingredients: typing.List["Ingredient"]
     parsing_notes: typing.Optional[str] = None
+
+class PitchIngredient(BaseModel):
+    name: str
+    quantity: float
+    unit: str
+
+class RecipePitch(BaseModel):
+    name: str
+    blurb: str
+    why_make_this: str
+    inventory_ingredients: typing.List["PitchIngredient"]
+    active_time_minutes: int
 
 # #########################################################################
 # Generated type aliases (0)
