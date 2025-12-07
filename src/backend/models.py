@@ -10,9 +10,10 @@ Database location is controlled by DATABASE_URL environment variable:
 import os
 from collections.abc import Generator
 from datetime import UTC, datetime
+from enum import Enum
 from uuid import UUID, uuid4
 
-from pydantic import field_validator
+from pydantic import BaseModel, field_validator
 from sqlalchemy import JSON, Column, event
 from sqlmodel import Field, Session, SQLModel, create_engine, select, text
 
@@ -122,6 +123,45 @@ class Pitch(SQLModel, table=True):
         default_factory=list, sa_column=Column(JSON)
     )  # List of {name, quantity, unit} dicts
     active_time_minutes: int = Field()
+    created_at: datetime = Field(default_factory=_utc_now)
+
+
+class RecipeIngredient(BaseModel):
+    """Structured ingredient with preparation field for shopping list clarity"""
+
+    name: str
+    quantity: str  # String to handle ranges ("2-3"), "to taste", etc.
+    unit: str
+    preparation: str | None = None  # e.g., "diced", "minced", "julienned"
+    notes: str | None = None  # e.g., "organic preferred"
+
+
+class RecipeState(str, Enum):
+    """Recipe lifecycle states"""
+
+    PLANNED = "planned"
+    COOKED = "cooked"
+    ABANDONED = "abandoned"
+
+
+class Recipe(SQLModel, table=True):
+    """Complete recipe with structured ingredients, generated from a pitch"""
+
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True)
+    criterion_id: UUID | None = Field(default=None)  # Optional link to meal criterion
+    name: str = Field()
+    description: str = Field()
+    ingredients: list[dict] = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )  # List of RecipeIngredient dicts
+    instructions: list[str] = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )  # Ordered steps
+    active_time_minutes: int = Field()
+    total_time_minutes: int = Field()
+    servings: int = Field()
+    state: RecipeState = Field(default=RecipeState.PLANNED)
+    notes: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=_utc_now)
 
 

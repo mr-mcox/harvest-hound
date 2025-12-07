@@ -657,8 +657,31 @@
   - For MVP: generative recipes only
   - (discovered: recipe-context-sources architectural pressure test, 2025-12-02)
 
+- [x] **Session-scoped recipes for MVP with canonical migration path**
+  - Recipe has session_id (session-specific for now)
+  - Recipe.ingredients stored WITHOUT source assignments (canonical-ready)
+  - Enables clean future migration: Add CanonicalRecipe table, rename Recipe → PlannedRecipe, backfill
+  - "Favorite" curation before canonicalization: Only recipes user wants to make again become canonical
+  - Doesn't paint into architectural corner while keeping MVP simple
+  - (discovered: pitch-selection-claims alignment, 2025-12-07)
+
+- [x] **IngredientClaim only for inventory items**
+  - Claims are quantity-tracked reservations against specific inventory items
+  - Only create claims for ingredients matching inventory (not grocery/pantry)
+  - IngredientClaim schema: recipe_id, inventory_item_id (FK), ingredient_name, quantity, unit, state
+  - Grocery/pantry likelihood deferred to shopping list feature (separate TIP)
+  - Simplifies claiming logic: exact match inventory → create claim, else skip
+  - (discovered: pitch-selection-claims alignment, 2025-12-07)
+
+- [x] **Decremented inventory pattern for multi-wave generation**
+  - Pass decremented inventory state to BAML (physical minus reserved claims)
+  - Remove "DO NOT use these ingredients" constraint (unnecessary, LLM pivots naturally)
+  - Prototype already implements this correctly in load_available_inventory()
+  - Simpler and more reliable than exclusion lists
+  - (discovered: pitch-selection-claims alignment, 2025-12-07)
+
 ### Consider Adding
-- [ ] 
+- [ ]
 
 ## Next Steps
 - [ ] Domain model sketch for MVP
