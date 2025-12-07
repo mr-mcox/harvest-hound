@@ -177,6 +177,61 @@ def delete_criterion(
     db.commit()
 
 
+# --- Pitches API ---
+
+
+class PitchResponse(BaseModel):
+    id: UUID
+    criterion_id: UUID
+    name: str
+    blurb: str
+    why_make_this: str
+    inventory_ingredients: list[dict]
+    active_time_minutes: int
+    created_at: str
+
+    @classmethod
+    def from_model(cls, pitch: Pitch) -> "PitchResponse":
+        return cls(
+            id=pitch.id,
+            criterion_id=pitch.criterion_id,
+            name=pitch.name,
+            blurb=pitch.blurb,
+            why_make_this=pitch.why_make_this,
+            inventory_ingredients=pitch.inventory_ingredients,
+            active_time_minutes=pitch.active_time_minutes,
+            created_at=pitch.created_at.isoformat(),
+        )
+
+
+@router.get("/sessions/{session_id}/pitches")
+def list_pitches(
+    session_id: UUID, db: Session = Depends(get_session)
+) -> list[PitchResponse]:
+    """List all pitches for a session, ordered by criterion and creation time"""
+    session = db.get(PlanningSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Get all criteria for this session
+    criteria = db.exec(
+        select(MealCriterion).where(MealCriterion.session_id == session_id)
+    ).all()
+    criterion_ids = [c.id for c in criteria]
+
+    if not criterion_ids:
+        return []
+
+    # Get all pitches for these criteria
+    pitches = db.exec(
+        select(Pitch)
+        .where(Pitch.criterion_id.in_(criterion_ids))
+        .order_by(Pitch.criterion_id, Pitch.created_at)
+    ).all()
+
+    return [PitchResponse.from_model(p) for p in pitches]
+
+
 # --- Pitch Generation (SSE Streaming) ---
 
 

@@ -15,8 +15,26 @@
     created_at: string;
   }
 
+  interface PitchIngredient {
+    name: string;
+    quantity: number;
+    unit: string;
+  }
+
+  interface Pitch {
+    id: string;
+    criterion_id: string;
+    name: string;
+    blurb: string;
+    why_make_this: string;
+    inventory_ingredients: PitchIngredient[];
+    active_time_minutes: number;
+    created_at: string;
+  }
+
   let session: Session | null = $state(null);
   let criteria: Criterion[] = $state([]);
+  let pitches: Pitch[] = $state([]);
   let loading = $state(true);
   let error = $state("");
 
@@ -29,6 +47,18 @@
   let generating = $state(false);
   let generationProgress = $state("");
   let generationError = $state("");
+
+  // Derived: pitches grouped by criterion
+  let pitchesByCriterion = $derived(() => {
+    const grouped: Record<string, Pitch[]> = {};
+    for (const pitch of pitches) {
+      if (!grouped[pitch.criterion_id]) {
+        grouped[pitch.criterion_id] = [];
+      }
+      grouped[pitch.criterion_id].push(pitch);
+    }
+    return grouped;
+  });
 
   async function loadSession() {
     const id = $page.params.id;
@@ -48,6 +78,14 @@
     const response = await fetch(`/api/sessions/${id}/criteria`);
     if (response.ok) {
       criteria = await response.json();
+    }
+  }
+
+  async function loadPitches() {
+    const id = $page.params.id;
+    const response = await fetch(`/api/sessions/${id}/pitches`);
+    if (response.ok) {
+      pitches = await response.json();
     }
   }
 
@@ -105,14 +143,25 @@
         generationProgress = "Generation complete!";
         generating = false;
         eventSource.close();
-        // Reload criteria to show pitches (Phase 6 will add pitch display)
         setTimeout(() => {
           generationProgress = "";
         }, 2000);
       } else if (data.progress) {
         generationProgress = `Generating for "${data.criterion_description}" (${data.criterion_index} of ${data.total_criteria}) - ${data.generating_count} pitches...`;
       } else if (data.pitch) {
-        generationProgress = `Generated pitch ${data.pitch_index} of ${data.total_for_criterion} for this criterion`;
+        // Accumulate pitch in real-time
+        const newPitch: Pitch = {
+          id: data.data.id,
+          criterion_id: data.criterion_id,
+          name: data.data.name,
+          blurb: data.data.blurb,
+          why_make_this: data.data.why_make_this,
+          inventory_ingredients: data.data.inventory_ingredients,
+          active_time_minutes: data.data.active_time_minutes,
+          created_at: new Date().toISOString(),
+        };
+        pitches = [...pitches, newPitch];
+        generationProgress = `Generated "${newPitch.name}" (${data.pitch_index} of ${data.total_for_criterion})`;
       }
     };
 
@@ -128,6 +177,7 @@
     await loadSession();
     if (!error) {
       await loadCriteria();
+      await loadPitches();
     }
   });
 </script>
@@ -257,7 +307,45 @@
           </div>
         {/if}
 
-        <!-- Phase 6 will add pitch display here -->
+        <!-- Pitches grouped by criterion -->
+        {#each criteria as criterion}
+          {@const criterionPitches = pitchesByCriterion()[criterion.id] || []}
+          <div class="space-y-3 mt-6">
+            <h3 class="h4 text-surface-700-300">
+              {criterion.description}
+              <span class="text-sm font-normal text-surface-500">
+                ({criterionPitches.length} / {criterion.slots * 3} pitches)
+              </span>
+            </h3>
+
+            {#if criterionPitches.length === 0}
+              <p class="text-sm text-surface-500 italic">No pitches yet</p>
+            {:else}
+              <div class="grid gap-3">
+                {#each criterionPitches as pitch}
+                  <div class="card preset-outlined-surface-500 p-4 space-y-2">
+                    <div class="flex items-start justify-between">
+                      <h4 class="font-semibold text-lg">{pitch.name}</h4>
+                      <span class="text-sm text-surface-500">
+                        {pitch.active_time_minutes} min
+                      </span>
+                    </div>
+                    <p class="text-surface-600-400 italic">{pitch.blurb}</p>
+                    <p class="text-sm text-surface-600-400">{pitch.why_make_this}</p>
+                    {#if pitch.inventory_ingredients.length > 0}
+                      <div class="text-sm">
+                        <span class="font-medium">Uses:</span>
+                        {pitch.inventory_ingredients
+                          .map((i) => `${i.quantity} ${i.unit} ${i.name}`)
+                          .join(", ")}
+                      </div>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/each}
       {/if}
     </div>
   {/if}

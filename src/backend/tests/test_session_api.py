@@ -182,3 +182,104 @@ class TestCriteriaAPI:
         )
 
         assert response.status_code == 404
+
+
+class TestPitchesAPI:
+    """Tests for /api/sessions/{id}/pitches endpoints"""
+
+    def test_list_pitches_empty(self, client):
+        """GET returns empty list when no pitches exist"""
+        session = client.post("/api/sessions", json={"name": "Test"}).json()
+
+        response = client.get(f"/api/sessions/{session['id']}/pitches")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_list_pitches_returns_created(self, client, session):
+        """GET returns pitches grouped by criterion"""
+        from models import MealCriterion, Pitch, PlanningSession
+
+        # Create session with criteria and pitches directly in DB
+        planning_session = PlanningSession(name="Test Session")
+        session.add(planning_session)
+        session.commit()
+        session.refresh(planning_session)
+
+        criterion1 = MealCriterion(
+            session_id=planning_session.id,
+            description="Quick meals",
+            slots=2,
+        )
+        criterion2 = MealCriterion(
+            session_id=planning_session.id,
+            description="Weekend cooking",
+            slots=1,
+        )
+        session.add(criterion1)
+        session.add(criterion2)
+        session.commit()
+        session.refresh(criterion1)
+        session.refresh(criterion2)
+
+        # Add pitches for criterion1
+        pitch1 = Pitch(
+            criterion_id=criterion1.id,
+            name="Quick Stir Fry",
+            blurb="A fast weeknight meal",
+            why_make_this="Uses CSA veggies",
+            inventory_ingredients=[
+                {"name": "bok choy", "quantity": 1, "unit": "bunch"}
+            ],
+            active_time_minutes=15,
+        )
+        pitch2 = Pitch(
+            criterion_id=criterion1.id,
+            name="Simple Pasta",
+            blurb="Comfort food",
+            why_make_this="Kid-friendly",
+            inventory_ingredients=[],
+            active_time_minutes=20,
+        )
+        # Add pitch for criterion2
+        pitch3 = Pitch(
+            criterion_id=criterion2.id,
+            name="Slow Roast",
+            blurb="Weekend project",
+            why_make_this="Perfect for lazy Sunday",
+            inventory_ingredients=[{"name": "carrots", "quantity": 2, "unit": "lb"}],
+            active_time_minutes=30,
+        )
+        session.add_all([pitch1, pitch2, pitch3])
+        session.commit()
+
+        # Fetch via API
+        response = client.get(f"/api/sessions/{planning_session.id}/pitches")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 3
+
+        # Verify pitch fields
+        names = [p["name"] for p in data]
+        assert "Quick Stir Fry" in names
+        assert "Simple Pasta" in names
+        assert "Slow Roast" in names
+
+        # Verify pitch has all required fields
+        pitch = next(p for p in data if p["name"] == "Quick Stir Fry")
+        assert pitch["blurb"] == "A fast weeknight meal"
+        assert pitch["why_make_this"] == "Uses CSA veggies"
+        assert pitch["inventory_ingredients"] == [
+            {"name": "bok choy", "quantity": 1, "unit": "bunch"}
+        ]
+        assert pitch["active_time_minutes"] == 15
+        assert "criterion_id" in pitch
+
+    def test_list_pitches_session_not_found(self, client):
+        """GET returns 404 for non-existent session"""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = client.get(f"/api/sessions/{fake_id}/pitches")
+
+        assert response.status_code == 404

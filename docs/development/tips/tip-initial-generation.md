@@ -258,7 +258,7 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 
 ---
 
-### Phase 6: Pitch Display & Grouping UI
+### Phase 6: Pitch Display & Grouping UI ✓
 
 **Purpose**: Display generated pitches grouped by criterion, completing the read-only browsing experience.
 
@@ -285,6 +285,17 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 **Dependencies**: Phase 5 (need pitches in database)
 
 **Complexity**: S
+
+**Implementation notes**:
+- Added GET `/api/sessions/{id}/pitches` endpoint returning all pitches for a session
+- PitchResponse model includes criterion_id for frontend grouping
+- Frontend loads existing pitches on mount (page refresh case)
+- SSE streaming accumulates pitches in real-time during generation
+- Pitches displayed grouped by criterion with count indicator (X / Y pitches)
+- Pitch cards show: name, active time, blurb (italic), why_make_this, inventory ingredients
+- Empty state "No pitches yet" for criteria without pitches
+- Added +page.ts to disable prerendering for dynamic route
+- All 51 tests passing, pre-commit clean
 
 ---
 
