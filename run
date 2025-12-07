@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Run Harvest Hound (frontend + backend)
+#
+# IMPORTANT: This script is for USER USE ONLY with live data.
+# Claude Code should NOT run this script - it uses harvest.db by default.
+#
+# Usage:
+#   ./run                    Run with live database (harvest.db)
+#   ./run --fork NAME        Fork harvest.db to NAME.db and run with that
+#   ./run --fork             Fork with timestamp name (fork-YYYYMMDD-HHMMSS.db)
+#   ./run --db PATH          Run with specific database file
+#
+# For development/testing with safe database, see CLAUDE.md
+
+set -e
+
+BACKEND_DIR="src/backend"
+FRONTEND_DIR="src/frontend"
+LIVE_DB="harvest.db"
+DB_PATH="$LIVE_DB"
+FORK_NAME=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --fork)
+      if [[ -n "$2" && ! "$2" =~ ^-- ]]; then
+        FORK_NAME="$2"
+        shift 2
+      else
+        FORK_NAME="fork-$(date +%Y%m%d-%H%M%S)"
+        shift
+      fi
+      ;;
+    --db)
+      if [[ -z "$2" || "$2" =~ ^-- ]]; then
+        echo "Error: --db requires a path argument"
+        exit 1
+      fi
+      DB_PATH="$2"
+      shift 2
+      ;;
+    --help|-h)
+      echo "Usage: ./run [OPTIONS]"
+      echo ""
+      echo "Run Harvest Hound with frontend and backend."
+      echo ""
+      echo "⚠️  WARNING: This script uses harvest.db (your real data) by default."
+      echo "    Claude Code should NOT run this script - see CLAUDE.md for development."
+      echo ""
+      echo "Options:"
+      echo "  --fork [NAME]  Fork harvest.db to NAME.db (or timestamped) and use it"
+      echo "  --db PATH      Use a specific database file"
+      echo "  --help         Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  ./run                      # Use harvest.db (your real data)"
+      echo "  ./run --fork experiment    # Copy to experiment.db, use that"
+      echo "  ./run --fork               # Copy to fork-20241207-143022.db"
+      echo "  ./run --db dev.db          # Use safe dev.db for testing"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Run './run --help' for usage"
+      exit 1
+      ;;
+  esac
+done
+
+# Handle fork
+if [[ -n "$FORK_NAME" ]]; then
+  # Ensure .db extension
+  if [[ ! "$FORK_NAME" =~ \.db$ ]]; then
+    FORK_NAME="${FORK_NAME}.db"
+  fi
+
+  # Check if source database exists
+  if [[ ! -f "$BACKEND_DIR/$LIVE_DB" ]]; then
+    echo "Error: $BACKEND_DIR/$LIVE_DB not found. Nothing to fork."
+    exit 1
+  fi
+
+  FULL_FORK_PATH="$BACKEND_DIR/$FORK_NAME"
+  if [[ -f "$FULL_FORK_PATH" ]]; then
+    echo "Error: $FORK_NAME already exists."
+    echo "Choose a different name or delete the existing file."
+    exit 1
+  fi
+
+  cp "$BACKEND_DIR/$LIVE_DB" "$FULL_FORK_PATH"
+  DB_PATH="$FORK_NAME"
+  echo "✓ Created fork: $FORK_NAME"
+fi
+
+echo "→ Using database: $DB_PATH"
+echo "→ Frontend: http://localhost:5173  (open this URL)"
+echo "→ Backend API: http://localhost:8000"
+echo ""
+
+# Run both frontend and backend with concurrently
+npx concurrently \
+  --names "api,web" \
+  --prefix-colors "cyan,magenta" \
+  "cd $BACKEND_DIR && DATABASE_URL=sqlite:///$DB_PATH uv run uvicorn app:app --reload --port 8000" \
+  "cd $FRONTEND_DIR && npm run dev"

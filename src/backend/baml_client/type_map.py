@@ -22,6 +22,12 @@ type_map = {
     "types.InventoryParsingResult": types.InventoryParsingResult,
     "stream_types.InventoryParsingResult": stream_types.InventoryParsingResult,
 
+    "types.PitchIngredient": types.PitchIngredient,
+    "stream_types.PitchIngredient": stream_types.PitchIngredient,
+
+    "types.RecipePitch": types.RecipePitch,
+    "stream_types.RecipePitch": stream_types.RecipePitch,
+
 
     "types.Priority": types.Priority,
 

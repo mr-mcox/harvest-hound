@@ -26,6 +26,32 @@ See `prototype/CLAUDE.md` for discovery methodology.
 - **Frontend**: Testing between vanilla JS and minimal Svelte
 - **Backend**: FastAPI + SQLModel + SQLite
 
+## Running the Application
+
+**For USER (authentic use with real data):**
+```bash
+./run                    # Uses harvest.db (your real kitchen inventory)
+./run --fork experiment  # Creates and uses experiment.db for testing scenarios
+./run --db dev.db        # Use safe dev.db for testing
+```
+
+This runs both frontend (http://localhost:5173) and backend (http://localhost:8000) together.
+
+**For Claude Code (development/testing):**
+```bash
+cd src/backend && uv run uvicorn app:app --reload
+```
+
+This defaults to `dev.db` and **cannot touch the user's real data**. Claude should NEVER run `./run` as it uses `harvest.db` by default.
+
+### Database Safety
+
+- `dev.db` - Safe default for Claude Code and testing
+- `harvest.db` - Live production data (real kitchen inventory)
+- `experiment.db` or `fork-*.db` - Copies for testing scenarios
+
+The separation exists because Claude Code once wiped live data during investigation. The `./run` script is **exclusively for user operation**.
+
 ## Project Structure
 
 ```
