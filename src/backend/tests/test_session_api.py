@@ -75,3 +75,110 @@ class TestSessionAPI:
         response = client.get(f"/api/sessions/{fake_id}")
 
         assert response.status_code == 404
+
+    def test_delete_criterion(self, client):
+        """DELETE removes a criterion"""
+        session = client.post("/api/sessions", json={"name": "Test"}).json()
+        criterion = client.post(
+            f"/api/sessions/{session['id']}/criteria",
+            json={"description": "To delete", "slots": 1},
+        ).json()
+
+        response = client.delete(
+            f"/api/sessions/{session['id']}/criteria/{criterion['id']}"
+        )
+
+        assert response.status_code == 204
+        # Verify it's gone
+        criteria = client.get(f"/api/sessions/{session['id']}/criteria").json()
+        assert len(criteria) == 0
+
+    def test_delete_criterion_not_found(self, client):
+        """DELETE returns 404 for non-existent criterion"""
+        session = client.post("/api/sessions", json={"name": "Test"}).json()
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = client.delete(f"/api/sessions/{session['id']}/criteria/{fake_id}")
+
+        assert response.status_code == 404
+
+    def test_create_criterion_max_7_enforced(self, client):
+        """POST returns 400 when session already has 7 criteria"""
+        session = client.post("/api/sessions", json={"name": "Test"}).json()
+
+        # Create 7 criteria (max allowed)
+        for i in range(7):
+            response = client.post(
+                f"/api/sessions/{session['id']}/criteria",
+                json={"description": f"Criterion {i + 1}", "slots": 1},
+            )
+            assert response.status_code == 201
+
+        # 8th should fail
+        response = client.post(
+            f"/api/sessions/{session['id']}/criteria",
+            json={"description": "One too many", "slots": 1},
+        )
+
+        assert response.status_code == 400
+        assert "maximum" in response.json()["detail"].lower()
+
+    def test_list_criteria_empty(self, client):
+        """GET returns empty list when no criteria exist"""
+        session = client.post("/api/sessions", json={"name": "Test"}).json()
+
+        response = client.get(f"/api/sessions/{session['id']}/criteria")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_list_criteria_returns_created(self, client):
+        """GET returns criteria after creation"""
+        session = client.post("/api/sessions", json={"name": "Test"}).json()
+        client.post(
+            f"/api/sessions/{session['id']}/criteria",
+            json={"description": "Quick meals", "slots": 2},
+        )
+        client.post(
+            f"/api/sessions/{session['id']}/criteria",
+            json={"description": "Weekend cooking", "slots": 1},
+        )
+
+        response = client.get(f"/api/sessions/{session['id']}/criteria")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+        descriptions = [c["description"] for c in data]
+        assert "Quick meals" in descriptions
+        assert "Weekend cooking" in descriptions
+
+
+class TestCriteriaAPI:
+    """Tests for /api/sessions/{id}/criteria endpoints"""
+
+    def test_create_criterion(self, client):
+        """POST creates a criterion for a session"""
+        session = client.post("/api/sessions", json={"name": "Test"}).json()
+
+        response = client.post(
+            f"/api/sessions/{session['id']}/criteria",
+            json={"description": "Quick weeknight meals", "slots": 3},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["description"] == "Quick weeknight meals"
+        assert data["slots"] == 3
+        assert "id" in data
+
+    def test_create_criterion_session_not_found(self, client):
+        """POST returns 404 for non-existent session"""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = client.post(
+            f"/api/sessions/{fake_id}/criteria",
+            json={"description": "Test", "slots": 1},
+        )
+
+        assert response.status_code == 404

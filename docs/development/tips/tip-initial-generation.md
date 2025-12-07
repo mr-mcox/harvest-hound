@@ -131,7 +131,7 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 
 ---
 
-### Phase 3: Meal Criteria Management
+### Phase 3: Meal Criteria Management ✓
 
 **Purpose**: Enable users to define meal constraints within a session, validating the structured planning workflow.
 
@@ -157,6 +157,14 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 **Dependencies**: Phase 2 (need session detail page)
 
 **Complexity**: S
+
+**Implementation notes**:
+- Added POST/GET/DELETE endpoints for criteria in routes.py
+- Max 7 criteria validation enforced server-side with 400 response
+- Session detail page updated with criteria form (description + slots) and list
+- UI shows criteria count and disables form at max
+- Placeholder for Phase 5 "Generate Pitches" button (disabled until criteria exist)
+- All tests passing (48 total, 7 new criteria API tests)
 
 ---
 
