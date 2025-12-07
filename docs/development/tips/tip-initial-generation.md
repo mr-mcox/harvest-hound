@@ -94,7 +94,7 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 
 ---
 
-### Phase 2: Session CRUD Foundation
+### Phase 2: Session CRUD Foundation ✓
 
 **Purpose**: Enable session creation, listing, and viewing through API and UI. Establishes navigation pattern for session-scoped workflows.
 
@@ -120,6 +120,14 @@ Users need to plan meals with structured constraints (quick weeknights, guest me
 **Dependencies**: Phase 1 (models must exist)
 
 **Complexity**: S
+
+**Implementation notes**:
+- Added session CRUD endpoints in routes.py (POST /api/sessions, GET /api/sessions, GET /api/sessions/{id})
+- SessionCreate/SessionResponse Pydantic models for API serialization
+- Main page updated with create form + session list (Svelte 5 runes syntax)
+- Auto-name generation "Week of [prior Sunday]" implemented client-side
+- Session detail page at /sessions/[id] with placeholder for Phase 3
+- All tests passing (41 total, 7 new session API tests)
 
 ---
 
