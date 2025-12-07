@@ -4,7 +4,10 @@ Database setup and models for Harvest Hound
 
 from collections.abc import Generator
 from datetime import UTC, datetime
+from uuid import UUID, uuid4
 
+from pydantic import field_validator
+from sqlalchemy import JSON, Column, event
 from sqlmodel import Field, Session, SQLModel, create_engine, select, text
 
 
@@ -13,7 +16,19 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-engine = create_engine("sqlite:///harvest.db")
+engine = create_engine(
+    "sqlite:///harvest.db",
+    connect_args={"check_same_thread": False},
+    echo=False,
+)
+
+
+# Enable foreign key support for SQLite (required for CASCADE deletes)
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_conn, connection_record):
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 class HouseholdProfile(SQLModel, table=True):
@@ -52,6 +67,46 @@ class InventoryItem(SQLModel, table=True):
     priority: str = Field(default="medium")  # low, medium, high, urgent
     portion_size: str | None = Field(default=None)  # e.g., "1 pound", "16 ounce"
     added_at: datetime = Field(default_factory=_utc_now)
+
+
+class PlanningSession(SQLModel, table=True):
+    """Weekly meal planning session for organizing recipe generation by criteria"""
+
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True)
+    name: str = Field()
+    created_at: datetime = Field(default_factory=_utc_now)
+
+
+class MealCriterion(SQLModel, table=True):
+    """Meal constraint/category for structured planning (e.g., 'Quick weeknight')"""
+
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True)
+    session_id: UUID = Field(foreign_key="planningsession.id", ondelete="CASCADE")
+    description: str = Field()
+    slots: int = Field()  # Number of meal slots (min 1)
+    created_at: datetime = Field(default_factory=_utc_now)
+
+    @field_validator("slots")
+    @classmethod
+    def validate_slots(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("slots must be at least 1")
+        return v
+
+
+class Pitch(SQLModel, table=True):
+    """Lightweight recipe pitch generated for a specific meal criterion"""
+
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True)
+    criterion_id: UUID = Field(foreign_key="mealcriterion.id", ondelete="CASCADE")
+    name: str = Field()
+    blurb: str = Field()  # Emotional hook
+    why_make_this: str = Field()  # Justification (CSA usage, etc.)
+    inventory_ingredients: list[str] = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )
+    active_time_minutes: int = Field()
+    created_at: datetime = Field(default_factory=_utc_now)
 
 
 def get_session() -> Generator[Session, None, None]:

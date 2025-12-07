@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
@@ -27,6 +28,14 @@ def test_engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+
+    # Enable foreign key support for SQLite (required for CASCADE deletes)
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
     SQLModel.metadata.create_all(engine)
     return engine
 
