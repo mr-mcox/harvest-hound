@@ -16,6 +16,9 @@ from . import stream_types
 
 type_map = {
 
+    "types.CompleteRecipe": types.CompleteRecipe,
+    "stream_types.CompleteRecipe": stream_types.CompleteRecipe,
+
     "types.Ingredient": types.Ingredient,
     "stream_types.Ingredient": stream_types.Ingredient,
 
@@ -24,6 +27,9 @@ type_map = {
 
     "types.PitchIngredient": types.PitchIngredient,
     "stream_types.PitchIngredient": stream_types.PitchIngredient,
+
+    "types.RecipeIngredient": types.RecipeIngredient,
+    "stream_types.RecipeIngredient": stream_types.RecipeIngredient,
 
     "types.RecipePitch": types.RecipePitch,
     "stream_types.RecipePitch": stream_types.RecipePitch,

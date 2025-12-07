@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["Ingredient","InventoryParsingResult","PitchIngredient","RecipePitch",]
+          ["CompleteRecipe","Ingredient","InventoryParsingResult","PitchIngredient","RecipeIngredient","RecipePitch",]
         ), enums=set(
           ["Priority",]
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -35,8 +35,12 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 4
+    # Generated classes 6
     # #########################################################################
+
+    @property
+    def CompleteRecipe(self) -> "CompleteRecipeViewer":
+        return CompleteRecipeViewer(self)
 
     @property
     def Ingredient(self) -> "IngredientViewer":
@@ -49,6 +53,10 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def PitchIngredient(self) -> "PitchIngredientViewer":
         return PitchIngredientViewer(self)
+
+    @property
+    def RecipeIngredient(self) -> "RecipeIngredientViewer":
+        return RecipeIngredientViewer(self)
 
     @property
     def RecipePitch(self) -> "RecipePitchViewer":
@@ -112,8 +120,75 @@ class PriorityValues:
 
 
 # #########################################################################
-# Generated classes 4
+# Generated classes 6
 # #########################################################################
+
+class CompleteRecipeAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("CompleteRecipe")
+        self._properties: typing.Set[str] = set([  "name",  "description",  "ingredients",  "instructions",  "active_time_minutes",  "total_time_minutes",  "servings",  "notes",  ])
+        self._props = CompleteRecipeProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "CompleteRecipeProperties":
+        return self._props
+
+
+class CompleteRecipeViewer(CompleteRecipeAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class CompleteRecipeProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("name"))
+    
+    @property
+    def description(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
+    
+    @property
+    def ingredients(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("ingredients"))
+    
+    @property
+    def instructions(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("instructions"))
+    
+    @property
+    def active_time_minutes(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("active_time_minutes"))
+    
+    @property
+    def total_time_minutes(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("total_time_minutes"))
+    
+    @property
+    def servings(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("servings"))
+    
+    @property
+    def notes(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("notes"))
+    
+    
+
 
 class IngredientAst:
     def __init__(self, tb: type_builder.TypeBuilder):
@@ -256,6 +331,61 @@ class PitchIngredientProperties:
     @property
     def unit(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("unit"))
+    
+    
+
+
+class RecipeIngredientAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("RecipeIngredient")
+        self._properties: typing.Set[str] = set([  "name",  "quantity",  "unit",  "preparation",  "notes",  ])
+        self._props = RecipeIngredientProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "RecipeIngredientProperties":
+        return self._props
+
+
+class RecipeIngredientViewer(RecipeIngredientAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class RecipeIngredientProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("name"))
+    
+    @property
+    def quantity(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("quantity"))
+    
+    @property
+    def unit(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("unit"))
+    
+    @property
+    def preparation(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("preparation"))
+    
+    @property
+    def notes(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("notes"))
     
     
 
