@@ -10,19 +10,19 @@
   - Felt "in the ballpark" - may need prompt tweaking but approach is sound
   - (discovered: recipe-generation experiment, 2025-11-29)
 
-- [x] **Store concept**: All stores auto-included for recipe generation feels right
-  - Don't need per-generation store selection
+- [x] **Ingredient source concept**: All ingredient sources auto-included for recipe generation feels right
+  - Don't need per-generation ingredient source selection
   - Could potentially prioritize via context ("ingredients going bad") but not blocking
   - (discovered: recipe-generation experiment, 2025-11-29)
 
 - [x] **Portioning constraints discovered**: Inventory has discrete vs infinitely divisible items
   - Freezer meat: 2 lbs = 2 separate 1-lb packages (can't use 1.5 lbs)
   - Vegetables: 2 lbs carrots = bulk (can use any amount)
-  - Low confidence if worth modeling explicitly - could be store-level context
+  - Low confidence if worth modeling explicitly - could be ingredient-level context
   - Affects: recipe generation (what amounts to suggest), inventory editing (increment/decrement UX)
   - (discovered: inventory-management experiment, 2025-11-29)
 
-- [x] **Store definitions dual-purpose**: What belongs + parsing context
+- [x] **Ingredient source definitions dual-purpose**: What belongs + parsing context
   - Example: "Freezer meat. Portions are typically 1 lb unless otherwise specified"
   - Might be overloading a concept, but both are LLM-facing so acceptable for now
   - Watch for: If non-LLM uses emerge, may need separation
@@ -55,20 +55,20 @@
   - Grocery claiming: Build shopping list for what you need to buy (not yet implemented)
   - Optional ingredients: Things that would enhance meal but aren't required (coleslaw, cheese, garnishes)
   - Three ingredient sources emerging: Inventory (have it), Grocery Essential (need it), Grocery Optional (nice to have)
-  - Grocery store claiming is fundamentally different - it's list-building, not reservation
+  - Grocery source claiming is fundamentally different - it's list-building, not reservation
   - (discovered: ingredient-claiming experiment, 2025-11-30)
 
-- [x] **Pantry staples vs inventory items**: Only claim trackable inventory
-  - Problem: Was claiming "baking powder", "garlic powder" - pantry staples shouldn't block future recipes
+- [x] **Pantry Staples vs inventory items**: Only claim trackable inventory
+  - Problem: Was claiming "baking powder", "garlic powder" - Pantry Staples shouldn't block future recipes
   - Solution: Filter claimed ingredients to only items in inventory system
-  - Pantry staples are effectively unlimited, don't need claiming
+  - Pantry Staples are effectively unlimited, don't need claiming
   - (discovered: ingredient-claiming experiment, 2025-11-30)
 
-- [x] **Store type separation validated**: Explicit vs definition stores works architecturally
-  - Explicit stores (CSA, Freezer): Itemized with quantities, need claiming
-  - Definition stores (Pantry Staples): Unlimited, never claimed
+- [x] **Ingredient source type separation validated**: Inventory vs Pantry Staples works architecturally
+  - Inventory sources: Itemized with quantities, need claiming
+  - Pantry Staples source: Unlimited, never claimed
   - LLM receives them separately in prompt, understands the distinction
-  - Code manages decremented inventory state for explicit stores only
+  - Code manages decremented inventory state for Inventory sources only
   - (discovered: ingredient-claiming-cognitive-load experiment, 2025-12-01)
 
 - [x] **Quantity-aware claiming works smoothly**: No edge cases found
@@ -145,17 +145,17 @@
   - For MVP: Only GENERATIVE pitches from inventory
   - (discovered: pitch-recipe-identity experiment, 2025-12-02)
 
-- [x] **Recipes exist independently of store assignments**: Architectural principle validated
-  - Store assignment is PLANNING-TIME context, not storage-time intrinsic property
-  - Recipe concept: "Kimchi Carbonara needs butter and kimchi" (no stores mentioned)
-  - Planning context: "I'll get butter from pantry, kimchi from fridge" (or "buy from Cub")
+- [x] **Recipes exist independently of ingredient source assignments**: Architectural principle validated
+  - Ingredient source assignment is PLANNING-TIME context, not storage-time intrinsic property
+  - Recipe concept: "Kimchi Carbonara needs butter and kimchi" (no ingredient sources mentioned)
+  - Planning context: "I'll get butter from my cupboard, kimchi from fridge" (or "buy from Cub")
   - Applies to BOTH generative and canonical recipes:
-    - Generative: LLM assigns stores during generation (current MVP flow)
-    - Canonical: System assigns stores when recipe selected for planning (future)
+    - Generative: LLM assigns ingredient sources during generation (current MVP flow)
+    - Canonical: System assigns ingredient sources when recipe selected for planning (future)
   - Both create `IngredientClaim` at planning time, different resolution mechanisms
   - Enables recipe reusability across different inventory states
-  - Enables recipe library import without pre-computing store assignments
-  - Store assignment changes with context: pantry restocked, grocery stores available this week
+  - Enables recipe library import without pre-computing ingredient source assignments
+  - Ingredient source assignment changes with context: staples restocked, grocery sources available this week
   - **Architectural win**: Can add canonical recipe library without breaking current model
   - (discovered: recipe-context-sources architectural pressure test, 2025-12-02)
 
@@ -172,22 +172,22 @@
   - Helps system generate balanced variety for the week
   - (discovered: recipe-pitch-selection experiment, 2025-11-29)
 
-- [x] **Location replaces Store concept**: Store evolved into location metadata
-  - "Store" concept successfully eliminated from user mental model
-  - Location is organizational metadata (chest freezer, refrigerator, cellar, pantry)
-  - User didn't even notice store selection existed (auto-created "My Inventory" worked invisibly)
+- [x] **Location for inventory organization**: Physical storage location as metadata
+  - Location is organizational metadata (chest freezer, refrigerator, cellar, shelves)
+  - User didn't need explicit inventory grouping (auto-created "My Inventory" worked invisibly)
   - Location matters for audit/review ("verify chest freezer has all our meat")
   - Location does NOT drive recipe generation - priority does
   - LLM can guess location during parsing (frozen meat → chest freezer, bacon → refrigerator)
   - User reaction: "The store concept fades away"
+  - Note: This is distinct from architectural "ingredient sources" (Inventory, Pantry Staples, Grocery)
   - (discovered: ingredient-priority experiment, 2025-12-01)
 
 - [x] **Priority drives recipe importance**: Location informs priority, priority drives recipes
-  - Priority values: low (pantry-level), medium (normal), high (use soon), urgent (spoiling)
+  - Priority values: low (staples-level), medium (normal), high (use soon), urgent (spoiling)
   - Location explains WHY something has a priority: frozen meat → low, fridge bacon → high
   - Priority visible in UI, location is background metadata explaining the rating
   - Normal distribution is healthy (lots in medium is expected and good)
-  - Low priority barely above pantry staples (not worth tracking oats, flour, etc.)
+  - Low priority barely above Pantry Staples (not worth tracking oats, flour, etc.)
   - User reaction: "Makes a lot of sense"
   - (discovered: ingredient-priority experiment, 2025-12-01)
 
@@ -199,42 +199,42 @@
   - Validates separation of concerns in ingredient metadata
   - (discovered: ingredient-priority experiment, 2025-12-01)
 
-- [x] **Complete ingredient claiming is critical**: EVERY ingredient must be claimed against a store
+- [x] **Complete ingredient claiming is critical**: EVERY ingredient must be claimed against an ingredient source
   - Discovery: Initial implementation only claimed inventory items, grocery items disappeared
   - Problem: Beet risotto needed goat cheese, but no claim created → shopping list empty
-  - Solution: LLM assigns every ingredient to a store (inventory, pantry, or grocery)
-  - Enables complete shopping list generation and pantry verification
+  - Solution: LLM assigns every ingredient to an ingredient source (Inventory, Pantry Staples, or Grocery)
+  - Enables complete shopping list generation and Pantry Staples verification
   - User reaction: "That's insufficient for this use case" (before fix)
   - (discovered: store-based-claiming experiment, 2025-12-01)
 
-- [x] **Pantry definition emerges from LLM behavior**: System reveals assumptions
-  - LLM assigned honey, walnuts, onion to grocery store
-  - User considers these pantry staples (always have on hand)
-  - Gap reveals pantry definition is fuzzy, user-specific
-  - Opportunity: Use grocery assignments to refine pantry definition over time
-  - Question: How does system learn what user considers pantry?
+- [x] **Pantry Staples definition emerges from LLM behavior**: System reveals assumptions
+  - LLM assigned honey, walnuts, onion to Grocery source
+  - User considers these Pantry Staples (always have on hand)
+  - Gap reveals Pantry Staples definition is fuzzy, user-specific
+  - Opportunity: Use Grocery assignments to refine Pantry Staples definition over time
+  - Question: How does system learn what user considers Pantry Staples?
   - (discovered: store-based-claiming experiment, 2025-12-01)
 
-- [x] **Multiple grocery stores, not singleton**: Different stores for different rhythms
+- [x] **Multiple grocery sources, not singleton**: Different grocery stores for different rhythms
   - Not "the grocery store" but: Cub (regular), Costco (bulk runs), Co-op, Asian grocery
-  - Store availability varies by week rhythm ("making a Costco run this week")
-  - User may select which grocery stores are available for meal planning
-  - Changes architecture: Grocery not a single definition store, but multiple options
+  - Grocery source availability varies by week rhythm ("making a Costco run this week")
+  - User may select which grocery sources are available for meal planning
+  - Changes architecture: Grocery not a single source, but multiple shopping options
   - (discovered: store-based-claiming experiment, 2025-12-01)
 
-- [x] **Three-tier store architecture**: Explicit, Pantry (singleton), Grocery stores (multiple)
-  - Explicit stores (CSA, Freezer): Itemized inventory we definitely have
-  - Pantry (singleton): Assumed staples, verify before cooking
-  - Grocery stores (multiple): Where we buy things, user selects available stores
-  - Claiming logic: If explicitly stated → use it. If not → judge likelihood of needing to buy.
-  - Replaces rigid grocery/pantry split with flexible judgment
+- [x] **Three-tier ingredient source architecture**: Inventory, Pantry Staples (singleton), Grocery (multiple)
+  - Inventory: Itemized ingredients we definitely have (CSA, freezer items, tracked ingredients)
+  - Pantry Staples (singleton): Assumed staples like salt, oil, common spices - verify before cooking
+  - Grocery (multiple sources): Where we buy things, user selects available stores (Cub, Costco, Co-op, etc.)
+  - Claiming logic: If explicitly in Inventory → claim it. If not → judge likelihood of needing to buy.
+  - Replaces rigid Grocery/Pantry Staples split with flexible judgment
   - (discovered: store-based-claiming experiment, 2025-12-01)
 
-- [x] **Likelihood-based ingredient sourcing**: Replace binary grocery/pantry with probability
-  - Instead of "is this pantry or grocery?", ask "how likely do we need to buy this?"
+- [x] **Likelihood-based ingredient sourcing**: Replace binary Grocery/Pantry Staples with probability
+  - Instead of "is this Pantry Staples or Grocery?", ask "how likely do we need to buy this?"
   - High likelihood: Definitely buy (unusual items, large quantities)
   - Medium likelihood: Review/verify (grey area for user decision)
-  - Low likelihood: Assume pantry (salt, common spices under threshold)
+  - Low likelihood: Assume Pantry Staples (salt, common spices under threshold)
   - Enables smarter grocery list ordering (high confidence items first)
   - Example: "2.5 tsp salt" = silly to verify, but "8 oz goat cheese" = need to buy
   - (discovered: store-based-claiming experiment, 2025-12-01)
@@ -242,7 +242,7 @@
 - [ ] Ingredient complexity level:
 
 ### Workflows That Feel Natural
-1. [x] **Zero-click recipe generation**: Auto-loading all stores, optional context field
+1. [x] **Zero-click recipe generation**: Auto-loading all ingredient sources, optional context field
    - Big win: just click "Generate" without manual entry
    - Optional context useful when needed, ignorable when not
    - (discovered: recipe-generation experiment, 2025-11-29)
@@ -322,10 +322,10 @@
     - (discovered: ingredient-priority experiment, 2025-12-01)
 
 12. [x] **Shopping list view fills workflow gap**: Planning → Shop → Cook flow complete
-    - Shopping list aggregates claims by store (grocery vs pantry)
+    - Shopping list aggregates claims by ingredient source (Grocery vs Pantry Staples)
     - Format: "2 onions - used in: Recipe A, Recipe B"
     - Copy-paste button for transferring to shopping app
-    - Pantry verification checklist ("Check you have 2c polenta for Recipe X")
+    - Pantry Staples verification checklist ("Check you have 2c polenta for Recipe X")
     - User reaction: "This works great"
     - Fills missing step between meal planning and actual shopping
     - (discovered: store-based-claiming experiment, 2025-12-01)
@@ -345,9 +345,9 @@
   - Surprising that we don't need complex navigation yet
   - (discovered: recipe-generation experiment, 2025-11-29)
 
-- [x] **Store management**: Used but infrequent
-  - Deleted duplicate store (one-time cleanup)
-  - Edited definition (refinement during setup)
+- [x] **Ingredient source management**: Used but infrequent
+  - Deleted duplicate source (one-time cleanup)
+  - Edited Pantry Staples definition (refinement during setup)
   - Suggests: Could be buried in configuration interface long-term, doesn't need prominent UI
   - (discovered: inventory-management experiment, 2025-11-29)
 
@@ -358,12 +358,12 @@
   - Template: household profile + inventory + optional context + anti-duplicate tracking
   - Sequential generation (one at a time) prevents duplicates
   - Sonnet 4.5 with extended thinking (2000 token budget): Quality matches prior Claude system
-  - Dairy inference problem solved with explicit "only use inventory" constraint
+  - Inference problem solved with explicit "only use available ingredients" constraint
   - (discovered: recipe-generation experiment, inventory-management experiment, 2025-11-29)
 
-- [x] **Ingredient parsing with store context**: BAML ExtractIngredients + optional store definition
+- [x] **Ingredient parsing with inventory context**: BAML ExtractIngredients + optional context
   - Handles "xN notation" (Butt Roast x3 → 3 roasts, not 3 pounds)
-  - Store context influences parsing (e.g., "Freezer meat. Portions are typically 1 lb")
+  - Context influences parsing (e.g., "Freezer meat. Portions are typically 1 lb")
   - Parsing notes useful for problematic items
   - Accuracy: Successfully parsed real CSA delivery list
   - (discovered: inventory-management experiment, 2025-11-29)
@@ -443,14 +443,14 @@
   - Query params for simple inputs (context, num_recipes) feels clean
   - (discovered: recipe-generation experiment, 2025-11-29)
 
-- [x] **Claims aggregation endpoint**: GET /api/claims/by-store
-  - Groups claims by store, aggregates quantities across recipes
-  - Returns: {store_name: {ingredients: {name: {total_qty, unit, recipes[]}}}}
-  - Enables shopping list view and pantry verification
-  - Structure supports multiple grocery stores (not just singleton)
+- [x] **Claims aggregation endpoint**: GET /api/claims/by-source
+  - Groups claims by ingredient source, aggregates quantities across recipes
+  - Returns: {source_name: {ingredients: {name: {total_qty, unit, recipes[]}}}}
+  - Enables shopping list view and Pantry Staples verification
+  - Structure supports multiple grocery sources (not just singleton)
   - (discovered: store-based-claiming experiment, 2025-12-01)
 
-- [x] **Bulk operations via single endpoint**: POST /stores/{id}/inventory/bulk
+- [x] **Bulk operations via single endpoint**: POST /inventory/bulk
   - Free text input → BAML parsing → bulk insert
   - Returns added items + parsing notes + skipped items
   - Single round-trip for entire CSA delivery
@@ -641,13 +641,13 @@
 ## Architecture Decisions for MVP
 
 ### Keep Simple
-- [x] **Recipes as reusable entities, stores as planning context**
-  - Recipe schema: ingredients without store assignments
-  - Store resolution happens at planning time (when recipe selected)
+- [x] **Recipes as reusable entities, ingredient sources as planning context**
+  - Recipe schema: ingredients without ingredient source assignments
+  - Ingredient source resolution happens at planning time (when recipe selected)
   - Don't conflate recipe identity with ephemeral planning context
-  - Temporal separation: recipe persists (long-lived), store assignments are session/week scoped
-  - **Key insight**: In prototype, BAML generation and store assignment happen together (efficient), but they're separate CONCEPTS that shouldn't be architecturally coupled
-  - Enables future: import recipes, reuse across different inventory states, regenerate with different stores
+  - Temporal separation: recipe persists (long-lived), ingredient source assignments are session/week scoped
+  - **Key insight**: In prototype, BAML generation and ingredient source assignment happen together (efficient), but they're separate CONCEPTS that shouldn't be architecturally coupled
+  - Enables future: import recipes, reuse across different inventory states, regenerate with different ingredient sources
   - (discovered: recipe-context-sources architectural pressure test, 2025-12-02)
 
 ### Still Don't Need

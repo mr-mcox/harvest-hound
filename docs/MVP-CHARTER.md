@@ -2,7 +2,7 @@
 
 **Status**: Living document - update as we learn, delete when MVP complete
 **Created**: 2025-12-02
-**Last Updated**: 2025-12-02
+**Last Updated**: 2025-12-06
 
 ---
 
@@ -20,9 +20,9 @@
 
 ### Key Boundaries
 
-- **Recipe ≠ Store Assignment**: Store resolution at planning time, not storage. Recipes are reusable across inventory states.
+- **Recipe ≠ Ingredient Source Assignment**: Ingredient source resolution at planning time, not storage. Recipes are reusable across inventory states.
 - **LLM declares, code manages**: LLM outputs what it used; code handles state/claiming. Don't make LLM do accounting.
-- **Three-tier stores**: Explicit (itemized, claimed) → Pantry (unlimited, unclaimed) → Grocery (list-building)
+- **Three-tier ingredient sources**: Inventory (itemized, claimed) → Pantry Staples (unlimited, unclaimed) → Grocery (list-building)
 
 ### Modeling Decisions
 
@@ -30,11 +30,11 @@
 |----------|--------|-----------|
 | Portioning hints | Optional field on ingredient | Prevents "stuck with 1/2 lb chorizo" - defrost increments matter |
 | Ingredient prep | Strip from ingredient, enforce in instructions | Prep surprises mid-cook are painful; instructions should be complete |
-| Likelihood-based sourcing | Nice-to-have | Look for seams; solves "key ingredient buried in pantry assumptions" |
+| Likelihood-based sourcing | Nice-to-have | Look for seams; solves "key ingredient buried in Pantry Staples assumptions" |
 
 ### Simpler Than Expected
 - Household profile as prompt constant (no DB/UI)
-- Store auto-selection (no per-generation UI needed)
+- Ingredient source auto-selection (no per-generation UI needed)
 - Single-page UI goes surprisingly far
 
 ### More Complex Than Expected
@@ -57,7 +57,7 @@ Prove the loop first, polish second. The thread: **CSA delivery → planning ses
 | Planning session | Create session → add criteria → generate grouped pitches | Free-form constraint text |
 | Pitch generation | 3x pitches per criterion, adaptive to unfilled slots | Basic cards, no invalidation UI |
 | Select + Flesh out | Sequential claiming, quantity-aware, identity validation | No claim visibility UI |
-| Shopping list | Aggregate claims by store, copy button | No essential/optional split |
+| Shopping list | Aggregate claims by ingredient source, copy button | No essential/optional split |
 | Lifecycle | Cook (consume claims) / Abandon (release claims) | No history view |
 
 ### Phase 2: Fidelity Pass (After Loop Works)
@@ -79,7 +79,7 @@ Relationships: Session → MealCriteria → Pitches → Recipe (with criterion r
 
 ### Explicitly OUT of Scope
 
-- Per-generation store selection
+- Per-generation ingredient source selection
 - Bulk recipe operations
 - POINTER pitches (clipped/saved recipes)
 - Recipe editing after planning (abandon + regenerate is workaround)
@@ -102,11 +102,13 @@ Relationships: Session → MealCriteria → Pitches → Recipe (with criterion r
 ### Patterns to Keep (Validated)
 
 - **BAML for all LLM interactions** - structured, testable, iterable
+- **BAML testing** - good test coverage for prompts pays off during implementation
 - **Household profile as prompt constant** - no DB/UI complexity
 - **LLM declares, code manages state** - critical separation
 - **SSE streaming for generation** - better UX than waiting
 - **Technique diversity in prompts** - multiple options for same ingredient
-- **Three-tier store architecture** - clean claiming logic
+- **Three-tier ingredient source architecture** - clean claiming logic (Inventory, Pantry Staples, Grocery)
+- **Svelte + Skeleton v3** - layout solid, styling minimal, reactive state natural
 
 ### Patterns to Change
 
