@@ -58,6 +58,7 @@ class RecipeIngredient(BaseModel):
     unit: typing.Optional[str] = None
     preparation: typing.Optional[str] = None
     notes: typing.Optional[str] = None
+    purchase_likelihood: typing.Optional[float] = None
 
 class RecipePitch(BaseModel):
     name: typing.Optional[str] = None

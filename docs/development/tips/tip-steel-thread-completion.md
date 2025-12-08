@@ -154,7 +154,7 @@ tags: [mvp, shopping-list, recipe-lifecycle, steel-thread]
 
 ---
 
-### Phase 5: BAML Prompt Enhancement (FleshOutRecipe)
+### Phase 5: BAML Prompt Enhancement (FleshOutRecipe) ✓
 
 **Purpose**: Update FleshOutRecipe BAML prompt to assign ingredient_source and purchase_likelihood for every ingredient.
 

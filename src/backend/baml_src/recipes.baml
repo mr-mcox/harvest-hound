@@ -162,10 +162,12 @@ class RecipeIngredient {
   unit string
   preparation string? @description("How to prep: diced, minced, julienned")
   notes string?
+  purchase_likelihood float @description("Likelihood you'd need to purchase this ingredient (0.0 = definitely in pantry, 1.0 = definitely need to buy). Consider pantry description.")
 
   @@assert(name_not_empty, {{ this.name|length > 0 }})
   @@assert(quantity_not_empty, {{ this.quantity|length > 0 }})
   @@assert(unit_not_empty, {{ this.unit|length > 0 }})
+  @@assert(likelihood_in_range, {{ this.purchase_likelihood >= 0.0 and this.purchase_likelihood <= 1.0 }})
 }
 
 class CompleteRecipe {
@@ -237,6 +239,18 @@ function FleshOutRecipe(
     INGREDIENT FORMAT:
     - preparation: How to prep BEFORE cooking (diced, minced, julienned)
       - Include for produce and proteins - important for shopping
+    - purchase_likelihood: Assign to EVERY ingredient (0.0 to 1.0)
+      - How likely would they need to purchase this if they don't have it in inventory?
+      - Consider the pantry description carefully:
+        * 0.0-0.3: Probably in pantry (e.g., salt when pantry is well-stocked)
+        * 0.3-0.7: Maybe have it, maybe not (grey area)
+        * 0.7-1.0: Definitely need to buy (specialty items, or items pantry never stocks)
+      - Examples:
+        * "salt" with well-stocked pantry → 0.1 (definitely have it)
+        * "cumin" with "extensive spice collection" → 0.2 (have it)
+        * "cumin" with "only keep salt, pepper, oil" → 0.9 (need to buy)
+        * "goat cheese" with "never keep fresh dairy" → 0.9 (need to buy)
+        * "goat cheese" with "always have various cheeses" → 0.2 (have it)
 
     {{ ctx.output_format }}
   "#
@@ -297,4 +311,91 @@ test flesh_out_includes_preparation {
     "#
   }
   @@assert(has_ingredients, {{ this.ingredients|length >= 1 }})
+}
+
+// Purchase likelihood tests - testing LLM judgment based on pantry context
+
+test purchase_likelihood_low_for_common_pantry_staple {
+  functions [FleshOutRecipe]
+  args {
+    pitch_name "Simple Roasted Carrots"
+    pitch_blurb "Caramelized carrots with olive oil"
+    pitch_inventory_ingredients "carrots: 2 lbs"
+    household_profile "Home cook with well-stocked kitchen"
+    pantry_staples #"
+    Fully stocked pantry with all basics: salt, black pepper, olive oil, butter,
+    various vinegars, soy sauce, honey, maple syrup, all common spices.
+    "#
+    grocery_stores "- Local Grocery: Standard grocery store"
+    inventory #"
+    ## CSA Box
+    - 2 lbs carrots (High priority)
+    "#
+  }
+  // Olive oil should have low purchase likelihood (< 0.3) with well-stocked pantry
+  @@assert(olive_oil_low_likelihood, {{ this.ingredients|map(attribute='purchase_likelihood')|min < 0.3 }})
+}
+
+test purchase_likelihood_high_for_specialty_item_minimal_pantry {
+  functions [FleshOutRecipe]
+  args {
+    pitch_name "Goat Cheese Salad"
+    pitch_blurb "Fresh greens with tangy goat cheese and balsamic"
+    pitch_inventory_ingredients "lettuce: 1 head"
+    household_profile "Minimalist cook with basic equipment"
+    pantry_staples #"
+    Minimalist pantry - only keep: salt, black pepper, olive oil.
+    No specialty items, no spices, no dairy products.
+    "#
+    grocery_stores "- Whole Foods: Upscale grocery with specialty items"
+    inventory #"
+    ## CSA Box
+    - 1 head lettuce (High priority)
+    "#
+  }
+  // With minimal pantry, highest purchase likelihood should be >= 0.7 (specialty item)
+  @@assert(has_high_likelihood_item, {{ this.ingredients|map(attribute='purchase_likelihood')|max >= 0.7 }})
+}
+
+test purchase_likelihood_high_when_pantry_never_has_fresh_dairy {
+  functions [FleshOutRecipe]
+  args {
+    pitch_name "Creamy Pasta"
+    pitch_blurb "Rich and creamy pasta with parmesan"
+    pitch_inventory_ingredients "pasta: 1 lb"
+    household_profile "Lactose-intolerant household"
+    pantry_staples #"
+    Never keep fresh dairy products - lactose intolerant household.
+    Only shelf-stable items: salt, pepper, olive oil, pasta, rice, canned goods.
+    "#
+    grocery_stores "- Local Grocery: Standard grocery store"
+    inventory #"
+    ## Pantry
+    - 1 lb pasta (Medium priority)
+    "#
+  }
+  // With "never keep dairy", highest purchase likelihood should be >= 0.7
+  @@assert(has_high_likelihood_dairy, {{ this.ingredients|map(attribute='purchase_likelihood')|max >= 0.7 }})
+}
+
+test purchase_likelihood_low_when_pantry_always_has_item {
+  functions [FleshOutRecipe]
+  args {
+    pitch_name "Spiced Carrot Soup"
+    pitch_blurb "Warming soup with cumin and coriander"
+    pitch_inventory_ingredients "carrots: 2 lbs"
+    household_profile "Adventurous home cook"
+    pantry_staples #"
+    Extensive spice collection - always stocked with: cumin, coriander, turmeric,
+    paprika, cinnamon, cardamom, garam masala, curry powder, plus all basics.
+    "#
+    grocery_stores "- Local Grocery: Standard grocery store"
+    inventory #"
+    ## CSA Box
+    - 2 lbs carrots (High priority)
+    "#
+  }
+  // Cumin should have low likelihood (< 0.3) when pantry always has it
+  @@assert(cumin_exists, {{ this.ingredients|selectattr('name', 'equalto', 'cumin')|list|length > 0 }})
+  @@assert(cumin_low_likelihood, {{ this.ingredients|selectattr('name', 'equalto', 'cumin')|first|attr('purchase_likelihood') < 0.3 }})
 }
