@@ -128,7 +128,7 @@ tags: [mvp, shopping-list, recipe-lifecycle, steel-thread]
 
 ---
 
-### Phase 4: Shopping List API Endpoint
+### Phase 4: Shopping List API Endpoint ✓
 
 **Purpose**: Expose shopping list via REST API with force-ranked grocery items and pantry verification.
 

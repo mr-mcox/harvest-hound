@@ -39,6 +39,7 @@ from services import (
     create_recipe_with_claims,
     format_available_inventory,
 )
+from shopping_list import ShoppingListResponse, compute_shopping_list
 
 router = APIRouter(prefix="/api")
 
@@ -639,3 +640,26 @@ def abandon_recipe(
         claims_deleted=claims_deleted,
         inventory_items_decremented=0,  # Never decrement for abandon
     )
+
+
+@router.get("/sessions/{session_id}/shopping-list")
+def get_shopping_list(
+    session_id: UUID,
+    db: Session = Depends(get_session),
+) -> ShoppingListResponse:
+    """
+    Get shopping list for a planning session.
+
+    Returns force-ranked grocery items (purchase_likelihood >= 0.3) sorted by
+    likelihood descending, plus pantry staples (likelihood < 0.3).
+
+    Shopping list is computed on-demand from planned recipes, excluding
+    ingredients with claims (already sourced from inventory).
+    """
+    # Verify session exists
+    planning_session = db.get(PlanningSession, session_id)
+    if not planning_session:
+        raise HTTPException(status_code=404, detail="Planning session not found")
+
+    # Compute and return shopping list
+    return compute_shopping_list(db, session_id)

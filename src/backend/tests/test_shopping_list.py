@@ -2,6 +2,7 @@
 Tests for shopping list computation algorithm
 """
 
+from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models import (
@@ -332,3 +333,80 @@ class TestShoppingListComputation:
         assert len(result.grocery_items) == 1
         assert result.grocery_items[0].ingredient_name == "boundary_item"
         assert len(result.pantry_staples) == 0
+
+
+class TestShoppingListAPIEndpoint:
+    """Tests for GET /sessions/{session_id}/shopping-list API endpoint"""
+
+    def test_get_shopping_list_returns_correct_structure(
+        self, session: Session, client: TestClient
+    ):
+        """Happy path: endpoint returns shopping list with correct structure"""
+        planning_session = _create_session(session)
+
+        # Create recipe with mixed grocery/pantry items
+        _create_recipe(
+            session,
+            planning_session,
+            "Salad",
+            [
+                {
+                    "name": "lettuce",
+                    "quantity": "1",
+                    "unit": "head",
+                    "purchase_likelihood": 0.9,
+                },
+                {
+                    "name": "salt",
+                    "quantity": "1",
+                    "unit": "tsp",
+                    "purchase_likelihood": 0.1,
+                },
+            ],
+        )
+
+        # Call endpoint
+        response = client.get(f"/api/sessions/{planning_session.id}/shopping-list")
+
+        # Verify response
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check structure
+        assert "grocery_items" in data
+        assert "pantry_staples" in data
+        assert isinstance(data["grocery_items"], list)
+        assert isinstance(data["pantry_staples"], list)
+
+        # Check content
+        assert len(data["grocery_items"]) == 1
+        assert data["grocery_items"][0]["ingredient_name"] == "lettuce"
+        assert data["grocery_items"][0]["total_quantity"] == "1 head"
+        assert data["grocery_items"][0]["purchase_likelihood"] == 0.9
+        assert data["grocery_items"][0]["used_in_recipes"] == ["Salad"]
+
+        assert len(data["pantry_staples"]) == 1
+        assert data["pantry_staples"][0]["ingredient_name"] == "salt"
+
+    def test_get_shopping_list_empty_session_returns_empty_lists(
+        self, session: Session, client: TestClient
+    ):
+        """Empty session returns empty grocery and pantry lists"""
+        planning_session = _create_session(session)
+
+        response = client.get(f"/api/sessions/{planning_session.id}/shopping-list")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["grocery_items"] == []
+        assert data["pantry_staples"] == []
+
+    def test_get_shopping_list_session_not_found_returns_404(self, client: TestClient):
+        """Non-existent session returns 404"""
+        from uuid import uuid4
+
+        fake_id = uuid4()
+        response = client.get(f"/api/sessions/{fake_id}/shopping-list")
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
