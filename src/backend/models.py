@@ -148,7 +148,6 @@ class ClaimState(str, Enum):
     """Ingredient claim lifecycle states"""
 
     RESERVED = "reserved"  # Ingredient reserved for planned recipe
-    CONSUMED = "consumed"  # Recipe cooked, ingredient used
 
 
 class Recipe(SQLModel, table=True):
@@ -170,6 +169,7 @@ class Recipe(SQLModel, table=True):
     state: RecipeState = Field(default=RecipeState.PLANNED)
     notes: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=_utc_now)
+    cooked_at: datetime | None = Field(default=None)
 
 
 class IngredientClaim(SQLModel, table=True):
@@ -179,7 +179,7 @@ class IngredientClaim(SQLModel, table=True):
     recipe_id: UUID = Field(foreign_key="recipe.id", ondelete="CASCADE")
     inventory_item_id: int = Field(foreign_key="inventoryitem.id", ondelete="CASCADE")
     ingredient_name: str = Field()  # Denormalized for display without joins
-    quantity: float = Field()
+    quantity: float = Field(gt=0)  # Must be greater than 0
     unit: str = Field()
     state: ClaimState = Field(default=ClaimState.RESERVED)
     created_at: datetime = Field(default_factory=_utc_now)

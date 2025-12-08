@@ -241,18 +241,18 @@ class TestCalculateAvailableInventory:
             ],
         )
 
-        # Mark claim as consumed (recipe was cooked)
+        # Delete claim (recipe was cooked, claims are removed not transitioned)
         claim = session.exec(
             select(IngredientClaim).where(IngredientClaim.recipe_id == recipe.id)
         ).first()
-        claim.state = ClaimState.CONSUMED
+        session.delete(claim)
         session.commit()
 
         available = calculate_available_inventory(session)
 
-        # Consumed claims don't reduce available - that inventory is gone
-        # But for multi-wave generation, we only care about reserved
-        assert available[0].quantity == 2.0  # Full inventory, consumed doesn't block
+        assert (
+            available[0].quantity == 2.0
+        )  # Full inventory, deleted claim doesn't block
 
     def test_multiple_ingredients_calculated_independently(self, session: Session):
         """Each ingredient's claims are calculated independently"""

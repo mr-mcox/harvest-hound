@@ -124,7 +124,8 @@ def calculate_available_inventory(session: Session) -> list[InventoryItem]:
     Calculate available inventory by subtracting reserved claims.
 
     Returns a list of InventoryItem-like objects with decremented quantities.
-    Only RESERVED claims reduce availability (not CONSUMED).
+    Only RESERVED claims reduce availability (cooked/abandoned recipes have
+    claims deleted).
 
     Args:
         session: Database session

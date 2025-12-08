@@ -2,6 +2,8 @@
 Tests for IngredientClaim behavior - tracking inventory reservations for recipes
 """
 
+import pytest
+from pydantic import ValidationError
 from sqlmodel import Session
 
 from models import (
@@ -126,3 +128,63 @@ class TestIngredientClaimBehavior:
         session.commit()
 
         assert session.get(IngredientClaim, claim_id) is None
+
+
+class TestIngredientClaimConstraints:
+    """Tests for IngredientClaim validation constraints"""
+
+    def test_positive_quantity_is_valid(self, session: Session):
+        """Happy path: positive quantity is accepted"""
+        store = _create_grocery_store(session)
+        item = _create_inventory_item(session, store)
+        recipe = _create_recipe(session)
+
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=item.id,
+            ingredient_name="carrots",
+            quantity=1.5,  # Positive quantity
+            unit="pounds",
+        )
+        session.add(claim)
+        session.commit()
+
+        assert claim.quantity == 1.5
+
+    def test_zero_quantity_raises_validation_error(self, session: Session):
+        """Zero quantity should be rejected"""
+        store = _create_grocery_store(session)
+        item = _create_inventory_item(session, store)
+        recipe = _create_recipe(session)
+
+        with pytest.raises(ValidationError) as exc_info:
+            IngredientClaim.model_validate(
+                {
+                    "recipe_id": recipe.id,
+                    "inventory_item_id": item.id,
+                    "ingredient_name": "carrots",
+                    "quantity": 0.0,  # Invalid: zero
+                    "unit": "pounds",
+                }
+            )
+
+        assert "greater than 0" in str(exc_info.value).lower()
+
+    def test_negative_quantity_raises_validation_error(self, session: Session):
+        """Negative quantity should be rejected"""
+        store = _create_grocery_store(session)
+        item = _create_inventory_item(session, store)
+        recipe = _create_recipe(session)
+
+        with pytest.raises(ValidationError) as exc_info:
+            IngredientClaim.model_validate(
+                {
+                    "recipe_id": recipe.id,
+                    "inventory_item_id": item.id,
+                    "ingredient_name": "carrots",
+                    "quantity": -2.0,  # Invalid: negative
+                    "unit": "pounds",
+                }
+            )
+
+        assert "greater than 0" in str(exc_info.value).lower()
