@@ -76,7 +76,7 @@ tags: [mvp, shopping-list, recipe-lifecycle, steel-thread]
 
 ---
 
-### Phase 2: Recipe Lifecycle Endpoints
+### Phase 2: Recipe Lifecycle Endpoints ✓
 
 **Purpose**: Enable cook and abandon actions via REST API. Users can complete or cancel planned recipes.
 

@@ -144,3 +144,15 @@ class FleshOutResponse(BaseModel):
 
     recipes: list[FleshedOutRecipe]
     errors: list[str]  # Any pitches that failed to flesh out
+
+
+# --- Recipe Lifecycle Schemas ---
+
+
+class RecipeLifecycleResponse(BaseModel):
+    """Response schema for recipe lifecycle actions (cook/abandon)"""
+
+    recipe_id: str  # UUID as string
+    new_state: str  # RecipeState value
+    claims_deleted: int
+    inventory_items_decremented: int  # Only for cook action, 0 for abandon

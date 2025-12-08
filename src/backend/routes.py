@@ -14,11 +14,15 @@ from baml_client import b
 from models import (
     GroceryStore,
     HouseholdProfile,
+    IngredientClaim,
     InventoryItem,
     MealCriterion,
     Pantry,
     Pitch,
     PlanningSession,
+    Recipe,
+    RecipeState,
+    _utc_now,
     db_health,
     get_session,
 )
@@ -28,6 +32,7 @@ from schemas import (
     FleshOutRequest,
     FleshOutResponse,
     RecipeIngredientResponse,
+    RecipeLifecycleResponse,
 )
 from services import (
     calculate_available_inventory,
@@ -521,3 +526,116 @@ async def flesh_out_pitches(
             errors.append(f"Failed to flesh out '{pitch.name}': {str(e)}")
 
     return FleshOutResponse(recipes=recipes_out, errors=errors)
+
+
+# --- Recipe Lifecycle Endpoints ---
+
+
+@router.post("/recipes/{recipe_id}/cook")
+def cook_recipe(
+    recipe_id: UUID,
+    db: Session = Depends(get_session),
+) -> RecipeLifecycleResponse:
+    """
+    Mark a recipe as cooked: transition state, delete claims, decrement inventory.
+
+    This is an atomic operation - all changes succeed or fail together.
+    Idempotent: calling multiple times produces same result (no-op if already cooked).
+    """
+    # Get recipe
+    recipe = db.get(Recipe, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    # Idempotency check: if already cooked, return early
+    if recipe.state == RecipeState.COOKED:
+        return RecipeLifecycleResponse(
+            recipe_id=str(recipe_id),
+            new_state=recipe.state.value,
+            claims_deleted=0,
+            inventory_items_decremented=0,
+        )
+
+    # Get all claims for this recipe
+    claims = db.exec(
+        select(IngredientClaim).where(IngredientClaim.recipe_id == recipe_id)
+    ).all()
+
+    # Track counts for response
+    inventory_items_decremented = 0
+
+    # Decrement inventory for each claim
+    for claim in claims:
+        inventory_item = db.get(InventoryItem, claim.inventory_item_id)
+        if inventory_item:  # Handle staleness: item might be deleted
+            inventory_item.quantity -= claim.quantity
+            inventory_items_decremented += 1
+
+    # Delete all claims
+    claims_deleted = len(claims)
+    for claim in claims:
+        db.delete(claim)
+
+    # Update recipe state
+    recipe.state = RecipeState.COOKED
+    recipe.cooked_at = _utc_now()
+
+    # Commit transaction (atomic)
+    db.commit()
+
+    return RecipeLifecycleResponse(
+        recipe_id=str(recipe_id),
+        new_state=recipe.state.value,
+        claims_deleted=claims_deleted,
+        inventory_items_decremented=inventory_items_decremented,
+    )
+
+
+@router.post("/recipes/{recipe_id}/abandon")
+def abandon_recipe(
+    recipe_id: UUID,
+    db: Session = Depends(get_session),
+) -> RecipeLifecycleResponse:
+    """
+    Mark a recipe as abandoned: transition state, delete claims (releases inventory).
+
+    This is an atomic operation - all changes succeed or fail together.
+    Idempotent: calling multiple times produces same result (no-op if already
+    abandoned).
+    """
+    # Get recipe
+    recipe = db.get(Recipe, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    # Idempotency check: if already abandoned, return early
+    if recipe.state == RecipeState.ABANDONED:
+        return RecipeLifecycleResponse(
+            recipe_id=str(recipe_id),
+            new_state=recipe.state.value,
+            claims_deleted=0,
+            inventory_items_decremented=0,
+        )
+
+    # Get all claims for this recipe
+    claims = db.exec(
+        select(IngredientClaim).where(IngredientClaim.recipe_id == recipe_id)
+    ).all()
+
+    # Delete all claims (releases inventory - no decrement)
+    claims_deleted = len(claims)
+    for claim in claims:
+        db.delete(claim)
+
+    # Update recipe state
+    recipe.state = RecipeState.ABANDONED
+
+    # Commit transaction (atomic)
+    db.commit()
+
+    return RecipeLifecycleResponse(
+        recipe_id=str(recipe_id),
+        new_state=recipe.state.value,
+        claims_deleted=claims_deleted,
+        inventory_items_decremented=0,  # Never decrement for abandon
+    )
