@@ -30,6 +30,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="request")
         return typing.cast(types.InventoryParsingResult, result)
 
+    def FleshOutRecipe(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CompleteRecipe:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="FleshOutRecipe", llm_response=llm_response, mode="request")
+        return typing.cast(types.CompleteRecipe, result)
+
     def GenerateRecipePitches(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> typing.List["types.RecipePitch"]:
@@ -49,6 +55,12 @@ class LlmStreamParser:
     ) -> stream_types.InventoryParsingResult:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractIngredients", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.InventoryParsingResult, result)
+
+    def FleshOutRecipe(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CompleteRecipe:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="FleshOutRecipe", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CompleteRecipe, result)
 
     def GenerateRecipePitches(
         self, llm_response: str, baml_options: BamlCallOptions = {},

@@ -86,3 +86,61 @@ class InventoryItemResponse(BaseModel):
     priority: Priority
     portion_size: str | None = None
     added_at: datetime
+
+
+# --- Flesh-Out Schemas ---
+
+
+class PitchToFleshOut(BaseModel):
+    """A pitch selected for flesh-out"""
+
+    name: str
+    blurb: str
+    inventory_ingredients: list[dict]  # [{name, quantity, unit}]
+
+
+class FleshOutRequest(BaseModel):
+    """Request schema for batch flesh-out of selected pitches"""
+
+    pitches: list[PitchToFleshOut]
+
+
+class ClaimSummary(BaseModel):
+    """Summary of an ingredient claim created during flesh-out"""
+
+    ingredient_name: str
+    quantity: float
+    unit: str
+    inventory_item_id: int
+
+
+class RecipeIngredientResponse(BaseModel):
+    """Recipe ingredient in response"""
+
+    name: str
+    quantity: str
+    unit: str
+    preparation: str | None = None
+    notes: str | None = None
+
+
+class FleshedOutRecipe(BaseModel):
+    """A recipe generated from flesh-out with claim summary"""
+
+    id: str  # UUID as string
+    name: str
+    description: str
+    ingredients: list[RecipeIngredientResponse]
+    instructions: list[str]
+    active_time_minutes: int
+    total_time_minutes: int
+    servings: int
+    notes: str | None
+    claims: list[ClaimSummary]  # Claims created for inventory items
+
+
+class FleshOutResponse(BaseModel):
+    """Response schema for flesh-out endpoint"""
+
+    recipes: list[FleshedOutRecipe]
+    errors: list[str]  # Any pitches that failed to flesh out

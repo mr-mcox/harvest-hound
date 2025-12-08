@@ -21,6 +21,34 @@
     unit: string;
   }
 
+  interface RecipeIngredient {
+    name: string;
+    quantity: string;
+    unit: string;
+    preparation: string | null;
+    notes: string | null;
+  }
+
+  interface ClaimSummary {
+    ingredient_name: string;
+    quantity: number;
+    unit: string;
+    inventory_item_id: number;
+  }
+
+  interface FleshedOutRecipe {
+    id: string;
+    name: string;
+    description: string;
+    ingredients: RecipeIngredient[];
+    instructions: string[];
+    active_time_minutes: number;
+    total_time_minutes: number;
+    servings: number;
+    notes: string | null;
+    claims: ClaimSummary[];
+  }
+
   interface Pitch {
     id: string;
     criterion_id: string;
@@ -48,10 +76,47 @@
   let generationProgress = $state("");
   let generationError = $state("");
 
-  // Derived: pitches grouped by criterion
+  // Flesh-out state
+  let fleshingOut = $state(false);
+  let fleshOutProgress = $state("");
+  let fleshOutError = $state("");
+  let plannedRecipes: FleshedOutRecipe[] = $state([]);
+
+  let selectedPitchIds: Set<string> = $state(new Set());
+  let fleshedOutPitchIds: Set<string> = $state(new Set());
+  let selectedCount = $derived(selectedPitchIds.size);
+
+  function togglePitchSelection(pitchId: string) {
+    if (selectedPitchIds.has(pitchId)) {
+      selectedPitchIds.delete(pitchId);
+    } else {
+      selectedPitchIds.add(pitchId);
+    }
+    selectedPitchIds = new Set(selectedPitchIds);
+  }
+
+  function isPitchSelected(pitchId: string): boolean {
+    return selectedPitchIds.has(pitchId);
+  }
+
+  function markPitchesAsFleshedOut(pitchIds: string[]) {
+    for (const id of pitchIds) {
+      fleshedOutPitchIds.add(id);
+      selectedPitchIds.delete(id);
+    }
+    fleshedOutPitchIds = new Set(fleshedOutPitchIds);
+    selectedPitchIds = new Set(selectedPitchIds);
+  }
+
+  function getSelectedPitches(): Pitch[] {
+    return pitches.filter((p) => selectedPitchIds.has(p.id));
+  }
+
   let pitchesByCriterion = $derived(() => {
     const grouped: Record<string, Pitch[]> = {};
     for (const pitch of pitches) {
+      if (fleshedOutPitchIds.has(pitch.id)) continue;
+
       if (!grouped[pitch.criterion_id]) {
         grouped[pitch.criterion_id] = [];
       }
@@ -173,6 +238,61 @@
     };
   }
 
+  async function fleshOutSelected() {
+    if (fleshingOut || selectedCount === 0) return;
+
+    fleshingOut = true;
+    fleshOutProgress = `Fleshing out ${selectedCount} recipe${selectedCount > 1 ? "s" : ""}...`;
+    fleshOutError = "";
+
+    const selectedPitches = getSelectedPitches();
+    const pitchesToFleshOut = selectedPitches.map((p) => ({
+      name: p.name,
+      blurb: p.blurb,
+      inventory_ingredients: p.inventory_ingredients,
+    }));
+
+    const id = $page.params.id;
+
+    try {
+      const response = await fetch(`/api/sessions/${id}/flesh-out-pitches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pitches: pitchesToFleshOut }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Add new recipes to planned list
+      plannedRecipes = [...plannedRecipes, ...data.recipes];
+
+      // Mark pitches as fleshed out (removes from display)
+      markPitchesAsFleshedOut(selectedPitches.map((p) => p.id));
+
+      // Show success briefly
+      fleshOutProgress = `Created ${data.recipes.length} recipe${data.recipes.length !== 1 ? "s" : ""}!`;
+      setTimeout(() => {
+        fleshOutProgress = "";
+      }, 2000);
+
+      // Report any errors from individual pitches
+      if (data.errors && data.errors.length > 0) {
+        fleshOutError = `Some pitches failed: ${data.errors.join(", ")}`;
+      }
+    } catch (err) {
+      fleshOutError =
+        err instanceof Error ? err.message : "Failed to flesh out recipes";
+      fleshOutProgress = "";
+    } finally {
+      fleshingOut = false;
+    }
+  }
+
   onMount(async () => {
     await loadSession();
     if (!error) {
@@ -275,6 +395,63 @@
       {/if}
     </div>
 
+    <!-- My Planned Recipes -->
+    {#if plannedRecipes.length > 0}
+      <div class="card preset-outlined-primary-500 p-6 space-y-4">
+        <h2 class="h3">My Planned Recipes</h2>
+        <div class="space-y-4">
+          {#each plannedRecipes as recipe}
+            <div class="card preset-filled-surface-100-900 p-4 space-y-3">
+              <div class="flex items-start justify-between">
+                <h3 class="h4">{recipe.name}</h3>
+                <div class="text-sm text-surface-500 text-right">
+                  <div>{recipe.active_time_minutes} min active</div>
+                  <div>{recipe.total_time_minutes} min total</div>
+                </div>
+              </div>
+              <p class="text-surface-600-400">{recipe.description}</p>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 class="font-semibold text-sm mb-2">
+                    Ingredients ({recipe.servings} servings)
+                  </h4>
+                  <ul class="text-sm space-y-1">
+                    {#each recipe.ingredients as ingredient}
+                      <li>
+                        {ingredient.quantity}
+                        {ingredient.unit}
+                        {ingredient.name}{#if ingredient.preparation}, {ingredient.preparation}{/if}
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm mb-2">Instructions</h4>
+                  <ol class="text-sm space-y-1 list-decimal list-inside">
+                    {#each recipe.instructions as step}
+                      <li>{step}</li>
+                    {/each}
+                  </ol>
+                </div>
+              </div>
+
+              {#if recipe.claims.length > 0}
+                <div
+                  class="text-xs text-surface-500 pt-2 border-t border-surface-300-700"
+                >
+                  <span class="font-medium">Claimed from inventory:</span>
+                  {recipe.claims
+                    .map((c) => `${c.quantity} ${c.unit} ${c.ingredient_name}`)
+                    .join(", ")}
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
     <!-- Recipe Pitch Generation -->
     <div class="card preset-outlined-surface-500 p-6 space-y-4">
       <h2 class="h3">Recipe Pitches</h2>
@@ -287,13 +464,42 @@
           Ready to generate pitches for {criteria.length}
           {criteria.length === 1 ? "criterion" : "criteria"}.
         </p>
-        <button
-          class="btn preset-filled-secondary-500"
-          disabled={generating}
-          onclick={generatePitches}
-        >
-          {generating ? "Generating..." : "Generate Pitches"}
-        </button>
+        <div class="flex gap-3 flex-wrap">
+          <button
+            class="btn preset-filled-secondary-500"
+            disabled={generating}
+            onclick={generatePitches}
+          >
+            {generating ? "Generating..." : "Generate Pitches"}
+          </button>
+
+          {#if selectedCount > 0}
+            <button
+              class="btn preset-filled-primary-500"
+              disabled={generating || fleshingOut}
+              onclick={fleshOutSelected}
+            >
+              {fleshingOut ? "Fleshing Out..." : "Flesh Out Selected"}
+              <span
+                class="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm font-medium"
+              >
+                {selectedCount}
+              </span>
+            </button>
+          {/if}
+        </div>
+
+        {#if fleshOutProgress}
+          <div class="card preset-outlined-primary-500 p-4">
+            <p class="text-sm">{fleshOutProgress}</p>
+          </div>
+        {/if}
+
+        {#if fleshOutError}
+          <div class="card preset-outlined-error-500 p-4">
+            <p class="text-sm text-error-500">{fleshOutError}</p>
+          </div>
+        {/if}
 
         {#if generationProgress}
           <div class="card preset-outlined-primary-500 p-4">
@@ -323,9 +529,40 @@
             {:else}
               <div class="grid gap-3">
                 {#each criterionPitches as pitch}
-                  <div class="card preset-outlined-surface-500 p-4 space-y-2">
+                  <button
+                    type="button"
+                    onclick={() => togglePitchSelection(pitch.id)}
+                    class="card p-4 space-y-2 text-left w-full transition-all cursor-pointer
+                      {isPitchSelected(pitch.id)
+                      ? 'preset-outlined-primary-500 ring-2 ring-primary-500 bg-primary-500/10'
+                      : 'preset-outlined-surface-500 hover:bg-surface-100-900'}"
+                  >
                     <div class="flex items-start justify-between">
-                      <h4 class="font-semibold text-lg">{pitch.name}</h4>
+                      <div class="flex items-center gap-2">
+                        <span
+                          class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
+                            {isPitchSelected(pitch.id)
+                            ? 'border-primary-500 bg-primary-500 text-white'
+                            : 'border-surface-400'}"
+                        >
+                          {#if isPitchSelected(pitch.id)}
+                            <svg
+                              class="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="3"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          {/if}
+                        </span>
+                        <h4 class="font-semibold text-lg">{pitch.name}</h4>
+                      </div>
                       <span class="text-sm text-surface-500">
                         {pitch.active_time_minutes} min
                       </span>
@@ -340,7 +577,7 @@
                           .join(", ")}
                       </div>
                     {/if}
-                  </div>
+                  </button>
                 {/each}
               </div>
             {/if}

@@ -22,6 +22,18 @@ from models import (
     db_health,
     get_session,
 )
+from schemas import (
+    ClaimSummary,
+    FleshedOutRecipe,
+    FleshOutRequest,
+    FleshOutResponse,
+    RecipeIngredientResponse,
+)
+from services import (
+    calculate_available_inventory,
+    create_recipe_with_claims,
+    format_available_inventory,
+)
 
 router = APIRouter(prefix="/api")
 
@@ -287,32 +299,26 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 yield f"data: {error_data}\n\n"
                 return
 
-            # Load household context from database
             household_profile = db.exec(select(HouseholdProfile)).first()
             pantry = db.exec(select(Pantry)).first()
             grocery_stores = db.exec(select(GroceryStore)).all()
-            inventory_items = db.exec(select(InventoryItem)).all()
 
-            # Format context for BAML
+            # Available inventory = physical minus reserved claims (enables multi-wave)
+            available_inventory = calculate_available_inventory(db)
+
             household_profile_text = (
                 household_profile.content if household_profile else ""
             )
             pantry_text = pantry.content if pantry else ""
-
-            # Format grocery stores
             grocery_stores_text = "\n".join(
                 f"- {store.name}: {store.description}" for store in grocery_stores
             )
+            inventory_text = format_available_inventory(available_inventory, db)
 
-            # Format inventory grouped by store with priority
-            inventory_text = _format_inventory_text(inventory_items, db)
-
-            # Sequential generation per criterion
             total_criteria = len(criteria)
             for criterion_index, criterion in enumerate(criteria, start=1):
                 num_pitches = 3 * criterion.slots
 
-                # Send progress event for criterion start
                 progress_data = json.dumps(
                     {
                         "progress": True,
@@ -324,7 +330,6 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 )
                 yield f"data: {progress_data}\n\n"
 
-                # Call BAML to generate pitches for this criterion
                 pitches = await b.GenerateRecipePitches(
                     inventory=inventory_text,
                     pantry_staples=pantry_text,
@@ -334,9 +339,7 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                     num_pitches=num_pitches,
                 )
 
-                # Save each pitch and stream it
                 for pitch_index, pitch in enumerate(pitches, start=1):
-                    # Save to database
                     db_pitch = Pitch(
                         criterion_id=criterion.id,
                         name=pitch.name,
@@ -392,3 +395,129 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
             "X-Accel-Buffering": "no",  # Disable nginx buffering
         },
     )
+
+
+# --- Flesh-Out Pitches to Complete Recipes ---
+
+
+@router.post("/sessions/{session_id}/flesh-out-pitches")
+async def flesh_out_pitches(
+    session_id: UUID,
+    request: FleshOutRequest,
+    db: Session = Depends(get_session),
+) -> FleshOutResponse:
+    """
+    Flesh out selected pitches into complete recipes with ingredient claims.
+
+    For each pitch:
+    1. Call BAML FleshOutRecipe to generate complete recipe
+    2. Save Recipe to database
+    3. Create IngredientClaims for matching inventory items (atomic)
+
+    Returns list of created recipes with their claims.
+    """
+    # Verify session exists
+    session = db.get(PlanningSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Handle empty pitches list
+    if not request.pitches:
+        return FleshOutResponse(recipes=[], errors=[])
+
+    # Load household context for BAML
+    household_profile = db.exec(select(HouseholdProfile)).first()
+    pantry = db.exec(select(Pantry)).first()
+    grocery_stores = db.exec(select(GroceryStore)).all()
+    inventory_items = db.exec(select(InventoryItem)).all()
+
+    household_profile_text = household_profile.content if household_profile else ""
+    pantry_text = pantry.content if pantry else ""
+    grocery_stores_text = "\n".join(
+        f"- {store.name}: {store.description}" for store in grocery_stores
+    )
+    inventory_text = _format_inventory_text(inventory_items, db)
+
+    recipes_out = []
+    errors = []
+
+    for pitch in request.pitches:
+        try:
+            # Format pitch inventory ingredients for BAML
+            pitch_ingredients_text = ", ".join(
+                f"{ing['name']}: {ing['quantity']} {ing['unit']}"
+                for ing in pitch.inventory_ingredients
+            )
+
+            # Call BAML to flesh out the pitch
+            baml_recipe = await b.FleshOutRecipe(
+                pitch_name=pitch.name,
+                pitch_blurb=pitch.blurb,
+                pitch_inventory_ingredients=pitch_ingredients_text,
+                household_profile=household_profile_text,
+                pantry_staples=pantry_text,
+                grocery_stores=grocery_stores_text,
+                inventory=inventory_text,
+            )
+
+            # Convert BAML output to recipe data dict
+            recipe_data = {
+                "name": baml_recipe.name,
+                "description": baml_recipe.description,
+                "ingredients": [
+                    {
+                        "name": ing.name,
+                        "quantity": ing.quantity,
+                        "unit": ing.unit,
+                        "preparation": ing.preparation,
+                        "notes": ing.notes,
+                    }
+                    for ing in baml_recipe.ingredients
+                ],
+                "instructions": baml_recipe.instructions,
+                "active_time_minutes": baml_recipe.active_time_minutes,
+                "total_time_minutes": baml_recipe.total_time_minutes,
+                "servings": baml_recipe.servings,
+                "notes": baml_recipe.notes,
+            }
+
+            # Create recipe with atomic claim creation
+            recipe, claims = create_recipe_with_claims(db, recipe_data)
+
+            # Build response
+            recipes_out.append(
+                FleshedOutRecipe(
+                    id=str(recipe.id),
+                    name=recipe.name,
+                    description=recipe.description,
+                    ingredients=[
+                        RecipeIngredientResponse(
+                            name=ing["name"],
+                            quantity=ing["quantity"],
+                            unit=ing["unit"],
+                            preparation=ing.get("preparation"),
+                            notes=ing.get("notes"),
+                        )
+                        for ing in recipe.ingredients
+                    ],
+                    instructions=recipe.instructions,
+                    active_time_minutes=recipe.active_time_minutes,
+                    total_time_minutes=recipe.total_time_minutes,
+                    servings=recipe.servings,
+                    notes=recipe.notes,
+                    claims=[
+                        ClaimSummary(
+                            ingredient_name=claim.ingredient_name,
+                            quantity=claim.quantity,
+                            unit=claim.unit,
+                            inventory_item_id=claim.inventory_item_id,
+                        )
+                        for claim in claims
+                    ],
+                )
+            )
+
+        except Exception as e:
+            errors.append(f"Failed to flesh out '{pitch.name}': {str(e)}")
+
+    return FleshOutResponse(recipes=recipes_out, errors=errors)
