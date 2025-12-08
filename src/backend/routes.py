@@ -37,7 +37,6 @@ from schemas import (
 from services import (
     calculate_available_inventory,
     create_recipe_with_claims,
-    format_available_inventory,
 )
 from shopping_list import ShoppingListResponse, compute_shopping_list
 
@@ -319,7 +318,18 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
             grocery_stores_text = "\n".join(
                 f"- {store.name}: {store.description}" for store in grocery_stores
             )
-            inventory_text = format_available_inventory(available_inventory, db)
+            # Build structured inventory for BAML
+            from baml_client import types as baml_types
+
+            inventory_items = [
+                baml_types.InventoryIngredient(
+                    name=item.ingredient_name,
+                    quantity=item.quantity,
+                    unit=item.unit,
+                    priority=item.priority,
+                )
+                for item in available_inventory
+            ]
 
             total_criteria = len(criteria)
             for criterion_index, criterion in enumerate(criteria, start=1):
@@ -337,7 +347,7 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 yield f"data: {progress_data}\n\n"
 
                 pitches = await b.GenerateRecipePitches(
-                    inventory=inventory_text,
+                    inventory=inventory_items,
                     pantry_staples=pantry_text,
                     grocery_stores=grocery_stores_text,
                     household_profile=household_profile_text,
@@ -468,6 +478,8 @@ async def flesh_out_pitches(
 
             # Convert BAML output to recipe data dict
             recipe_data = {
+                "session_id": session_id,  # Link recipe to planning session
+                "criterion_id": pitch.criterion_id,
                 "name": baml_recipe.name,
                 "description": baml_recipe.description,
                 "ingredients": [
@@ -477,6 +489,7 @@ async def flesh_out_pitches(
                         "unit": ing.unit,
                         "preparation": ing.preparation,
                         "notes": ing.notes,
+                        "purchase_likelihood": ing.purchase_likelihood,
                     }
                     for ing in baml_recipe.ingredients
                 ],
@@ -503,6 +516,7 @@ async def flesh_out_pitches(
                             unit=ing["unit"],
                             preparation=ing.get("preparation"),
                             notes=ing.get("notes"),
+                            purchase_likelihood=ing.get("purchase_likelihood", 0.5),
                         )
                         for ing in recipe.ingredients
                     ],
@@ -640,6 +654,66 @@ def abandon_recipe(
         claims_deleted=claims_deleted,
         inventory_items_decremented=0,  # Never decrement for abandon
     )
+
+
+@router.get("/sessions/{session_id}/recipes")
+def get_session_recipes(
+    session_id: UUID,
+    db: Session = Depends(get_session),
+) -> list[FleshedOutRecipe]:
+    """
+    Get all planned recipes for a session.
+
+    Returns recipes with their ingredient claims for display in the session view.
+    """
+    # Verify session exists
+    session = db.get(PlanningSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Get all planned recipes for this session
+    recipes = db.exec(
+        select(Recipe).where(
+            Recipe.session_id == session_id,
+            Recipe.state == RecipeState.PLANNED,
+        )
+    ).all()
+
+    # Build response with claims
+    recipes_out = []
+    for recipe in recipes:
+        claims = db.exec(
+            select(IngredientClaim).where(IngredientClaim.recipe_id == recipe.id)
+        ).all()
+
+        claim_summaries = [
+            ClaimSummary(
+                ingredient_name=c.ingredient_name,
+                quantity=c.quantity,
+                unit=c.unit,
+                inventory_item_id=c.inventory_item_id,
+            )
+            for c in claims
+        ]
+
+        recipes_out.append(
+            FleshedOutRecipe(
+                id=str(recipe.id),
+                name=recipe.name,
+                description=recipe.description,
+                ingredients=[
+                    RecipeIngredientResponse(**ing) for ing in recipe.ingredients
+                ],
+                instructions=recipe.instructions,
+                active_time_minutes=recipe.active_time_minutes,
+                total_time_minutes=recipe.total_time_minutes,
+                servings=recipe.servings,
+                notes=recipe.notes,
+                claims=claim_summaries,
+            )
+        )
+
+    return recipes_out
 
 
 @router.get("/sessions/{session_id}/shopping-list")

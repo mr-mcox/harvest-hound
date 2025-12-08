@@ -45,9 +45,9 @@ function ExtractIngredients(text: string, configuration_instructions: string?) -
         - name: singular, lowercase, include category context when nested (e.g., "pork butt roast" not just "butt roast")
         - quantity: numeric value (e.g., 2 not "two")
         - unit: full name, singular, lowercase (e.g., "pound" not "lbs", "cup" not "cups")
-          - For countable items, use item-specific units: "roast", "chop", "can", "jar", "head", "bunch"
+          - For containers or natural groupings: "can", "jar", "bottle", "head", "bunch", "roast", "chop"
+          - For produce: use weight units ("pound", "ounce") or "each" for countable items
           - When you see "xN" notation (e.g., "x3"), N is the quantity and the item type is the unit
-          - Avoid generic units like "piece", "each", "item" - be specific to what it is
         - priority: infer based on perishability (how quickly it will spoil)
           - Urgent: fresh items that spoil quickly (leafy greens, herbs, berries, fresh cream)
           - High: items to use relatively soon (other fresh vegetables, fresh meat)
@@ -187,4 +187,29 @@ test portion_size_from_config {
     @@assert({{ this.ingredients[1].name == "chicken breast" }})
     @@assert({{ this.ingredients[1].quantity == 3 }})
     @@assert({{ this.ingredients[1].portion_size == "1 pound" }})
+}
+
+test vegetables_without_containers_use_each {
+    functions [ExtractIngredients]
+    args {
+        text #"
+        2 rutabeggas
+        1 kohlrabi
+        3 acorn squash
+        "#
+        configuration_instructions null
+    }
+    @@assert({{ this.ingredients|length == 3 }})
+    // rutabegga should use "each" not "rutabegga" as unit
+    @@assert({{ this.ingredients[0].name == "rutabegga" }})
+    @@assert({{ this.ingredients[0].quantity == 2 }})
+    @@assert({{ this.ingredients[0].unit == "each" }})
+    // kohlrabi should use "each" not "kohlrabi" as unit
+    @@assert({{ this.ingredients[1].name == "kohlrabi" }})
+    @@assert({{ this.ingredients[1].quantity == 1 }})
+    @@assert({{ this.ingredients[1].unit == "each" }})
+    // acorn squash should use "each", not "squash" (would render as "2.0 squash acorn squash")
+    @@assert({{ this.ingredients[2].name == "acorn squash" }})
+    @@assert({{ this.ingredients[2].quantity == 3 }})
+    @@assert({{ this.ingredients[2].unit == "each" }})
 }

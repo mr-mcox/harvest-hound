@@ -51,10 +51,12 @@ def compute_shopping_list(
     Returns:
         ShoppingListResponse with grocery_items and pantry_staples
     """
-    # Get all planned recipes (no session link yet, so get all planned)
-    # TODO: Filter by session once recipes have session_id FK
+    # Get all planned recipes for this session
     recipes = session.exec(
-        select(Recipe).where(Recipe.state == RecipeState.PLANNED)
+        select(Recipe).where(
+            Recipe.session_id == planning_session_id,
+            Recipe.state == RecipeState.PLANNED,
+        )
     ).all()
 
     if not recipes:

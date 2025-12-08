@@ -1,5 +1,12 @@
 // Recipe pitch generation for meal planning criteria
 
+class InventoryIngredient {
+  name string @description("Ingredient name")
+  quantity float @description("Quantity on hand")
+  unit string @description("Unit of measurement")
+  priority string @description("Priority level: Urgent, High, Medium, Low")
+}
+
 class PitchIngredient {
   name string @description("Ingredient name matching inventory")
   quantity float @description("Amount needed for this recipe")
@@ -23,7 +30,7 @@ class RecipePitch {
 }
 
 function GenerateRecipePitches(
-  inventory: string,
+  inventory: InventoryIngredient[],
   pantry_staples: string,
   grocery_stores: string,
   household_profile: string,
@@ -44,7 +51,7 @@ function GenerateRecipePitches(
     </grocery-stores>
 
     <inventory>
-    Ingredients currently on hand, grouped by source. Each ingredient has a priority level (Urgent > High > Medium > Low). Prioritize higher-priority ingredients:
+    Ingredients currently on hand. Each ingredient has a priority level (Urgent > High > Medium > Low). Prioritize higher-priority ingredients:
     {{ inventory }}
     </inventory>
 
@@ -85,14 +92,11 @@ function GenerateRecipePitches(
 test basic_pitch_generation {
   functions [GenerateRecipePitches]
   args {
-    inventory #"
-    ## CSA Box
-    - 2 lbs carrots (High priority)
-    - 1 bunch kale (Urgent priority)
-
-    ## Freezer
-    - 1 lb ground beef (Medium priority)
-    "#
+    inventory [
+      {name: "carrots", quantity: 2, unit: "pound", priority: "High"},
+      {name: "kale", quantity: 1, unit: "bunch", priority: "Urgent"},
+      {name: "ground beef", quantity: 1, unit: "pound", priority: "Medium"}
+    ]
     pantry_staples #"
     Salt, pepper, olive oil, garlic, onions, soy sauce, rice, pasta
     "#
@@ -119,11 +123,10 @@ test basic_pitch_generation {
 test respects_num_pitches {
   functions [GenerateRecipePitches]
   args {
-    inventory #"
-    ## Grocery Store
-    - 1 lb chicken breast (Medium priority)
-    - 1 head broccoli (High priority)
-    "#
+    inventory [
+      {name: "chicken breast", quantity: 1, unit: "pound", priority: "Medium"},
+      {name: "broccoli", quantity: 1, unit: "head", priority: "High"}
+    ]
     pantry_staples "Salt, pepper, oil, garlic"
     grocery_stores "- Local Grocery: General grocery store"
     household_profile "Single person, quick meals preferred"
@@ -137,11 +140,10 @@ test respects_num_pitches {
 test inventory_ingredients_have_quantities {
   functions [GenerateRecipePitches]
   args {
-    inventory #"
-    ## Farmers Market
-    - 3 lbs sweet potatoes (Medium priority)
-    - 2 cans black beans (Low priority)
-    "#
+    inventory [
+      {name: "sweet potatoes", quantity: 3, unit: "pound", priority: "Medium"},
+      {name: "black beans", quantity: 2, unit: "can", priority: "Low"}
+    ]
     pantry_staples "Cumin, chili powder, salt, oil"
     grocery_stores "- Farmers Market: Local produce and specialty items"
     household_profile "Vegetarian household"

@@ -27,6 +27,7 @@
     unit: string;
     preparation: string | null;
     notes: string | null;
+    purchase_likelihood?: number;
   }
 
   interface ClaimSummary {
@@ -171,6 +172,14 @@
     }
   }
 
+  async function loadPlannedRecipes() {
+    const id = $page.params.id;
+    const response = await fetch(`/api/sessions/${id}/recipes`);
+    if (response.ok) {
+      plannedRecipes = await response.json();
+    }
+  }
+
   async function loadShoppingList() {
     if (plannedRecipes.length === 0) {
       shoppingList = { grocery_items: [], pantry_staples: [] };
@@ -294,6 +303,7 @@
       name: p.name,
       blurb: p.blurb,
       inventory_ingredients: p.inventory_ingredients,
+      criterion_id: p.criterion_id,
     }));
 
     const id = $page.params.id;
@@ -396,6 +406,8 @@
     if (!error) {
       await loadCriteria();
       await loadPitches();
+      await loadPlannedRecipes();
+      await loadShoppingList();
     }
   });
 </script>

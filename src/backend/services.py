@@ -80,6 +80,8 @@ def create_recipe_with_claims(
     lookup = build_inventory_lookup(session)
 
     recipe = Recipe(
+        session_id=recipe_data.get("session_id"),
+        criterion_id=recipe_data.get("criterion_id"),
         name=recipe_data["name"],
         description=recipe_data["description"],
         ingredients=recipe_data["ingredients"],

@@ -22,6 +22,9 @@ type_map = {
     "types.Ingredient": types.Ingredient,
     "stream_types.Ingredient": stream_types.Ingredient,
 
+    "types.InventoryIngredient": types.InventoryIngredient,
+    "stream_types.InventoryIngredient": stream_types.InventoryIngredient,
+
     "types.InventoryParsingResult": types.InventoryParsingResult,
     "stream_types.InventoryParsingResult": stream_types.InventoryParsingResult,
 

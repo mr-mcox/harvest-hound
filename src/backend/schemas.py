@@ -4,6 +4,7 @@ Pydantic schemas for API request/response models
 
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -97,6 +98,7 @@ class PitchToFleshOut(BaseModel):
     name: str
     blurb: str
     inventory_ingredients: list[dict]  # [{name, quantity, unit}]
+    criterion_id: UUID  # Which criterion this pitch belongs to
 
 
 class FleshOutRequest(BaseModel):
@@ -122,6 +124,7 @@ class RecipeIngredientResponse(BaseModel):
     unit: str
     preparation: str | None = None
     notes: str | None = None
+    purchase_likelihood: float = 0.5  # 0.0-1.0, LLM confidence needs purchase
 
 
 class FleshedOutRecipe(BaseModel):

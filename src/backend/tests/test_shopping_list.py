@@ -50,6 +50,7 @@ def _create_recipe(
         total_time_minutes=60,
         servings=4,
         state=RecipeState.PLANNED,
+        session_id=planning_session.id,
     )
     session.add(recipe)
     session.commit()

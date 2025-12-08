@@ -119,7 +119,7 @@ class BamlSyncClient:
                 "pitch_name": pitch_name,"pitch_blurb": pitch_blurb,"pitch_inventory_ingredients": pitch_inventory_ingredients,"household_profile": household_profile,"pantry_staples": pantry_staples,"grocery_stores": grocery_stores,"inventory": inventory,
             })
             return typing.cast(types.CompleteRecipe, result.cast_to(types, types, stream_types, False, __runtime__))
-    def GenerateRecipePitches(self, inventory: str,pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
+    def GenerateRecipePitches(self, inventory: typing.List["types.InventoryIngredient"],pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
         baml_options: BamlCallOptions = {},
     ) -> typing.List["types.RecipePitch"]:
         # Check if on_tick is provided
@@ -166,7 +166,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CompleteRecipe, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GenerateRecipePitches(self, inventory: str,pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
+    def GenerateRecipePitches(self, inventory: typing.List["types.InventoryIngredient"],pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlSyncStream[typing.List["stream_types.RecipePitch"], typing.List["types.RecipePitch"]]:
         ctx, result = self.__options.merge_options(baml_options).create_sync_stream(function_name="GenerateRecipePitches", args={
@@ -200,7 +200,7 @@ class BamlHttpRequestClient:
             "pitch_name": pitch_name,"pitch_blurb": pitch_blurb,"pitch_inventory_ingredients": pitch_inventory_ingredients,"household_profile": household_profile,"pantry_staples": pantry_staples,"grocery_stores": grocery_stores,"inventory": inventory,
         }, mode="request")
         return result
-    def GenerateRecipePitches(self, inventory: str,pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
+    def GenerateRecipePitches(self, inventory: typing.List["types.InventoryIngredient"],pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateRecipePitches", args={
@@ -229,7 +229,7 @@ class BamlHttpStreamRequestClient:
             "pitch_name": pitch_name,"pitch_blurb": pitch_blurb,"pitch_inventory_ingredients": pitch_inventory_ingredients,"household_profile": household_profile,"pantry_staples": pantry_staples,"grocery_stores": grocery_stores,"inventory": inventory,
         }, mode="stream")
         return result
-    def GenerateRecipePitches(self, inventory: str,pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
+    def GenerateRecipePitches(self, inventory: typing.List["types.InventoryIngredient"],pantry_staples: str,grocery_stores: str,household_profile: str,additional_context: str,num_pitches: int,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = self.__options.merge_options(baml_options).create_http_request_sync(function_name="GenerateRecipePitches", args={

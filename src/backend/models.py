@@ -156,6 +156,9 @@ class Recipe(SQLModel, table=True):
     """Complete recipe with structured ingredients, generated from a pitch"""
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True)
+    session_id: UUID | None = Field(
+        default=None, foreign_key="planningsession.id", ondelete="CASCADE"
+    )
     criterion_id: UUID | None = Field(default=None)  # Optional link to meal criterion
     name: str = Field()
     description: str = Field()
