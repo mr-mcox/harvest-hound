@@ -31,6 +31,7 @@ src/
     app.py         # FastAPI entrypoint
     routes.py      # API endpoints
     models.py      # SQLModel database setup
+    migrations/    # Alembic database migrations
     baml_functions.py  # BAML wrapper functions
     baml_src/      # BAML prompt definitions
     baml_client/   # Generated BAML client (do not edit)
@@ -49,6 +50,49 @@ src/
 ## Environment Variables
 
 - `ANTHROPIC_HH_API_KEY` - Required for BAML/LLM features
+- `DATABASE_URL` - Database connection (default: `sqlite:///dev.db`)
+  - Dev: `sqlite:///dev.db` (default, safe for testing)
+  - Live: `sqlite:///harvest.db` (production data)
+
+## Database Migrations
+
+Database schema changes are managed with Alembic.
+
+### Creating a Migration
+
+After modifying models in `models.py`:
+
+```bash
+cd backend
+uv run alembic revision --autogenerate -m "description_of_change"
+```
+
+This generates a migration file in `migrations/versions/`. Review it before applying.
+
+### Applying Migrations
+
+**Development database (dev.db):**
+```bash
+cd backend
+uv run alembic upgrade head
+```
+
+**Live database (harvest.db):**
+```bash
+cd backend
+DATABASE_URL=sqlite:///harvest.db uv run alembic upgrade head
+```
+
+### Migration History
+
+```bash
+cd backend
+uv run alembic current     # Show current version
+uv run alembic history     # Show migration history
+uv run alembic downgrade -1  # Rollback one migration (use with caution!)
+```
+
+**Important**: Always backup `harvest.db` before running migrations on live data.
 
 ## Code Quality
 
