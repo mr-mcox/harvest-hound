@@ -134,6 +134,8 @@ class RecipeIngredient(BaseModel):
     unit: str
     preparation: str | None = None  # e.g., "diced", "minced", "julienned"
     notes: str | None = None  # e.g., "organic preferred"
+    purchase_likelihood: float = 0.5  # 0.0-1.0, LLM confidence needs purchase
+    # Threshold: <0.3 = pantry staple, ≥0.3 = grocery item
 
 
 class RecipeState(str, Enum):
