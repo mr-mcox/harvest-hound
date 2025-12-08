@@ -189,7 +189,7 @@ Users need to select promising pitches, flesh them out into complete recipes, an
 
 ---
 
-### Phase 5: Claim-Aware Multi-Wave Generation
+### Phase 5: Claim-Aware Multi-Wave Generation ✓
 
 **Purpose**: Ensure GenerateRecipePitches respects claimed ingredients by passing decremented inventory state. Enables iterative "pick some → generate more" workflow.
 

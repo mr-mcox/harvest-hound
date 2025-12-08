@@ -2,10 +2,13 @@
 Business logic services for Harvest Hound
 """
 
+from copy import copy
+
 from sqlmodel import Session, select
 
 from models import (
     ClaimState,
+    GroceryStore,
     IngredientClaim,
     InventoryItem,
     Recipe,
@@ -74,10 +77,8 @@ def create_recipe_with_claims(
     Returns:
         Tuple of (saved Recipe, list of created IngredientClaims)
     """
-    # Build inventory lookup
     lookup = build_inventory_lookup(session)
 
-    # Create recipe
     recipe = Recipe(
         name=recipe_data["name"],
         description=recipe_data["description"],
@@ -90,9 +91,8 @@ def create_recipe_with_claims(
         state=RecipeState.PLANNED,
     )
     session.add(recipe)
-    session.flush()  # Get recipe ID without committing
+    session.flush()
 
-    # Create claims for matching ingredients
     claims = []
     for ingredient in recipe_data["ingredients"]:
         ing_name = ingredient["name"]
@@ -111,12 +111,76 @@ def create_recipe_with_claims(
             session.add(claim)
             claims.append(claim)
 
-    # Commit all together (atomic)
     session.commit()
-
-    # Refresh to get IDs
     session.refresh(recipe)
     for claim in claims:
         session.refresh(claim)
 
     return recipe, claims
+
+
+def calculate_available_inventory(session: Session) -> list[InventoryItem]:
+    """
+    Calculate available inventory by subtracting reserved claims.
+
+    Returns a list of InventoryItem-like objects with decremented quantities.
+    Only RESERVED claims reduce availability (not CONSUMED).
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of InventoryItem copies with adjusted quantities
+    """
+    items = session.exec(select(InventoryItem)).all()
+    reserved_claims = session.exec(
+        select(IngredientClaim).where(IngredientClaim.state == ClaimState.RESERVED)
+    ).all()
+
+    claimed_by_item: dict[int, float] = {}
+    for claim in reserved_claims:
+        item_id = claim.inventory_item_id
+        claimed_by_item[item_id] = claimed_by_item.get(item_id, 0.0) + claim.quantity
+
+    available = []
+    for item in items:
+        adjusted = copy(item)  # Avoid modifying the original
+        claimed = claimed_by_item.get(item.id, 0.0)
+        adjusted.quantity = max(0.0, item.quantity - claimed)
+        available.append(adjusted)
+
+    return available
+
+
+def format_available_inventory(
+    available_items: list[InventoryItem], session: Session
+) -> str:
+    """
+    Format available inventory items grouped by store for BAML prompt.
+
+    Args:
+        available_items: List of InventoryItem with adjusted quantities
+        session: Database session for store lookups
+
+    Returns:
+        Formatted string for BAML prompt
+    """
+    inventory_by_store: dict[str, list[InventoryItem]] = {}
+    for item in available_items:
+        store = session.get(GroceryStore, item.store_id)
+        store_name = store.name if store else "Unknown Store"
+        if store_name not in inventory_by_store:
+            inventory_by_store[store_name] = []
+        inventory_by_store[store_name].append(item)
+
+    inventory_text = ""
+    for store_name, items in inventory_by_store.items():
+        inventory_text += f"\n## {store_name}\n"
+        for item in items:
+            priority_label = f"({item.priority} priority)"
+            inventory_text += (
+                f"- {item.quantity} {item.unit} "
+                f"{item.ingredient_name} {priority_label}\n"
+            )
+
+    return inventory_text

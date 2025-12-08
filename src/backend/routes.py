@@ -29,7 +29,11 @@ from schemas import (
     FleshOutResponse,
     RecipeIngredientResponse,
 )
-from services import create_recipe_with_claims
+from services import (
+    calculate_available_inventory,
+    create_recipe_with_claims,
+    format_available_inventory,
+)
 
 router = APIRouter(prefix="/api")
 
@@ -295,32 +299,26 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 yield f"data: {error_data}\n\n"
                 return
 
-            # Load household context from database
             household_profile = db.exec(select(HouseholdProfile)).first()
             pantry = db.exec(select(Pantry)).first()
             grocery_stores = db.exec(select(GroceryStore)).all()
-            inventory_items = db.exec(select(InventoryItem)).all()
 
-            # Format context for BAML
+            # Available inventory = physical minus reserved claims (enables multi-wave)
+            available_inventory = calculate_available_inventory(db)
+
             household_profile_text = (
                 household_profile.content if household_profile else ""
             )
             pantry_text = pantry.content if pantry else ""
-
-            # Format grocery stores
             grocery_stores_text = "\n".join(
                 f"- {store.name}: {store.description}" for store in grocery_stores
             )
+            inventory_text = format_available_inventory(available_inventory, db)
 
-            # Format inventory grouped by store with priority
-            inventory_text = _format_inventory_text(inventory_items, db)
-
-            # Sequential generation per criterion
             total_criteria = len(criteria)
             for criterion_index, criterion in enumerate(criteria, start=1):
                 num_pitches = 3 * criterion.slots
 
-                # Send progress event for criterion start
                 progress_data = json.dumps(
                     {
                         "progress": True,
@@ -332,7 +330,6 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 )
                 yield f"data: {progress_data}\n\n"
 
-                # Call BAML to generate pitches for this criterion
                 pitches = await b.GenerateRecipePitches(
                     inventory=inventory_text,
                     pantry_staples=pantry_text,
@@ -342,9 +339,7 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                     num_pitches=num_pitches,
                 )
 
-                # Save each pitch and stream it
                 for pitch_index, pitch in enumerate(pitches, start=1):
-                    # Save to database
                     db_pitch = Pitch(
                         criterion_id=criterion.id,
                         name=pitch.name,
