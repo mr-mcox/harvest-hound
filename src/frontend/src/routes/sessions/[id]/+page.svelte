@@ -21,6 +21,34 @@
     unit: string;
   }
 
+  interface RecipeIngredient {
+    name: string;
+    quantity: string;
+    unit: string;
+    preparation: string | null;
+    notes: string | null;
+  }
+
+  interface ClaimSummary {
+    ingredient_name: string;
+    quantity: number;
+    unit: string;
+    inventory_item_id: number;
+  }
+
+  interface FleshedOutRecipe {
+    id: string;
+    name: string;
+    description: string;
+    ingredients: RecipeIngredient[];
+    instructions: string[];
+    active_time_minutes: number;
+    total_time_minutes: number;
+    servings: number;
+    notes: string | null;
+    claims: ClaimSummary[];
+  }
+
   interface Pitch {
     id: string;
     criterion_id: string;
@@ -47,6 +75,12 @@
   let generating = $state(false);
   let generationProgress = $state("");
   let generationError = $state("");
+
+  // Flesh-out state
+  let fleshingOut = $state(false);
+  let fleshOutProgress = $state("");
+  let fleshOutError = $state("");
+  let plannedRecipes: FleshedOutRecipe[] = $state([]);
 
   let selectedPitchIds: Set<string> = $state(new Set());
   let fleshedOutPitchIds: Set<string> = $state(new Set());
@@ -204,6 +238,61 @@
     };
   }
 
+  async function fleshOutSelected() {
+    if (fleshingOut || selectedCount === 0) return;
+
+    fleshingOut = true;
+    fleshOutProgress = `Fleshing out ${selectedCount} recipe${selectedCount > 1 ? "s" : ""}...`;
+    fleshOutError = "";
+
+    const selectedPitches = getSelectedPitches();
+    const pitchesToFleshOut = selectedPitches.map((p) => ({
+      name: p.name,
+      blurb: p.blurb,
+      inventory_ingredients: p.inventory_ingredients,
+    }));
+
+    const id = $page.params.id;
+
+    try {
+      const response = await fetch(`/api/sessions/${id}/flesh-out-pitches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pitches: pitchesToFleshOut }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Add new recipes to planned list
+      plannedRecipes = [...plannedRecipes, ...data.recipes];
+
+      // Mark pitches as fleshed out (removes from display)
+      markPitchesAsFleshedOut(selectedPitches.map((p) => p.id));
+
+      // Show success briefly
+      fleshOutProgress = `Created ${data.recipes.length} recipe${data.recipes.length !== 1 ? "s" : ""}!`;
+      setTimeout(() => {
+        fleshOutProgress = "";
+      }, 2000);
+
+      // Report any errors from individual pitches
+      if (data.errors && data.errors.length > 0) {
+        fleshOutError = `Some pitches failed: ${data.errors.join(", ")}`;
+      }
+    } catch (err) {
+      fleshOutError =
+        err instanceof Error ? err.message : "Failed to flesh out recipes";
+      fleshOutProgress = "";
+    } finally {
+      fleshingOut = false;
+    }
+  }
+
   onMount(async () => {
     await loadSession();
     if (!error) {
@@ -306,6 +395,63 @@
       {/if}
     </div>
 
+    <!-- My Planned Recipes -->
+    {#if plannedRecipes.length > 0}
+      <div class="card preset-outlined-primary-500 p-6 space-y-4">
+        <h2 class="h3">My Planned Recipes</h2>
+        <div class="space-y-4">
+          {#each plannedRecipes as recipe}
+            <div class="card preset-filled-surface-100-900 p-4 space-y-3">
+              <div class="flex items-start justify-between">
+                <h3 class="h4">{recipe.name}</h3>
+                <div class="text-sm text-surface-500 text-right">
+                  <div>{recipe.active_time_minutes} min active</div>
+                  <div>{recipe.total_time_minutes} min total</div>
+                </div>
+              </div>
+              <p class="text-surface-600-400">{recipe.description}</p>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 class="font-semibold text-sm mb-2">
+                    Ingredients ({recipe.servings} servings)
+                  </h4>
+                  <ul class="text-sm space-y-1">
+                    {#each recipe.ingredients as ingredient}
+                      <li>
+                        {ingredient.quantity}
+                        {ingredient.unit}
+                        {ingredient.name}{#if ingredient.preparation}, {ingredient.preparation}{/if}
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm mb-2">Instructions</h4>
+                  <ol class="text-sm space-y-1 list-decimal list-inside">
+                    {#each recipe.instructions as step}
+                      <li>{step}</li>
+                    {/each}
+                  </ol>
+                </div>
+              </div>
+
+              {#if recipe.claims.length > 0}
+                <div
+                  class="text-xs text-surface-500 pt-2 border-t border-surface-300-700"
+                >
+                  <span class="font-medium">Claimed from inventory:</span>
+                  {recipe.claims
+                    .map((c) => `${c.quantity} ${c.unit} ${c.ingredient_name}`)
+                    .join(", ")}
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
     <!-- Recipe Pitch Generation -->
     <div class="card preset-outlined-surface-500 p-6 space-y-4">
       <h2 class="h3">Recipe Pitches</h2>
@@ -328,8 +474,12 @@
           </button>
 
           {#if selectedCount > 0}
-            <button class="btn preset-filled-primary-500" disabled={generating}>
-              Flesh Out Selected
+            <button
+              class="btn preset-filled-primary-500"
+              disabled={generating || fleshingOut}
+              onclick={fleshOutSelected}
+            >
+              {fleshingOut ? "Fleshing Out..." : "Flesh Out Selected"}
               <span
                 class="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm font-medium"
               >
@@ -338,6 +488,18 @@
             </button>
           {/if}
         </div>
+
+        {#if fleshOutProgress}
+          <div class="card preset-outlined-primary-500 p-4">
+            <p class="text-sm">{fleshOutProgress}</p>
+          </div>
+        {/if}
+
+        {#if fleshOutError}
+          <div class="card preset-outlined-error-500 p-4">
+            <p class="text-sm text-error-500">{fleshOutError}</p>
+          </div>
+        {/if}
 
         {#if generationProgress}
           <div class="card preset-outlined-primary-500 p-4">
