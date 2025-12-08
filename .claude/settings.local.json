@@ -39,7 +39,8 @@
       "mcp__baml_Docs__search_baml_code",
       "mcp__baml_Docs__fetch_generic_url_content",
       "Bash(node -c:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(pre-commit run:*)"
     ],
     "deny": []
   }

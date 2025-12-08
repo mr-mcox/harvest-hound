@@ -141,16 +141,21 @@ Mark items complete in TodoWrite as you finish.
 
 After completing all work items in the phase:
 
-1. **Verify phase is complete**:
+1. **Remove redundant comments** (see Comment Hygiene)
+   - Review all modified files
+   - Delete comments that just restate self-describing code
+   - Run pre-commit after cleanup
+
+2. **Verify phase is complete**:
    - All tests passing
    - Pre-commit clean
    - Phase goals met
 
-2. **Update TIP**:
+3. **Update TIP**:
    - Mark phase complete with ✓
    - Note any deviations or discoveries
 
-3. **Pause for user feedback**:
+4. **Pause for user feedback**:
    ```
    Phase N complete.
 
@@ -161,7 +166,7 @@ After completing all work items in the phase:
    Ready for Phase N+1, or would you like to review?
    ```
 
-4. **Proceed or address feedback** before next phase
+5. **Proceed or address feedback** before next phase
 
 ---
 
@@ -294,6 +299,7 @@ Use these signals to decide test depth for each work item.
 - Remove duplication
 - Extract meaningful abstractions
 - Improve naming
+- **Remove redundant comments** (see Comment Hygiene below)
 - Keep tests green throughout
 
 ---
@@ -317,6 +323,18 @@ Use these signals to decide test depth for each work item.
 - Performance optimization (same outputs)
 
 **If behavior must change**: Stop. This is NEW BEHAVIOR, not REFACTOR.
+
+---
+
+### Comment Hygiene
+
+**Remove redundant comments** that merely restate what self-describing code already says.
+
+**Delete**: `# Get user by ID` before `user = get_user_by_id(user_id)`
+
+**Keep**: Comments explaining WHY ("Using exponential backoff due to aggressive rate-limits"), non-obvious constraints, or complex business rules.
+
+**When**: During REFACTOR phase and at Phase Checkpoint before final verification.
 
 ---
 
@@ -368,6 +386,7 @@ If during implementation you realize:
 
 ### Per Phase:
 - [ ] All work items complete
+- [ ] Redundant comments removed
 - [ ] All tests passing
 - [ ] TIP updated with ✓
 - [ ] User checkpoint completed

@@ -213,7 +213,7 @@ Users need to select promising pitches, flesh them out into complete recipes, an
 
 ---
 
-### Phase 6: Frontend Multi-Select UI
+### Phase 6: Frontend Multi-Select UI ✓
 
 **Purpose**: Add client-side multi-select interaction for pitch cards with visual feedback and batch action trigger. Sequenced after backend ready to minimize rework.
 
