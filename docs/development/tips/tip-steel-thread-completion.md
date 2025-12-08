@@ -180,7 +180,7 @@ tags: [mvp, shopping-list, recipe-lifecycle, steel-thread]
 
 ---
 
-### Phase 6: Frontend Integration
+### Phase 6: Frontend Integration ✓
 
 **Purpose**: Wire frontend to new endpoints, display shopping list and recipe lifecycle actions.
 
