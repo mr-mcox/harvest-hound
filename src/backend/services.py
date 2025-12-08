@@ -80,6 +80,8 @@ def create_recipe_with_claims(
     lookup = build_inventory_lookup(session)
 
     recipe = Recipe(
+        session_id=recipe_data.get("session_id"),
+        criterion_id=recipe_data.get("criterion_id"),
         name=recipe_data["name"],
         description=recipe_data["description"],
         ingredients=recipe_data["ingredients"],
@@ -124,7 +126,8 @@ def calculate_available_inventory(session: Session) -> list[InventoryItem]:
     Calculate available inventory by subtracting reserved claims.
 
     Returns a list of InventoryItem-like objects with decremented quantities.
-    Only RESERVED claims reduce availability (not CONSUMED).
+    Only RESERVED claims reduce availability (cooked/abandoned recipes have
+    claims deleted).
 
     Args:
         session: Database session

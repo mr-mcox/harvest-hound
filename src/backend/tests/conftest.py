@@ -48,15 +48,18 @@ def session(test_engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture
-def client(test_engine, monkeypatch) -> Generator[TestClient, None, None]:
+def client(test_engine) -> Generator[TestClient, None, None]:
     """Provide a test client with isolated database"""
 
     def get_test_session() -> Generator[Session, None, None]:
         with Session(test_engine) as session:
             yield session
 
-    # Patch the models module to use test engine
-    monkeypatch.setattr(models, "engine", test_engine)
+    # Override the get_session dependency to use test engine
+    app.dependency_overrides[models.get_session] = get_test_session
 
     with TestClient(app) as client:
         yield client
+
+    # Clean up
+    app.dependency_overrides.clear()

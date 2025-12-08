@@ -267,6 +267,68 @@ class TestAtomicClaimCreation:
 
         assert recipe.state == RecipeState.PLANNED
 
+    def test_recipe_session_id_is_set(self, session: Session):
+        """Recipe session_id is set from recipe_data"""
+        from services import create_recipe_with_claims
+
+        # Create a planning session
+        planning_session = PlanningSession(name="Test Week")
+        session.add(planning_session)
+        session.commit()
+        session.refresh(planning_session)
+
+        recipe_data = {
+            "session_id": planning_session.id,
+            "name": "Test Recipe",
+            "description": "Test",
+            "ingredients": [],
+            "instructions": ["Step 1"],
+            "active_time_minutes": 10,
+            "total_time_minutes": 10,
+            "servings": 2,
+            "notes": None,
+        }
+
+        recipe, claims = create_recipe_with_claims(session, recipe_data)
+
+        assert recipe.session_id == planning_session.id
+
+    def test_recipe_criterion_id_is_set(self, session: Session):
+        """Recipe criterion_id is set from recipe_data"""
+        from services import create_recipe_with_claims
+
+        # Create a planning session and criterion
+        planning_session = PlanningSession(name="Test Week")
+        session.add(planning_session)
+        session.commit()
+        session.refresh(planning_session)
+
+        criterion = MealCriterion(
+            session_id=planning_session.id,
+            description="Quick weeknight dinners",
+            slots=2,
+        )
+        session.add(criterion)
+        session.commit()
+        session.refresh(criterion)
+
+        recipe_data = {
+            "session_id": planning_session.id,
+            "criterion_id": criterion.id,
+            "name": "Test Recipe",
+            "description": "Test",
+            "ingredients": [],
+            "instructions": ["Step 1"],
+            "active_time_minutes": 10,
+            "total_time_minutes": 10,
+            "servings": 2,
+            "notes": None,
+        }
+
+        recipe, claims = create_recipe_with_claims(session, recipe_data)
+
+        assert recipe.criterion_id == criterion.id
+
 
 # --- Flesh-Out Endpoint Integration Tests ---
 
@@ -287,6 +349,7 @@ class TestFleshOutEndpoint:
         mock_ingredient.unit = "pounds"
         mock_ingredient.preparation = "julienned"
         mock_ingredient.notes = None
+        mock_ingredient.purchase_likelihood = 0.8
 
         mock_recipe = MagicMock()
         mock_recipe.name = "Honey Glazed Carrots"
@@ -313,6 +376,7 @@ class TestFleshOutEndpoint:
                             "inventory_ingredients": [
                                 {"name": "carrots", "quantity": 2.0, "unit": "pounds"}
                             ],
+                            "criterion_id": str(criterion.id),
                         }
                     ]
                 },
@@ -349,6 +413,7 @@ class TestFleshOutEndpoint:
                 mock_ing.unit = "pound"
                 mock_ing.preparation = "chopped"
                 mock_ing.notes = None
+                mock_ing.purchase_likelihood = 0.7
                 mock.name = "Carrot Soup"
                 mock.description = "Warming soup"
             else:
@@ -357,6 +422,7 @@ class TestFleshOutEndpoint:
                 mock_ing.unit = "bunch"
                 mock_ing.preparation = "torn"
                 mock_ing.notes = None
+                mock_ing.purchase_likelihood = 0.6
                 mock.name = "Kale Salad"
                 mock.description = "Fresh and healthy"
 
@@ -379,6 +445,7 @@ class TestFleshOutEndpoint:
                             "inventory_ingredients": [
                                 {"name": "carrots", "quantity": 1.0, "unit": "pound"}
                             ],
+                            "criterion_id": str(criterion.id),
                         },
                         {
                             "name": "Kale Salad",
@@ -386,6 +453,7 @@ class TestFleshOutEndpoint:
                             "inventory_ingredients": [
                                 {"name": "kale", "quantity": 1.0, "unit": "bunch"}
                             ],
+                            "criterion_id": str(criterion.id),
                         },
                     ]
                 },
@@ -421,3 +489,56 @@ class TestFleshOutEndpoint:
         data = response.json()
         assert data["recipes"] == []
         assert data["errors"] == []
+
+    def test_flesh_out_includes_purchase_likelihood(self, client, session: Session):
+        """Verify purchase_likelihood is included in ingredient response"""
+        planning_session, criterion = _create_session_with_criterion(session)
+        store, items = _create_store_with_inventory(session)
+
+        # Mock BAML response with purchase_likelihood
+        mock_ingredient = MagicMock()
+        mock_ingredient.name = "coconut milk"
+        mock_ingredient.quantity = "1"
+        mock_ingredient.unit = "can (13.5 oz)"
+        mock_ingredient.preparation = None
+        mock_ingredient.notes = "Full-fat preferred"
+        mock_ingredient.purchase_likelihood = 0.1  # Low - pantry staple
+
+        mock_recipe = MagicMock()
+        mock_recipe.name = "Coconut Curry"
+        mock_recipe.description = "Creamy curry"
+        mock_recipe.ingredients = [mock_ingredient]
+        mock_recipe.instructions = ["Cook curry"]
+        mock_recipe.active_time_minutes = 30
+        mock_recipe.total_time_minutes = 45
+        mock_recipe.servings = 4
+        mock_recipe.notes = None
+
+        async def mock_flesh_out(*args, **kwargs):
+            return mock_recipe
+
+        with patch("routes.b.FleshOutRecipe", side_effect=mock_flesh_out):
+            response = client.post(
+                f"/api/sessions/{planning_session.id}/flesh-out-pitches",
+                json={
+                    "pitches": [
+                        {
+                            "name": "Coconut Curry",
+                            "blurb": "Creamy and delicious",
+                            "inventory_ingredients": [],
+                            "criterion_id": str(criterion.id),
+                        }
+                    ]
+                },
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify purchase_likelihood is in the response
+        assert len(data["recipes"]) == 1
+        recipe = data["recipes"][0]
+        assert len(recipe["ingredients"]) == 1
+        ingredient = recipe["ingredients"][0]
+        assert "purchase_likelihood" in ingredient
+        assert ingredient["purchase_likelihood"] == 0.1

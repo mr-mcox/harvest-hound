@@ -4,6 +4,7 @@ Pydantic schemas for API request/response models
 
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -97,6 +98,7 @@ class PitchToFleshOut(BaseModel):
     name: str
     blurb: str
     inventory_ingredients: list[dict]  # [{name, quantity, unit}]
+    criterion_id: UUID  # Which criterion this pitch belongs to
 
 
 class FleshOutRequest(BaseModel):
@@ -122,6 +124,7 @@ class RecipeIngredientResponse(BaseModel):
     unit: str
     preparation: str | None = None
     notes: str | None = None
+    purchase_likelihood: float = 0.5  # 0.0-1.0, LLM confidence needs purchase
 
 
 class FleshedOutRecipe(BaseModel):
@@ -144,3 +147,15 @@ class FleshOutResponse(BaseModel):
 
     recipes: list[FleshedOutRecipe]
     errors: list[str]  # Any pitches that failed to flesh out
+
+
+# --- Recipe Lifecycle Schemas ---
+
+
+class RecipeLifecycleResponse(BaseModel):
+    """Response schema for recipe lifecycle actions (cook/abandon)"""
+
+    recipe_id: str  # UUID as string
+    new_state: str  # RecipeState value
+    claims_deleted: int
+    inventory_items_decremented: int  # Only for cook action, 0 for abandon

@@ -134,6 +134,8 @@ class RecipeIngredient(BaseModel):
     unit: str
     preparation: str | None = None  # e.g., "diced", "minced", "julienned"
     notes: str | None = None  # e.g., "organic preferred"
+    purchase_likelihood: float = 0.5  # 0.0-1.0, LLM confidence needs purchase
+    # Threshold: <0.3 = pantry staple, ≥0.3 = grocery item
 
 
 class RecipeState(str, Enum):
@@ -148,13 +150,15 @@ class ClaimState(str, Enum):
     """Ingredient claim lifecycle states"""
 
     RESERVED = "reserved"  # Ingredient reserved for planned recipe
-    CONSUMED = "consumed"  # Recipe cooked, ingredient used
 
 
 class Recipe(SQLModel, table=True):
     """Complete recipe with structured ingredients, generated from a pitch"""
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True)
+    session_id: UUID | None = Field(
+        default=None, foreign_key="planningsession.id", ondelete="CASCADE"
+    )
     criterion_id: UUID | None = Field(default=None)  # Optional link to meal criterion
     name: str = Field()
     description: str = Field()
@@ -170,6 +174,7 @@ class Recipe(SQLModel, table=True):
     state: RecipeState = Field(default=RecipeState.PLANNED)
     notes: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=_utc_now)
+    cooked_at: datetime | None = Field(default=None)
 
 
 class IngredientClaim(SQLModel, table=True):
@@ -179,7 +184,7 @@ class IngredientClaim(SQLModel, table=True):
     recipe_id: UUID = Field(foreign_key="recipe.id", ondelete="CASCADE")
     inventory_item_id: int = Field(foreign_key="inventoryitem.id", ondelete="CASCADE")
     ingredient_name: str = Field()  # Denormalized for display without joins
-    quantity: float = Field()
+    quantity: float = Field(gt=0)  # Must be greater than 0
     unit: str = Field()
     state: ClaimState = Field(default=ClaimState.RESERVED)
     created_at: datetime = Field(default_factory=_utc_now)

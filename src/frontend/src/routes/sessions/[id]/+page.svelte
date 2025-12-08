@@ -27,6 +27,7 @@
     unit: string;
     preparation: string | null;
     notes: string | null;
+    purchase_likelihood?: number;
   }
 
   interface ClaimSummary {
@@ -47,6 +48,18 @@
     servings: number;
     notes: string | null;
     claims: ClaimSummary[];
+  }
+
+  interface ShoppingListItem {
+    ingredient_name: string;
+    total_quantity: string;
+    purchase_likelihood: number;
+    used_in_recipes: string[];
+  }
+
+  interface ShoppingListResponse {
+    grocery_items: ShoppingListItem[];
+    pantry_staples: ShoppingListItem[];
   }
 
   interface Pitch {
@@ -81,6 +94,11 @@
   let fleshOutProgress = $state("");
   let fleshOutError = $state("");
   let plannedRecipes: FleshedOutRecipe[] = $state([]);
+
+  // Shopping list state
+  let shoppingList: ShoppingListResponse | null = $state(null);
+  let loadingShoppingList = $state(false);
+  let shoppingListError = $state("");
 
   let selectedPitchIds: Set<string> = $state(new Set());
   let fleshedOutPitchIds: Set<string> = $state(new Set());
@@ -151,6 +169,41 @@
     const response = await fetch(`/api/sessions/${id}/pitches`);
     if (response.ok) {
       pitches = await response.json();
+    }
+  }
+
+  async function loadPlannedRecipes() {
+    const id = $page.params.id;
+    const response = await fetch(`/api/sessions/${id}/recipes`);
+    if (response.ok) {
+      plannedRecipes = await response.json();
+    }
+  }
+
+  async function loadShoppingList() {
+    if (plannedRecipes.length === 0) {
+      shoppingList = { grocery_items: [], pantry_staples: [] };
+      return;
+    }
+
+    loadingShoppingList = true;
+    shoppingListError = "";
+
+    const id = $page.params.id;
+    try {
+      const response = await fetch(`/api/sessions/${id}/shopping-list`);
+      if (response.ok) {
+        shoppingList = await response.json();
+      } else if (response.status === 404) {
+        shoppingListError = "Session not found";
+      } else {
+        shoppingListError = "Failed to load shopping list";
+      }
+    } catch (err) {
+      shoppingListError =
+        err instanceof Error ? err.message : "Failed to load shopping list";
+    } finally {
+      loadingShoppingList = false;
     }
   }
 
@@ -250,6 +303,7 @@
       name: p.name,
       blurb: p.blurb,
       inventory_ingredients: p.inventory_ingredients,
+      criterion_id: p.criterion_id,
     }));
 
     const id = $page.params.id;
@@ -274,6 +328,9 @@
       // Mark pitches as fleshed out (removes from display)
       markPitchesAsFleshedOut(selectedPitches.map((p) => p.id));
 
+      // Load shopping list with new recipes
+      await loadShoppingList();
+
       // Show success briefly
       fleshOutProgress = `Created ${data.recipes.length} recipe${data.recipes.length !== 1 ? "s" : ""}!`;
       setTimeout(() => {
@@ -293,11 +350,64 @@
     }
   }
 
+  async function cookRecipe(recipeId: string) {
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/cook`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Cook failed: ${response.status}`);
+      }
+
+      // Remove recipe from planned list (optimistic update)
+      plannedRecipes = plannedRecipes.filter((r) => r.id !== recipeId);
+
+      // Refresh shopping list
+      await loadShoppingList();
+
+      return true;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to mark recipe as cooked";
+      alert(message);
+      return false;
+    }
+  }
+
+  async function abandonRecipe(recipeId: string) {
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/abandon`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Abandon failed: ${response.status}`);
+      }
+
+      // Remove recipe from planned list (optimistic update)
+      plannedRecipes = plannedRecipes.filter((r) => r.id !== recipeId);
+
+      // Refresh shopping list
+      await loadShoppingList();
+
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to abandon recipe";
+      alert(message);
+      return false;
+    }
+  }
+
   onMount(async () => {
     await loadSession();
     if (!error) {
       await loadCriteria();
       await loadPitches();
+      await loadPlannedRecipes();
+      await loadShoppingList();
     }
   });
 </script>
@@ -446,9 +556,112 @@
                     .join(", ")}
                 </div>
               {/if}
+
+              <!-- Recipe Lifecycle Buttons -->
+              <div class="flex gap-2 pt-2 border-t border-surface-300-700">
+                <button
+                  onclick={() => cookRecipe(recipe.id)}
+                  class="btn btn-sm preset-filled-success-500 flex-1"
+                >
+                  Mark as Cooked
+                </button>
+                <button
+                  onclick={() => abandonRecipe(recipe.id)}
+                  class="btn btn-sm preset-outlined-surface-500 flex-1"
+                >
+                  Abandon
+                </button>
+              </div>
             </div>
           {/each}
         </div>
+      </div>
+    {/if}
+
+    <!-- Shopping List -->
+    {#if shoppingList && (shoppingList.grocery_items.length > 0 || shoppingList.pantry_staples.length > 0)}
+      <div class="card preset-outlined-secondary-500 p-6 space-y-4">
+        <h2 class="h3">Shopping List</h2>
+
+        {#if loadingShoppingList}
+          <p class="text-surface-600-400 text-sm">Loading shopping list...</p>
+        {:else if shoppingListError}
+          <div class="card preset-outlined-error-500 p-4">
+            <p class="text-sm text-error-500">{shoppingListError}</p>
+          </div>
+        {:else}
+          <!-- Grocery Items (high confidence) -->
+          {#if shoppingList.grocery_items.length > 0}
+            <div class="space-y-2">
+              <h3 class="font-semibold text-surface-700-300">
+                Grocery Items
+                <span class="text-sm font-normal text-surface-500">
+                  (High confidence - definitely need to buy)
+                </span>
+              </h3>
+              <ul class="space-y-2">
+                {#each shoppingList.grocery_items as item}
+                  <li class="p-3 rounded bg-surface-100-900">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <span class="font-medium">{item.ingredient_name}</span>
+                        <span class="text-surface-600-400 ml-2">
+                          {item.total_quantity}
+                        </span>
+                      </div>
+                      <span
+                        class="text-xs px-2 py-1 rounded bg-primary-500/20 text-primary-500"
+                      >
+                        {Math.round(item.purchase_likelihood * 100)}% confidence
+                      </span>
+                    </div>
+                    {#if item.used_in_recipes.length > 0}
+                      <div class="text-xs text-surface-500 mt-1">
+                        Used in: {item.used_in_recipes.join(", ")}
+                      </div>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+
+          <!-- Pantry Staples (low confidence) -->
+          {#if shoppingList.pantry_staples.length > 0}
+            <div class="space-y-2 pt-4 border-t border-surface-300-700">
+              <h3 class="font-semibold text-surface-700-300">
+                Pantry Staples to Verify
+                <span class="text-sm font-normal text-surface-500">
+                  (Lower confidence - check if you have these)
+                </span>
+              </h3>
+              <ul class="space-y-2">
+                {#each shoppingList.pantry_staples as item}
+                  <li class="p-3 rounded bg-surface-100-900 opacity-75">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <span class="font-medium">{item.ingredient_name}</span>
+                        <span class="text-surface-600-400 ml-2">
+                          {item.total_quantity}
+                        </span>
+                      </div>
+                      <span
+                        class="text-xs px-2 py-1 rounded bg-surface-500/20 text-surface-500"
+                      >
+                        {Math.round(item.purchase_likelihood * 100)}% confidence
+                      </span>
+                    </div>
+                    {#if item.used_in_recipes.length > 0}
+                      <div class="text-xs text-surface-500 mt-1">
+                        Used in: {item.used_in_recipes.join(", ")}
+                      </div>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+        {/if}
       </div>
     {/if}
 

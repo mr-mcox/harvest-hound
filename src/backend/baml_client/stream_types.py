@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (6)
+# Generated classes (7)
 # #########################################################################
 
 class CompleteRecipe(BaseModel):
@@ -43,6 +43,12 @@ class Ingredient(BaseModel):
     priority: typing.Optional[types.Priority] = None
     portion_size: typing.Optional[str] = None
 
+class InventoryIngredient(BaseModel):
+    name: typing.Optional[str] = None
+    quantity: typing.Optional[float] = None
+    unit: typing.Optional[str] = None
+    priority: typing.Optional[str] = None
+
 class InventoryParsingResult(BaseModel):
     ingredients: typing.List["Ingredient"]
     parsing_notes: typing.Optional[str] = None
@@ -58,6 +64,7 @@ class RecipeIngredient(BaseModel):
     unit: typing.Optional[str] = None
     preparation: typing.Optional[str] = None
     notes: typing.Optional[str] = None
+    purchase_likelihood: typing.Optional[float] = None
 
 class RecipePitch(BaseModel):
     name: typing.Optional[str] = None
