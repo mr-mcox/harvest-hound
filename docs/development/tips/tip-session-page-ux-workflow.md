@@ -149,7 +149,7 @@ tags: [ux, recipe-planning, pitch-invalidation, workflow-optimization]
 
 ---
 
-### Phase 4: Markdown Rendering in Instructions
+### Phase 4: Markdown Rendering in Instructions ✓
 
 **Purpose**: Render markdown formatting in recipe instructions so emphasis and structure are visually clear.
 
@@ -170,6 +170,21 @@ tags: [ux, recipe-planning, pitch-invalidation, workflow-optimization]
 **Dependencies**: None (can be done independently)
 
 **Complexity**: XS (library integration is straightforward)
+
+**What Was Built**:
+- Installed markdown-it (14.1.0) and @types/markdown-it (14.1.2) via pnpm
+- Created markdown rendering utility (`src/frontend/src/lib/markdown.ts`) with XSS protection
+- Applied markdown rendering to recipe detail page instructions
+- Session page uses compact recipe cards (no inline instructions) - only detail page needed updates
+- Unit tests (6 passing) covering bold, italics, code, line breaks, mixed formatting, and XSS safety
+
+**Tests**: 6 new tests passing in `markdown.test.ts`, all existing tests (28 total) passing
+
+**Files Modified**:
+- `src/frontend/package.json` - Added markdown-it dependencies
+- New: `src/frontend/src/lib/markdown.ts` - Markdown rendering utility
+- New: `src/frontend/src/lib/markdown.test.ts` - Unit tests
+- `src/frontend/src/routes/recipes/[id]/+page.svelte` - Applied markdown to instructions
 
 ---
 

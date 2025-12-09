@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { renderMarkdown } from "$lib/markdown";
 
   interface RecipeIngredient {
     name: string;
@@ -142,7 +143,7 @@
         <h2 class="h4 mb-3">Instructions</h2>
         <ol class="space-y-3 list-decimal list-inside">
           {#each recipe.instructions as step}
-            <li class="text-sm">{step}</li>
+            <li class="text-sm">{@html renderMarkdown(step)}</li>
           {/each}
         </ol>
       </div>
