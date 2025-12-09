@@ -188,7 +188,7 @@ tags: [ux, recipe-planning, pitch-invalidation, workflow-optimization]
 
 ---
 
-### Phase 5: Workflow-Oriented Page Sections
+### Phase 5: Workflow-Oriented Page Sections ✓
 
 **Purpose**: Reorganize session page into job-to-be-done sections (Planning, Cooking, Shopping) with collapsible controls. This creates focus by hiding irrelevant sections.
 
@@ -209,6 +209,38 @@ tags: [ux, recipe-planning, pitch-invalidation, workflow-optimization]
 **Dependencies**: Phase 3 (compact recipe cards need to exist first)
 
 **Complexity**: S (reorganization of existing elements)
+
+**Implementation Approach**:
+- **Refactor-first strategy**: Extracted components before adding accordion (make the change easy, then make the easy change)
+- **Components extracted**:
+  1. `MealCriteria.svelte` - Form + list for managing meal criteria
+  2. `PlannedRecipes.svelte` - Compact recipe cards with cook/abandon actions
+  3. `ShoppingList.svelte` - Grocery items and pantry staples display
+- **RecipePitches**: Left inline (page reduced from 905 to 740 lines, sufficiently manageable)
+
+**What Was Built**:
+- Accordion structure with three workflow-oriented sections:
+  1. **Planning** (default expanded): Meal Criteria + Recipe Pitches
+  2. **Cooking** (default expanded): Planned Recipes
+  3. **Shopping** (default collapsed): Shopping List
+- Each section has:
+  - Colored header border (surface/primary/secondary)
+  - Chevron indicator for expand/collapse state
+  - Hover effect on trigger
+  - Independent collapse state (multiple=true, collapsible=true)
+- Default state: Planning and Cooking expanded, Shopping collapsed
+
+**Files Created**:
+- `src/frontend/src/lib/components/MealCriteria.svelte` - 126 lines
+- `src/frontend/src/lib/components/PlannedRecipes.svelte` - 119 lines
+- `src/frontend/src/lib/components/ShoppingList.svelte` - 112 lines
+
+**Files Modified**:
+- `src/frontend/src/routes/sessions/[id]/+page.svelte` - Reduced from 905 to 740 lines (18% reduction)
+
+**Tests**: All existing tests passing, pre-commit clean
+
+**Dependencies**: Phase 3 compact recipe cards used in both inline (Planning) and list (Cooking) contexts
 
 ---
 
