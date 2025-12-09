@@ -36,7 +36,9 @@ from schemas import (
 )
 from services import (
     calculate_available_inventory,
+    calculate_pitch_generation_delta,
     create_recipe_with_claims,
+    filter_valid_pitches,
 )
 from shopping_list import ShoppingListResponse, compute_shopping_list
 
@@ -225,7 +227,7 @@ class PitchResponse(BaseModel):
 def list_pitches(
     session_id: UUID, db: Session = Depends(get_session)
 ) -> list[PitchResponse]:
-    """List all pitches for a session, ordered by criterion and creation time"""
+    """List all valid pitches for a session (filtered by available inventory)"""
     session = db.get(PlanningSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -246,7 +248,11 @@ def list_pitches(
         .order_by(Pitch.criterion_id, Pitch.created_at)
     ).all()
 
-    return [PitchResponse.from_model(p) for p in pitches]
+    # Filter to only pitches that can be made with available inventory
+    available_inventory = calculate_available_inventory(db)
+    valid_pitches = filter_valid_pitches(list(pitches), available_inventory)
+
+    return [PitchResponse.from_model(p) for p in valid_pitches]
 
 
 # --- Pitch Generation (SSE Streaming) ---
@@ -318,6 +324,20 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
             grocery_stores_text = "\n".join(
                 f"- {store.name}: {store.description}" for store in grocery_stores
             )
+            # Calculate smart pitch generation delta
+            total_delta = calculate_pitch_generation_delta(db, session_id)
+
+            if total_delta == 0:
+                # All slots filled or enough pitches already exist
+                completion_data = json.dumps(
+                    {
+                        "complete": True,
+                        "message": "All meals planned - no generation needed",
+                    }
+                )
+                yield f"data: {completion_data}\n\n"
+                return
+
             # Build structured inventory for BAML
             from baml_client import types as baml_types
 
@@ -331,9 +351,14 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 for item in available_inventory
             ]
 
+            # Distribute delta across criteria proportionally by slots
+            total_slots = sum(c.slots for c in criteria)
             total_criteria = len(criteria)
+
             for criterion_index, criterion in enumerate(criteria, start=1):
-                num_pitches = 3 * criterion.slots
+                # Calculate this criterion's share of the delta
+                criterion_share = (criterion.slots / total_slots) * total_delta
+                num_pitches = max(1, round(criterion_share))  # At least 1 if delta > 0
 
                 progress_data = json.dumps(
                     {
@@ -507,6 +532,9 @@ async def flesh_out_pitches(
             recipes_out.append(
                 FleshedOutRecipe(
                     id=str(recipe.id),
+                    criterion_id=str(recipe.criterion_id)
+                    if recipe.criterion_id
+                    else None,
                     name=recipe.name,
                     description=recipe.description,
                     ingredients=[
@@ -525,6 +553,7 @@ async def flesh_out_pitches(
                     total_time_minutes=recipe.total_time_minutes,
                     servings=recipe.servings,
                     notes=recipe.notes,
+                    state=recipe.state.value,
                     claims=[
                         ClaimSummary(
                             ingredient_name=claim.ingredient_name,
@@ -662,20 +691,21 @@ def get_session_recipes(
     db: Session = Depends(get_session),
 ) -> list[FleshedOutRecipe]:
     """
-    Get all planned recipes for a session.
+    Get all active recipes for a session (planned and cooked, excluding abandoned).
 
     Returns recipes with their ingredient claims for display in the session view.
+    Cooked recipes are shown with a checkmark indicator on the frontend.
     """
     # Verify session exists
     session = db.get(PlanningSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Get all planned recipes for this session
+    # Get all active recipes (planned + cooked, exclude abandoned)
     recipes = db.exec(
         select(Recipe).where(
             Recipe.session_id == session_id,
-            Recipe.state == RecipeState.PLANNED,
+            Recipe.state.in_([RecipeState.PLANNED, RecipeState.COOKED]),
         )
     ).all()
 
@@ -699,6 +729,7 @@ def get_session_recipes(
         recipes_out.append(
             FleshedOutRecipe(
                 id=str(recipe.id),
+                criterion_id=str(recipe.criterion_id) if recipe.criterion_id else None,
                 name=recipe.name,
                 description=recipe.description,
                 ingredients=[
@@ -709,11 +740,58 @@ def get_session_recipes(
                 total_time_minutes=recipe.total_time_minutes,
                 servings=recipe.servings,
                 notes=recipe.notes,
+                state=recipe.state.value,
                 claims=claim_summaries,
             )
         )
 
     return recipes_out
+
+
+@router.get("/recipes/{recipe_id}")
+def get_recipe(
+    recipe_id: UUID,
+    db: Session = Depends(get_session),
+) -> FleshedOutRecipe:
+    """
+    Get a single recipe by ID with full details and claims.
+
+    Returns recipe details suitable for the recipe detail page.
+    """
+    # Get recipe
+    recipe = db.get(Recipe, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    # Get all claims for this recipe
+    claims = db.exec(
+        select(IngredientClaim).where(IngredientClaim.recipe_id == recipe_id)
+    ).all()
+
+    claim_summaries = [
+        ClaimSummary(
+            ingredient_name=c.ingredient_name,
+            quantity=c.quantity,
+            unit=c.unit,
+            inventory_item_id=c.inventory_item_id,
+        )
+        for c in claims
+    ]
+
+    return FleshedOutRecipe(
+        id=str(recipe.id),
+        criterion_id=str(recipe.criterion_id) if recipe.criterion_id else None,
+        name=recipe.name,
+        description=recipe.description,
+        ingredients=[RecipeIngredientResponse(**ing) for ing in recipe.ingredients],
+        instructions=recipe.instructions,
+        active_time_minutes=recipe.active_time_minutes,
+        total_time_minutes=recipe.total_time_minutes,
+        servings=recipe.servings,
+        notes=recipe.notes,
+        state=recipe.state.value,
+        claims=claim_summaries,
+    )
 
 
 @router.get("/sessions/{session_id}/shopping-list")

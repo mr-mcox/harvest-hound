@@ -131,6 +131,7 @@ class FleshedOutRecipe(BaseModel):
     """A recipe generated from flesh-out with claim summary"""
 
     id: str  # UUID as string
+    criterion_id: str | None = None  # UUID as string, links to meal criterion
     name: str
     description: str
     ingredients: list[RecipeIngredientResponse]
@@ -139,6 +140,7 @@ class FleshedOutRecipe(BaseModel):
     total_time_minutes: int
     servings: int
     notes: str | None
+    state: str = "planned"  # Recipe state (planned, cooked, abandoned)
     claims: list[ClaimSummary]  # Claims created for inventory items
 
 

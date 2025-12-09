@@ -37,5 +37,9 @@
     "typescript": "^5.9.3",
     "vite": "^7.2.2",
     "vitest": "^4.0.15"
+  },
+  "dependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "markdown-it": "^14.1.0"
   }
 }

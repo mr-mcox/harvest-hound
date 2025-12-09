@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { page } from "$app/stores";
+  import { Accordion } from "@skeletonlabs/skeleton-svelte";
+  import MealCriteria from "$lib/components/MealCriteria.svelte";
+  import PlannedRecipes from "$lib/components/PlannedRecipes.svelte";
+  import ShoppingList from "$lib/components/ShoppingList.svelte";
 
   interface Session {
     id: string;
@@ -39,6 +43,7 @@
 
   interface FleshedOutRecipe {
     id: string;
+    criterion_id: string | null;
     name: string;
     description: string;
     ingredients: RecipeIngredient[];
@@ -47,6 +52,7 @@
     total_time_minutes: number;
     servings: number;
     notes: string | null;
+    state: string;
     claims: ClaimSummary[];
   }
 
@@ -104,6 +110,15 @@
   let fleshedOutPitchIds: Set<string> = $state(new Set());
   let selectedCount = $derived(selectedPitchIds.size);
 
+  // Calculate if all meal slots are filled
+  let allSlotsFilled = $derived(
+    (() => {
+      const totalSlots = criteria.reduce((sum, c) => sum + c.slots, 0);
+      const plannedCount = plannedRecipes.length;
+      return totalSlots > 0 && totalSlots === plannedCount;
+    })()
+  );
+
   function togglePitchSelection(pitchId: string) {
     if (selectedPitchIds.has(pitchId)) {
       selectedPitchIds.delete(pitchId);
@@ -139,6 +154,20 @@
         grouped[pitch.criterion_id] = [];
       }
       grouped[pitch.criterion_id].push(pitch);
+    }
+    return grouped;
+  });
+
+  // Group recipes by criterion for inline display
+  let recipesByCriterion = $derived(() => {
+    const grouped: Record<string, FleshedOutRecipe[]> = {};
+    for (const recipe of plannedRecipes) {
+      if (!recipe.criterion_id) continue;
+
+      if (!grouped[recipe.criterion_id]) {
+        grouped[recipe.criterion_id] = [];
+      }
+      grouped[recipe.criterion_id].push(recipe);
     }
     return grouped;
   });
@@ -258,7 +287,7 @@
         generating = false;
         eventSource.close();
       } else if (data.complete) {
-        generationProgress = "Generation complete!";
+        generationProgress = data.message || "Generation complete!";
         generating = false;
         eventSource.close();
         setTimeout(() => {
@@ -361,8 +390,8 @@
         throw new Error(errorData.detail || `Cook failed: ${response.status}`);
       }
 
-      // Remove recipe from planned list (optimistic update)
-      plannedRecipes = plannedRecipes.filter((r) => r.id !== recipeId);
+      // Reload recipes to show updated state (cooked recipes stay visible)
+      await loadPlannedRecipes();
 
       // Refresh shopping list
       await loadShoppingList();
@@ -432,371 +461,327 @@
       Created {new Date(session.created_at).toLocaleDateString()}
     </p>
 
-    <!-- Meal Criteria -->
-    <div class="card preset-outlined-surface-500 p-6 space-y-4">
-      <h2 class="h3">Meal Criteria</h2>
-
-      <!-- Add Criterion Form -->
-      <form
-        onsubmit={(e) => {
-          e.preventDefault();
-          addCriterion();
-        }}
-        class="space-y-3"
-      >
-        <div class="flex gap-3">
-          <input
-            type="text"
-            bind:value={newDescription}
-            placeholder="e.g., Quick weeknight meals"
-            class="input flex-1"
-            disabled={submitting}
-          />
-          <div class="flex items-center gap-2">
-            <label for="slots" class="text-sm text-surface-600-400">Slots:</label>
-            <input
-              id="slots"
-              type="number"
-              bind:value={newSlots}
-              min="1"
-              max="7"
-              class="input w-16 text-center"
-              disabled={submitting}
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          class="btn preset-filled-primary-500"
-          disabled={!newDescription.trim() || submitting}
-        >
-          Add Criterion
-        </button>
-      </form>
-
-      <!-- Criteria List -->
-      {#if criteria.length > 0}
-        <ul class="space-y-2 mt-4">
-          {#each criteria as criterion}
-            <li
-              class="flex items-center justify-between p-3 rounded bg-surface-100-900"
-            >
-              <div>
-                <span class="font-medium">{criterion.description}</span>
-                <span class="text-sm text-surface-600-400 ml-2">
-                  ({criterion.slots}
-                  {criterion.slots === 1 ? "slot" : "slots"})
-                </span>
-              </div>
-              <button
-                onclick={() => deleteCriterion(criterion.id)}
-                class="btn btn-sm preset-outlined-error-500"
-                aria-label="Delete criterion"
-              >
-                Delete
-              </button>
-            </li>
-          {/each}
-        </ul>
-      {:else}
-        <p class="text-surface-600-400 text-sm">
-          No criteria yet. Add criteria to define your meal planning constraints.
-        </p>
-      {/if}
-    </div>
-
-    <!-- My Planned Recipes -->
-    {#if plannedRecipes.length > 0}
-      <div class="card preset-outlined-primary-500 p-6 space-y-4">
-        <h2 class="h3">My Planned Recipes</h2>
-        <div class="space-y-4">
-          {#each plannedRecipes as recipe}
-            <div class="card preset-filled-surface-100-900 p-4 space-y-3">
-              <div class="flex items-start justify-between">
-                <h3 class="h4">{recipe.name}</h3>
-                <div class="text-sm text-surface-500 text-right">
-                  <div>{recipe.active_time_minutes} min active</div>
-                  <div>{recipe.total_time_minutes} min total</div>
-                </div>
-              </div>
-              <p class="text-surface-600-400">{recipe.description}</p>
-
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 class="font-semibold text-sm mb-2">
-                    Ingredients ({recipe.servings} servings)
-                  </h4>
-                  <ul class="text-sm space-y-1">
-                    {#each recipe.ingredients as ingredient}
-                      <li>
-                        {ingredient.quantity}
-                        {ingredient.unit}
-                        {ingredient.name}{#if ingredient.preparation}, {ingredient.preparation}{/if}
-                      </li>
-                    {/each}
-                  </ul>
-                </div>
-                <div>
-                  <h4 class="font-semibold text-sm mb-2">Instructions</h4>
-                  <ol class="text-sm space-y-1 list-decimal list-inside">
-                    {#each recipe.instructions as step}
-                      <li>{step}</li>
-                    {/each}
-                  </ol>
-                </div>
-              </div>
-
-              {#if recipe.claims.length > 0}
-                <div
-                  class="text-xs text-surface-500 pt-2 border-t border-surface-300-700"
-                >
-                  <span class="font-medium">Claimed from inventory:</span>
-                  {recipe.claims
-                    .map((c) => `${c.quantity} ${c.unit} ${c.ingredient_name}`)
-                    .join(", ")}
-                </div>
-              {/if}
-
-              <!-- Recipe Lifecycle Buttons -->
-              <div class="flex gap-2 pt-2 border-t border-surface-300-700">
-                <button
-                  onclick={() => cookRecipe(recipe.id)}
-                  class="btn btn-sm preset-filled-success-500 flex-1"
-                >
-                  Mark as Cooked
-                </button>
-                <button
-                  onclick={() => abandonRecipe(recipe.id)}
-                  class="btn btn-sm preset-outlined-surface-500 flex-1"
-                >
-                  Abandon
-                </button>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
-
-    <!-- Shopping List -->
-    {#if shoppingList && (shoppingList.grocery_items.length > 0 || shoppingList.pantry_staples.length > 0)}
-      <div class="card preset-outlined-secondary-500 p-6 space-y-4">
-        <h2 class="h3">Shopping List</h2>
-
-        {#if loadingShoppingList}
-          <p class="text-surface-600-400 text-sm">Loading shopping list...</p>
-        {:else if shoppingListError}
-          <div class="card preset-outlined-error-500 p-4">
-            <p class="text-sm text-error-500">{shoppingListError}</p>
-          </div>
-        {:else}
-          <!-- Grocery Items (high confidence) -->
-          {#if shoppingList.grocery_items.length > 0}
-            <div class="space-y-2">
-              <h3 class="font-semibold text-surface-700-300">
-                Grocery Items
-                <span class="text-sm font-normal text-surface-500">
-                  (High confidence - definitely need to buy)
-                </span>
-              </h3>
-              <ul class="space-y-2">
-                {#each shoppingList.grocery_items as item}
-                  <li class="p-3 rounded bg-surface-100-900">
-                    <div class="flex items-start justify-between">
-                      <div class="flex-1">
-                        <span class="font-medium">{item.ingredient_name}</span>
-                        <span class="text-surface-600-400 ml-2">
-                          {item.total_quantity}
-                        </span>
-                      </div>
-                      <span
-                        class="text-xs px-2 py-1 rounded bg-primary-500/20 text-primary-500"
-                      >
-                        {Math.round(item.purchase_likelihood * 100)}% confidence
-                      </span>
-                    </div>
-                    {#if item.used_in_recipes.length > 0}
-                      <div class="text-xs text-surface-500 mt-1">
-                        Used in: {item.used_in_recipes.join(", ")}
-                      </div>
-                    {/if}
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {/if}
-
-          <!-- Pantry Staples (low confidence) -->
-          {#if shoppingList.pantry_staples.length > 0}
-            <div class="space-y-2 pt-4 border-t border-surface-300-700">
-              <h3 class="font-semibold text-surface-700-300">
-                Pantry Staples to Verify
-                <span class="text-sm font-normal text-surface-500">
-                  (Lower confidence - check if you have these)
-                </span>
-              </h3>
-              <ul class="space-y-2">
-                {#each shoppingList.pantry_staples as item}
-                  <li class="p-3 rounded bg-surface-100-900 opacity-75">
-                    <div class="flex items-start justify-between">
-                      <div class="flex-1">
-                        <span class="font-medium">{item.ingredient_name}</span>
-                        <span class="text-surface-600-400 ml-2">
-                          {item.total_quantity}
-                        </span>
-                      </div>
-                      <span
-                        class="text-xs px-2 py-1 rounded bg-surface-500/20 text-surface-500"
-                      >
-                        {Math.round(item.purchase_likelihood * 100)}% confidence
-                      </span>
-                    </div>
-                    {#if item.used_in_recipes.length > 0}
-                      <div class="text-xs text-surface-500 mt-1">
-                        Used in: {item.used_in_recipes.join(", ")}
-                      </div>
-                    {/if}
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {/if}
-        {/if}
-      </div>
-    {/if}
-
-    <!-- Recipe Pitch Generation -->
-    <div class="card preset-outlined-surface-500 p-6 space-y-4">
-      <h2 class="h3">Recipe Pitches</h2>
-      {#if criteria.length === 0}
-        <p class="text-surface-600-400">
-          Add at least one criterion to generate recipe pitches.
-        </p>
-      {:else}
-        <p class="text-surface-600-400">
-          Ready to generate pitches for {criteria.length}
-          {criteria.length === 1 ? "criterion" : "criteria"}.
-        </p>
-        <div class="flex gap-3 flex-wrap">
-          <button
-            class="btn preset-filled-secondary-500"
-            disabled={generating}
-            onclick={generatePitches}
+    <!-- Workflow-Oriented Sections -->
+    <Accordion
+      multiple={true}
+      collapsible={true}
+      defaultValue={["planning", "cooking"]}
+    >
+      <!-- Planning Section: Meal Criteria & Pitches -->
+      <Accordion.Item value="planning">
+        <h2>
+          <Accordion.ItemTrigger
+            class="card preset-outlined-surface-500 p-4 w-full text-left hover:bg-surface-50-950 transition-colors"
           >
-            {generating ? "Generating..." : "Generate Pitches"}
-          </button>
+            <div class="flex items-center justify-between">
+              <span class="h3">Planning: Meal Criteria & Pitches</span>
+              <Accordion.ItemIndicator class="text-surface-600-400">
+                <svg
+                  class="w-5 h-5 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </Accordion.ItemIndicator>
+            </div>
+          </Accordion.ItemTrigger>
+        </h2>
+        <Accordion.ItemContent>
+          <div class="space-y-6 mt-4">
+            <!-- Meal Criteria -->
+            <MealCriteria sessionId={session.id} {criteria} onUpdate={loadCriteria} />
 
-          {#if selectedCount > 0}
-            <button
-              class="btn preset-filled-primary-500"
-              disabled={generating || fleshingOut}
-              onclick={fleshOutSelected}
-            >
-              {fleshingOut ? "Fleshing Out..." : "Flesh Out Selected"}
-              <span
-                class="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm font-medium"
-              >
-                {selectedCount}
-              </span>
-            </button>
-          {/if}
-        </div>
-
-        {#if fleshOutProgress}
-          <div class="card preset-outlined-primary-500 p-4">
-            <p class="text-sm">{fleshOutProgress}</p>
-          </div>
-        {/if}
-
-        {#if fleshOutError}
-          <div class="card preset-outlined-error-500 p-4">
-            <p class="text-sm text-error-500">{fleshOutError}</p>
-          </div>
-        {/if}
-
-        {#if generationProgress}
-          <div class="card preset-outlined-primary-500 p-4">
-            <p class="text-sm">{generationProgress}</p>
-          </div>
-        {/if}
-
-        {#if generationError}
-          <div class="card preset-outlined-error-500 p-4">
-            <p class="text-sm text-error-500">{generationError}</p>
-          </div>
-        {/if}
-
-        <!-- Pitches grouped by criterion -->
-        {#each criteria as criterion}
-          {@const criterionPitches = pitchesByCriterion()[criterion.id] || []}
-          <div class="space-y-3 mt-6">
-            <h3 class="h4 text-surface-700-300">
-              {criterion.description}
-              <span class="text-sm font-normal text-surface-500">
-                ({criterionPitches.length} / {criterion.slots * 3} pitches)
-              </span>
-            </h3>
-
-            {#if criterionPitches.length === 0}
-              <p class="text-sm text-surface-500 italic">No pitches yet</p>
-            {:else}
-              <div class="grid gap-3">
-                {#each criterionPitches as pitch}
+            <!-- Recipe Pitch Generation -->
+            <div class="card preset-outlined-surface-500 p-6 space-y-4">
+              <h2 class="h3">Recipe Pitches</h2>
+              {#if criteria.length === 0}
+                <p class="text-surface-600-400">
+                  Add at least one criterion to generate recipe pitches.
+                </p>
+              {:else}
+                <p class="text-surface-600-400">
+                  Ready to generate pitches for {criteria.length}
+                  {criteria.length === 1 ? "criterion" : "criteria"}.
+                </p>
+                <div class="flex gap-3 flex-wrap">
                   <button
-                    type="button"
-                    onclick={() => togglePitchSelection(pitch.id)}
-                    class="card p-4 space-y-2 text-left w-full transition-all cursor-pointer
-                      {isPitchSelected(pitch.id)
-                      ? 'preset-outlined-primary-500 ring-2 ring-primary-500 bg-primary-500/10'
-                      : 'preset-outlined-surface-500 hover:bg-surface-100-900'}"
+                    class="btn preset-filled-secondary-500"
+                    disabled={generating || allSlotsFilled}
+                    onclick={generatePitches}
                   >
-                    <div class="flex items-start justify-between">
-                      <div class="flex items-center gap-2">
-                        <span
-                          class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
-                            {isPitchSelected(pitch.id)
-                            ? 'border-primary-500 bg-primary-500 text-white'
-                            : 'border-surface-400'}"
-                        >
-                          {#if isPitchSelected(pitch.id)}
-                            <svg
-                              class="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="3"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          {/if}
-                        </span>
-                        <h4 class="font-semibold text-lg">{pitch.name}</h4>
-                      </div>
-                      <span class="text-sm text-surface-500">
-                        {pitch.active_time_minutes} min
-                      </span>
-                    </div>
-                    <p class="text-surface-600-400 italic">{pitch.blurb}</p>
-                    <p class="text-sm text-surface-600-400">{pitch.why_make_this}</p>
-                    {#if pitch.inventory_ingredients.length > 0}
-                      <div class="text-sm">
-                        <span class="font-medium">Uses:</span>
-                        {pitch.inventory_ingredients
-                          .map((i) => `${i.quantity} ${i.unit} ${i.name}`)
-                          .join(", ")}
-                      </div>
+                    {#if generating}
+                      Generating...
+                    {:else if allSlotsFilled}
+                      All Meals Planned
+                    {:else}
+                      Generate Pitches
                     {/if}
                   </button>
+
+                  {#if selectedCount > 0}
+                    <button
+                      class="btn preset-filled-primary-500"
+                      disabled={generating || fleshingOut}
+                      onclick={fleshOutSelected}
+                    >
+                      {fleshingOut ? "Fleshing Out..." : "Flesh Out Selected"}
+                      <span
+                        class="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm font-medium"
+                      >
+                        {selectedCount}
+                      </span>
+                    </button>
+                  {/if}
+                </div>
+
+                {#if fleshOutProgress}
+                  <div class="card preset-outlined-primary-500 p-4">
+                    <p class="text-sm">{fleshOutProgress}</p>
+                  </div>
+                {/if}
+
+                {#if fleshOutError}
+                  <div class="card preset-outlined-error-500 p-4">
+                    <p class="text-sm text-error-500">{fleshOutError}</p>
+                  </div>
+                {/if}
+
+                {#if generationProgress}
+                  <div class="card preset-outlined-primary-500 p-4">
+                    <p class="text-sm">{generationProgress}</p>
+                  </div>
+                {/if}
+
+                {#if generationError}
+                  <div class="card preset-outlined-error-500 p-4">
+                    <p class="text-sm text-error-500">{generationError}</p>
+                  </div>
+                {/if}
+
+                <!-- Pitches and recipes grouped by criterion -->
+                {#each criteria as criterion}
+                  {@const criterionPitches = pitchesByCriterion()[criterion.id] || []}
+                  {@const criterionRecipes = recipesByCriterion()[criterion.id] || []}
+                  {@const totalItems =
+                    criterionPitches.length + criterionRecipes.length}
+                  <div class="space-y-3 mt-6">
+                    <h3 class="h4 text-surface-700-300">
+                      {criterion.description}
+                      <span class="text-sm font-normal text-surface-500">
+                        ({criterionRecipes.length} planned, {criterionPitches.length} / {criterion.slots *
+                          3} pitches)
+                      </span>
+                    </h3>
+
+                    {#if totalItems === 0}
+                      <p class="text-sm text-surface-500 italic">
+                        No pitches or recipes yet
+                      </p>
+                    {:else}
+                      <div class="grid gap-3">
+                        <!-- Show recipes first (planned meals) -->
+                        {#each criterionRecipes as recipe}
+                          <button
+                            type="button"
+                            onclick={() =>
+                              (window.location.href = `/recipes/${recipe.id}?session=${$page.params.id}`)}
+                            class="card p-4 space-y-2 text-left w-full transition-all cursor-pointer
+                      {recipe.state === 'cooked'
+                              ? 'preset-outlined-success-500 bg-success-500/5'
+                              : 'preset-outlined-success-500 bg-success-500/10 hover:bg-success-500/15'}"
+                          >
+                            <div class="flex items-start justify-between">
+                              <div class="flex items-center gap-2">
+                                <!-- Recipe indicator icon -->
+                                <span
+                                  class="w-5 h-5 rounded-full bg-success-500 text-white flex items-center justify-center flex-shrink-0"
+                                >
+                                  <svg
+                                    class="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="3"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                </span>
+                                <h4 class="font-semibold text-lg">{recipe.name}</h4>
+                                {#if recipe.state === "cooked"}
+                                  <span
+                                    class="text-xs px-2 py-1 rounded-full bg-success-500 text-white"
+                                  >
+                                    Cooked ✓
+                                  </span>
+                                {/if}
+                              </div>
+                              <span class="text-sm text-surface-500">
+                                {recipe.active_time_minutes} min
+                              </span>
+                            </div>
+                            {#if recipe.claims.length > 0}
+                              <p class="text-xs text-surface-600-400">
+                                <span class="font-medium">From inventory:</span>
+                                {recipe.claims
+                                  .map(
+                                    (c) =>
+                                      `${c.quantity} ${c.unit} ${c.ingredient_name}`
+                                  )
+                                  .join(", ")}
+                              </p>
+                            {/if}
+                          </button>
+                        {/each}
+
+                        <!-- Then show remaining pitches -->
+                        {#each criterionPitches as pitch}
+                          <button
+                            type="button"
+                            onclick={() => togglePitchSelection(pitch.id)}
+                            class="card p-4 space-y-2 text-left w-full transition-all cursor-pointer
+                      {isPitchSelected(pitch.id)
+                              ? 'preset-outlined-primary-500 ring-2 ring-primary-500 bg-primary-500/10'
+                              : 'preset-outlined-surface-500 hover:bg-surface-100-900'}"
+                          >
+                            <div class="flex items-start justify-between">
+                              <div class="flex items-center gap-2">
+                                <span
+                                  class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
+                            {isPitchSelected(pitch.id)
+                                    ? 'border-primary-500 bg-primary-500 text-white'
+                                    : 'border-surface-400'}"
+                                >
+                                  {#if isPitchSelected(pitch.id)}
+                                    <svg
+                                      class="w-3 h-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="3"
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                  {/if}
+                                </span>
+                                <h4 class="font-semibold text-lg">{pitch.name}</h4>
+                              </div>
+                              <span class="text-sm text-surface-500">
+                                {pitch.active_time_minutes} min
+                              </span>
+                            </div>
+                            <p class="text-surface-600-400 italic">{pitch.blurb}</p>
+                            <p class="text-sm text-surface-600-400">
+                              {pitch.why_make_this}
+                            </p>
+                            {#if pitch.inventory_ingredients.length > 0}
+                              <div class="text-sm">
+                                <span class="font-medium">Uses:</span>
+                                {pitch.inventory_ingredients
+                                  .map((i) => `${i.quantity} ${i.unit} ${i.name}`)
+                                  .join(", ")}
+                              </div>
+                            {/if}
+                          </button>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
                 {/each}
-              </div>
-            {/if}
+              {/if}
+            </div>
           </div>
-        {/each}
-      {/if}
-    </div>
+        </Accordion.ItemContent>
+      </Accordion.Item>
+
+      <!-- Cooking Section: Planned Recipes -->
+      <Accordion.Item value="cooking">
+        <h2>
+          <Accordion.ItemTrigger
+            class="card preset-outlined-primary-500 p-4 w-full text-left hover:bg-surface-50-950 transition-colors"
+          >
+            <div class="flex items-center justify-between">
+              <span class="h3">Cooking: Planned Recipes</span>
+              <Accordion.ItemIndicator class="text-surface-600-400">
+                <svg
+                  class="w-5 h-5 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </Accordion.ItemIndicator>
+            </div>
+          </Accordion.ItemTrigger>
+        </h2>
+        <Accordion.ItemContent>
+          <div class="mt-4">
+            <PlannedRecipes
+              sessionId={session.id}
+              {plannedRecipes}
+              onCook={cookRecipe}
+              onAbandon={abandonRecipe}
+            />
+          </div>
+        </Accordion.ItemContent>
+      </Accordion.Item>
+
+      <!-- Shopping Section -->
+      <Accordion.Item value="shopping">
+        <h2>
+          <Accordion.ItemTrigger
+            class="card preset-outlined-secondary-500 p-4 w-full text-left hover:bg-surface-50-950 transition-colors"
+          >
+            <div class="flex items-center justify-between">
+              <span class="h3">Shopping: Shopping List</span>
+              <Accordion.ItemIndicator class="text-surface-600-400">
+                <svg
+                  class="w-5 h-5 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </Accordion.ItemIndicator>
+            </div>
+          </Accordion.ItemTrigger>
+        </h2>
+        <Accordion.ItemContent>
+          <div class="mt-4">
+            <ShoppingList
+              {shoppingList}
+              loading={loadingShoppingList}
+              error={shoppingListError}
+            />
+          </div>
+        </Accordion.ItemContent>
+      </Accordion.Item>
+    </Accordion>
   {/if}
 </main>
