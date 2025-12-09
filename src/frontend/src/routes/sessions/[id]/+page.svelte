@@ -39,6 +39,7 @@
 
   interface FleshedOutRecipe {
     id: string;
+    criterion_id: string | null;
     name: string;
     description: string;
     ingredients: RecipeIngredient[];
@@ -47,6 +48,7 @@
     total_time_minutes: number;
     servings: number;
     notes: string | null;
+    state: string;
     claims: ClaimSummary[];
   }
 
@@ -148,6 +150,20 @@
         grouped[pitch.criterion_id] = [];
       }
       grouped[pitch.criterion_id].push(pitch);
+    }
+    return grouped;
+  });
+
+  // Group recipes by criterion for inline display
+  let recipesByCriterion = $derived(() => {
+    const grouped: Record<string, FleshedOutRecipe[]> = {};
+    for (const recipe of plannedRecipes) {
+      if (!recipe.criterion_id) continue;
+
+      if (!grouped[recipe.criterion_id]) {
+        grouped[recipe.criterion_id] = [];
+      }
+      grouped[recipe.criterion_id].push(recipe);
     }
     return grouped;
   });
@@ -370,8 +386,8 @@
         throw new Error(errorData.detail || `Cook failed: ${response.status}`);
       }
 
-      // Remove recipe from planned list (optimistic update)
-      plannedRecipes = plannedRecipes.filter((r) => r.id !== recipeId);
+      // Reload recipes to show updated state (cooked recipes stay visible)
+      await loadPlannedRecipes();
 
       // Refresh shopping list
       await loadShoppingList();
@@ -518,69 +534,82 @@
     {#if plannedRecipes.length > 0}
       <div class="card preset-outlined-primary-500 p-6 space-y-4">
         <h2 class="h3">My Planned Recipes</h2>
-        <div class="space-y-4">
+        <div class="grid gap-3">
           {#each plannedRecipes as recipe}
-            <div class="card preset-filled-surface-100-900 p-4 space-y-3">
-              <div class="flex items-start justify-between">
-                <h3 class="h4">{recipe.name}</h3>
-                <div class="text-sm text-surface-500 text-right">
-                  <div>{recipe.active_time_minutes} min active</div>
-                  <div>{recipe.total_time_minutes} min total</div>
+            <div
+              class="card p-4 space-y-3
+                {recipe.state === 'cooked'
+                ? 'preset-outlined-success-500 bg-success-500/5'
+                : 'preset-outlined-success-500 bg-success-500/10'}"
+            >
+              <!-- Clickable area for navigation -->
+              <button
+                type="button"
+                onclick={() =>
+                  (window.location.href = `/recipes/${recipe.id}?session=${$page.params.id}`)}
+                class="w-full text-left space-y-2"
+              >
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center gap-2">
+                    <!-- Recipe indicator icon -->
+                    <span
+                      class="w-5 h-5 rounded-full bg-success-500 text-white flex items-center justify-center flex-shrink-0"
+                    >
+                      <svg
+                        class="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="3"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </span>
+                    <h4 class="font-semibold text-lg">{recipe.name}</h4>
+                    {#if recipe.state === "cooked"}
+                      <span
+                        class="text-xs px-2 py-1 rounded-full bg-success-500 text-white"
+                      >
+                        Cooked ✓
+                      </span>
+                    {/if}
+                  </div>
+                  <span class="text-sm text-surface-500">
+                    {recipe.active_time_minutes} min
+                  </span>
                 </div>
-              </div>
-              <p class="text-surface-600-400">{recipe.description}</p>
 
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 class="font-semibold text-sm mb-2">
-                    Ingredients ({recipe.servings} servings)
-                  </h4>
-                  <ul class="text-sm space-y-1">
-                    {#each recipe.ingredients as ingredient}
-                      <li>
-                        {ingredient.quantity}
-                        {ingredient.unit}
-                        {ingredient.name}{#if ingredient.preparation}, {ingredient.preparation}{/if}
-                      </li>
-                    {/each}
-                  </ul>
-                </div>
-                <div>
-                  <h4 class="font-semibold text-sm mb-2">Instructions</h4>
-                  <ol class="text-sm space-y-1 list-decimal list-inside">
-                    {#each recipe.instructions as step}
-                      <li>{step}</li>
-                    {/each}
-                  </ol>
-                </div>
-              </div>
+                {#if recipe.claims.length > 0}
+                  <p class="text-xs text-surface-600-400">
+                    <span class="font-medium">From inventory:</span>
+                    {recipe.claims
+                      .map((c) => `${c.quantity} ${c.unit} ${c.ingredient_name}`)
+                      .join(", ")}
+                  </p>
+                {/if}
+              </button>
 
-              {#if recipe.claims.length > 0}
-                <div
-                  class="text-xs text-surface-500 pt-2 border-t border-surface-300-700"
-                >
-                  <span class="font-medium">Claimed from inventory:</span>
-                  {recipe.claims
-                    .map((c) => `${c.quantity} ${c.unit} ${c.ingredient_name}`)
-                    .join(", ")}
+              <!-- Action buttons -->
+              {#if recipe.state !== "cooked"}
+                <div class="flex gap-2 pt-2 border-t border-surface-300-700">
+                  <button
+                    onclick={() => cookRecipe(recipe.id)}
+                    class="btn btn-sm preset-filled-success-500 flex-1"
+                  >
+                    Mark as Cooked
+                  </button>
+                  <button
+                    onclick={() => abandonRecipe(recipe.id)}
+                    class="btn btn-sm preset-outlined-surface-500 flex-1"
+                  >
+                    Abandon
+                  </button>
                 </div>
               {/if}
-
-              <!-- Recipe Lifecycle Buttons -->
-              <div class="flex gap-2 pt-2 border-t border-surface-300-700">
-                <button
-                  onclick={() => cookRecipe(recipe.id)}
-                  class="btn btn-sm preset-filled-success-500 flex-1"
-                >
-                  Mark as Cooked
-                </button>
-                <button
-                  onclick={() => abandonRecipe(recipe.id)}
-                  class="btn btn-sm preset-outlined-surface-500 flex-1"
-                >
-                  Abandon
-                </button>
-              </div>
             </div>
           {/each}
         </div>
@@ -741,21 +770,80 @@
           </div>
         {/if}
 
-        <!-- Pitches grouped by criterion -->
+        <!-- Pitches and recipes grouped by criterion -->
         {#each criteria as criterion}
           {@const criterionPitches = pitchesByCriterion()[criterion.id] || []}
+          {@const criterionRecipes = recipesByCriterion()[criterion.id] || []}
+          {@const totalItems = criterionPitches.length + criterionRecipes.length}
           <div class="space-y-3 mt-6">
             <h3 class="h4 text-surface-700-300">
               {criterion.description}
               <span class="text-sm font-normal text-surface-500">
-                ({criterionPitches.length} / {criterion.slots * 3} pitches)
+                ({criterionRecipes.length} planned, {criterionPitches.length} / {criterion.slots *
+                  3} pitches)
               </span>
             </h3>
 
-            {#if criterionPitches.length === 0}
-              <p class="text-sm text-surface-500 italic">No pitches yet</p>
+            {#if totalItems === 0}
+              <p class="text-sm text-surface-500 italic">No pitches or recipes yet</p>
             {:else}
               <div class="grid gap-3">
+                <!-- Show recipes first (planned meals) -->
+                {#each criterionRecipes as recipe}
+                  <button
+                    type="button"
+                    onclick={() =>
+                      (window.location.href = `/recipes/${recipe.id}?session=${$page.params.id}`)}
+                    class="card p-4 space-y-2 text-left w-full transition-all cursor-pointer
+                      {recipe.state === 'cooked'
+                      ? 'preset-outlined-success-500 bg-success-500/5'
+                      : 'preset-outlined-success-500 bg-success-500/10 hover:bg-success-500/15'}"
+                  >
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-2">
+                        <!-- Recipe indicator icon -->
+                        <span
+                          class="w-5 h-5 rounded-full bg-success-500 text-white flex items-center justify-center flex-shrink-0"
+                        >
+                          <svg
+                            class="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="3"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </span>
+                        <h4 class="font-semibold text-lg">{recipe.name}</h4>
+                        {#if recipe.state === "cooked"}
+                          <span
+                            class="text-xs px-2 py-1 rounded-full bg-success-500 text-white"
+                          >
+                            Cooked ✓
+                          </span>
+                        {/if}
+                      </div>
+                      <span class="text-sm text-surface-500">
+                        {recipe.active_time_minutes} min
+                      </span>
+                    </div>
+                    {#if recipe.claims.length > 0}
+                      <p class="text-xs text-surface-600-400">
+                        <span class="font-medium">From inventory:</span>
+                        {recipe.claims
+                          .map((c) => `${c.quantity} ${c.unit} ${c.ingredient_name}`)
+                          .join(", ")}
+                      </p>
+                    {/if}
+                  </button>
+                {/each}
+
+                <!-- Then show remaining pitches -->
                 {#each criterionPitches as pitch}
                   <button
                     type="button"

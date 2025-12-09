@@ -109,28 +109,43 @@ tags: [ux, recipe-planning, pitch-invalidation, workflow-optimization]
 
 ---
 
-### Phase 3: Recipe Detail Page with Routing
+### Phase 3: Recipe Detail Page with Routing ✓
 
 **Purpose**: Create separate route for recipe detail view, showing compact cards on session page. This reduces visual clutter and creates focused cooking mode.
 
-**Scope**: New route `/recipes/[id]`, session page compact cards component
+**Scope**: New route `/recipes/[id]`, session page compact cards component, inline recipe display in criterion groups
 
-**TDD Focus**:
-- Acceptance criterion: Click recipe card navigates to `/recipes/{id}`, shows full details with back button
-- Test approach: Integration tests for page load, E2E test for navigation flow
-- Key scenarios: Navigate to detail, cook action, abandon action, back to session
+**Implementation Approach** (Revised during execution):
+- **Original plan**: Recipes only in separate "Planned Recipes" section
+- **Implemented**: Recipes appear in TWO places for different contexts:
+  1. **Inline in criterion groups** (planning context): Recipes replace their source pitches spatially, showing what's committed per criterion
+  2. **"Planned Recipes" section** (cooking context): Focused list with cook/abandon actions
+- **Rationale**: User feedback during planning - "reinforces what I've already selected" and helps make contrasting choices ("I already have 2 rice dishes for weeknight meals, let me pick a pitch that contrasts")
 
-**Key Considerations**:
-- SvelteKit routing: Just create `src/frontend/src/routes/recipes/[id]/+page.svelte` and `+page.ts` loader
-- Recipe detail page shows: name, ingredients, instructions, cook/abandon buttons, back navigation
-- Session page compact cards show: name, time, claimed ingredients summary (extracted from existing inline display)
-- Recipe lifecycle actions (cook/abandon) work from detail page, use `goto()` to navigate back to session
-- Can reuse existing API endpoints (`/api/recipes/{id}/cook`, `/api/recipes/{id}/abandon`)
-- May need GET `/api/recipes/{id}` endpoint if not already exists
+**What Was Built**:
+- GET `/api/recipes/{id}` endpoint with basic tests (happy path, 404, cooked state)
+- Updated GET `/sessions/{id}/recipes` to include both PLANNED and COOKED recipes (exclude ABANDONED)
+- Added `state` and `criterion_id` fields to FleshedOutRecipe schema
+- Recipe detail page (`/recipes/[id]`) with full view, cook/abandon buttons, back navigation
+- Compact recipe card component with visual distinction (soft green tint + checkmark icon)
+- Inline recipe rendering in criterion groups (recipes shown before pitches)
+- Updated "Planned Recipes" section to use compact cards with inline actions
+- Cook action keeps recipe visible with "Cooked ✓" badge (instead of removing)
+- Abandon action removes recipe entirely
 
-**Dependencies**: None (can be done independently)
+**Tests**: 3 passing tests for GET `/api/recipes/{id}`, all existing session tests passing
 
-**Complexity**: S (SvelteKit routing is file-based, straightforward)
+**Files Modified**:
+- `src/backend/routes.py` - Added GET endpoint, updated session recipes query
+- `src/backend/schemas.py` - Added state and criterion_id fields
+- `src/backend/tests/test_recipe_detail.py` - New test suite
+- `src/frontend/src/routes/recipes/[id]/+page.svelte` - Recipe detail page
+- `src/frontend/src/routes/recipes/[id]/+page.ts` - Data loader
+- `src/frontend/src/routes/sessions/[id]/+page.svelte` - Inline recipes + compact cards
+
+**Dependencies**: None (implemented independently)
+
+**Complexity**: S (as planned)
 
 ---
 

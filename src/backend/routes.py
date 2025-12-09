@@ -532,6 +532,9 @@ async def flesh_out_pitches(
             recipes_out.append(
                 FleshedOutRecipe(
                     id=str(recipe.id),
+                    criterion_id=str(recipe.criterion_id)
+                    if recipe.criterion_id
+                    else None,
                     name=recipe.name,
                     description=recipe.description,
                     ingredients=[
@@ -550,6 +553,7 @@ async def flesh_out_pitches(
                     total_time_minutes=recipe.total_time_minutes,
                     servings=recipe.servings,
                     notes=recipe.notes,
+                    state=recipe.state.value,
                     claims=[
                         ClaimSummary(
                             ingredient_name=claim.ingredient_name,
@@ -687,20 +691,21 @@ def get_session_recipes(
     db: Session = Depends(get_session),
 ) -> list[FleshedOutRecipe]:
     """
-    Get all planned recipes for a session.
+    Get all active recipes for a session (planned and cooked, excluding abandoned).
 
     Returns recipes with their ingredient claims for display in the session view.
+    Cooked recipes are shown with a checkmark indicator on the frontend.
     """
     # Verify session exists
     session = db.get(PlanningSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Get all planned recipes for this session
+    # Get all active recipes (planned + cooked, exclude abandoned)
     recipes = db.exec(
         select(Recipe).where(
             Recipe.session_id == session_id,
-            Recipe.state == RecipeState.PLANNED,
+            Recipe.state.in_([RecipeState.PLANNED, RecipeState.COOKED]),
         )
     ).all()
 
@@ -724,6 +729,7 @@ def get_session_recipes(
         recipes_out.append(
             FleshedOutRecipe(
                 id=str(recipe.id),
+                criterion_id=str(recipe.criterion_id) if recipe.criterion_id else None,
                 name=recipe.name,
                 description=recipe.description,
                 ingredients=[
@@ -734,11 +740,58 @@ def get_session_recipes(
                 total_time_minutes=recipe.total_time_minutes,
                 servings=recipe.servings,
                 notes=recipe.notes,
+                state=recipe.state.value,
                 claims=claim_summaries,
             )
         )
 
     return recipes_out
+
+
+@router.get("/recipes/{recipe_id}")
+def get_recipe(
+    recipe_id: UUID,
+    db: Session = Depends(get_session),
+) -> FleshedOutRecipe:
+    """
+    Get a single recipe by ID with full details and claims.
+
+    Returns recipe details suitable for the recipe detail page.
+    """
+    # Get recipe
+    recipe = db.get(Recipe, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    # Get all claims for this recipe
+    claims = db.exec(
+        select(IngredientClaim).where(IngredientClaim.recipe_id == recipe_id)
+    ).all()
+
+    claim_summaries = [
+        ClaimSummary(
+            ingredient_name=c.ingredient_name,
+            quantity=c.quantity,
+            unit=c.unit,
+            inventory_item_id=c.inventory_item_id,
+        )
+        for c in claims
+    ]
+
+    return FleshedOutRecipe(
+        id=str(recipe.id),
+        criterion_id=str(recipe.criterion_id) if recipe.criterion_id else None,
+        name=recipe.name,
+        description=recipe.description,
+        ingredients=[RecipeIngredientResponse(**ing) for ing in recipe.ingredients],
+        instructions=recipe.instructions,
+        active_time_minutes=recipe.active_time_minutes,
+        total_time_minutes=recipe.total_time_minutes,
+        servings=recipe.servings,
+        notes=recipe.notes,
+        state=recipe.state.value,
+        claims=claim_summaries,
+    )
 
 
 @router.get("/sessions/{session_id}/shopping-list")
