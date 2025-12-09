@@ -11,6 +11,7 @@ from models import (
     GroceryStore,
     IngredientClaim,
     InventoryItem,
+    Pitch,
     Recipe,
     RecipeState,
 )
@@ -187,3 +188,65 @@ def format_available_inventory(
             )
 
     return inventory_text
+
+
+def is_pitch_valid(pitch: Pitch, available_inventory: list[InventoryItem]) -> bool:
+    """
+    Check if a pitch can be made with available inventory.
+
+    Validation rules (aggressive approach - prefer false negatives):
+    - All ingredients must exist in inventory (case-insensitive matching)
+    - Units must match exactly (unit mismatch = invalid pitch)
+    - Available quantity must be >= required quantity
+
+    Args:
+        pitch: Pitch to validate
+        available_inventory: List of InventoryItem with decremented quantities
+
+    Returns:
+        True if all pitch ingredients can be satisfied, False otherwise
+    """
+    # Build lookup for fast case-insensitive matching
+    inventory_lookup = {
+        item.ingredient_name.lower(): item for item in available_inventory
+    }
+
+    # Check each ingredient requirement
+    for pitch_ingredient in pitch.inventory_ingredients:
+        ingredient_name = pitch_ingredient["name"]
+        required_quantity = pitch_ingredient["quantity"]
+        required_unit = pitch_ingredient["unit"]
+
+        # Find matching inventory item (case-insensitive)
+        inventory_item = inventory_lookup.get(ingredient_name.lower())
+
+        if inventory_item is None:
+            # Ingredient not in inventory
+            return False
+
+        if inventory_item.unit != required_unit:
+            # Aggressive invalidation: unit mismatch
+            return False
+
+        if inventory_item.quantity < required_quantity:
+            # Insufficient quantity
+            return False
+
+    # All ingredients satisfied
+    return True
+
+
+def filter_valid_pitches(
+    pitches: list[Pitch], available_inventory: list[InventoryItem]
+) -> list[Pitch]:
+    """
+    Filter a list of pitches to only those that can be made with available inventory.
+
+    Args:
+        pitches: List of pitches to filter
+        available_inventory: List of InventoryItem with decremented quantities
+
+    Returns:
+        List of valid pitches (preserves original order)
+    """
+    return [pitch for pitch in pitches if is_pitch_valid(pitch, available_inventory)]

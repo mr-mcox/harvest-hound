@@ -37,6 +37,7 @@ from schemas import (
 from services import (
     calculate_available_inventory,
     create_recipe_with_claims,
+    filter_valid_pitches,
 )
 from shopping_list import ShoppingListResponse, compute_shopping_list
 
@@ -225,7 +226,7 @@ class PitchResponse(BaseModel):
 def list_pitches(
     session_id: UUID, db: Session = Depends(get_session)
 ) -> list[PitchResponse]:
-    """List all pitches for a session, ordered by criterion and creation time"""
+    """List all valid pitches for a session (filtered by available inventory)"""
     session = db.get(PlanningSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -246,7 +247,11 @@ def list_pitches(
         .order_by(Pitch.criterion_id, Pitch.created_at)
     ).all()
 
-    return [PitchResponse.from_model(p) for p in pitches]
+    # Filter to only pitches that can be made with available inventory
+    available_inventory = calculate_available_inventory(db)
+    valid_pitches = filter_valid_pitches(list(pitches), available_inventory)
+
+    return [PitchResponse.from_model(p) for p in valid_pitches]
 
 
 # --- Pitch Generation (SSE Streaming) ---

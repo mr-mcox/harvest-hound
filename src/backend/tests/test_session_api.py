@@ -198,7 +198,13 @@ class TestPitchesAPI:
 
     def test_list_pitches_returns_created(self, client, session):
         """GET returns pitches grouped by criterion"""
-        from models import MealCriterion, Pitch, PlanningSession
+        from models import (
+            GroceryStore,
+            InventoryItem,
+            MealCriterion,
+            Pitch,
+            PlanningSession,
+        )
 
         # Create session with criteria and pitches directly in DB
         planning_session = PlanningSession(name="Test Session")
@@ -221,6 +227,28 @@ class TestPitchesAPI:
         session.commit()
         session.refresh(criterion1)
         session.refresh(criterion2)
+
+        # Create store with inventory for the pitches
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        # Add inventory items for the pitches
+        bok_choy = InventoryItem(
+            store_id=store.id,
+            ingredient_name="bok choy",
+            quantity=2.0,
+            unit="bunch",
+        )
+        carrots = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=3.0,
+            unit="lb",
+        )
+        session.add_all([bok_choy, carrots])
+        session.commit()
 
         # Add pitches for criterion1
         pitch1 = Pitch(
@@ -283,3 +311,247 @@ class TestPitchesAPI:
         response = client.get(f"/api/sessions/{fake_id}/pitches")
 
         assert response.status_code == 404
+
+    def test_list_pitches_filters_invalid_pitches_based_on_inventory(
+        self, client, session
+    ):
+        """GET returns only valid pitches that can be made with available inventory"""
+        from models import (
+            GroceryStore,
+            InventoryItem,
+            MealCriterion,
+            Pitch,
+            PlanningSession,
+        )
+
+        # Create session with criterion
+        planning_session = PlanningSession(name="Test Session")
+        session.add(planning_session)
+        session.commit()
+        session.refresh(planning_session)
+
+        criterion = MealCriterion(
+            session_id=planning_session.id,
+            description="Quick meals",
+            slots=2,
+        )
+        session.add(criterion)
+        session.commit()
+        session.refresh(criterion)
+
+        # Create store with inventory
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        # Create inventory items
+        carrots = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=3.0,
+            unit="pounds",
+        )
+        onions = InventoryItem(
+            store_id=store.id,
+            ingredient_name="onions",
+            quantity=2.0,
+            unit="whole",
+        )
+        session.add_all([carrots, onions])
+        session.commit()
+        session.refresh(carrots)
+        session.refresh(onions)
+
+        # Create pitches
+        valid_pitch = Pitch(
+            criterion_id=criterion.id,
+            name="Carrot Soup",
+            blurb="Uses carrots",
+            why_make_this="Good soup",
+            inventory_ingredients=[
+                {"name": "carrots", "quantity": 2.0, "unit": "pounds"}
+            ],
+            active_time_minutes=30,
+        )
+
+        invalid_pitch_missing = Pitch(
+            criterion_id=criterion.id,
+            name="Potato Soup",
+            blurb="Needs potatoes",
+            why_make_this="Comfort food",
+            inventory_ingredients=[
+                {
+                    "name": "potatoes",
+                    "quantity": 3.0,
+                    "unit": "pounds",
+                }  # Not in inventory
+            ],
+            active_time_minutes=40,
+        )
+
+        invalid_pitch_unit_mismatch = Pitch(
+            criterion_id=criterion.id,
+            name="Onion Salad",
+            blurb="Wrong units",
+            why_make_this="Fresh salad",
+            inventory_ingredients=[
+                {
+                    "name": "onions",
+                    "quantity": 1.0,
+                    "unit": "cups",
+                }  # Have 'whole', need 'cups'
+            ],
+            active_time_minutes=10,
+        )
+
+        invalid_pitch_insufficient = Pitch(
+            criterion_id=criterion.id,
+            name="Lots of Carrots",
+            blurb="Too many carrots",
+            why_make_this="Carrot overload",
+            inventory_ingredients=[
+                {
+                    "name": "carrots",
+                    "quantity": 5.0,
+                    "unit": "pounds",
+                }  # Only have 3 pounds
+            ],
+            active_time_minutes=60,
+        )
+
+        session.add_all(
+            [
+                valid_pitch,
+                invalid_pitch_missing,
+                invalid_pitch_unit_mismatch,
+                invalid_pitch_insufficient,
+            ]
+        )
+        session.commit()
+
+        # Fetch pitches via API
+        response = client.get(f"/api/sessions/{planning_session.id}/pitches")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Only the valid pitch should be returned
+        assert len(data) == 1
+        assert data[0]["name"] == "Carrot Soup"
+
+    def test_list_pitches_accounts_for_reserved_claims(self, client, session):
+        """GET filters pitches based on available inventory minus reserved claims"""
+        from models import (
+            ClaimState,
+            GroceryStore,
+            IngredientClaim,
+            InventoryItem,
+            MealCriterion,
+            Pitch,
+            PlanningSession,
+            Recipe,
+            RecipeState,
+        )
+
+        # Create session with criterion
+        planning_session = PlanningSession(name="Test Session")
+        session.add(planning_session)
+        session.commit()
+        session.refresh(planning_session)
+
+        criterion = MealCriterion(
+            session_id=planning_session.id,
+            description="Quick meals",
+            slots=3,
+        )
+        session.add(criterion)
+        session.commit()
+        session.refresh(criterion)
+
+        # Create store with inventory
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        # Create inventory: 5 pounds of carrots
+        carrots = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=5.0,
+            unit="pounds",
+        )
+        session.add(carrots)
+        session.commit()
+        session.refresh(carrots)
+
+        # Create a recipe that claims 3 pounds of carrots
+        existing_recipe = Recipe(
+            session_id=planning_session.id,
+            criterion_id=criterion.id,
+            name="Existing Carrot Recipe",
+            description="Uses some carrots",
+            ingredients=[{"name": "carrots", "quantity": "3", "unit": "pounds"}],
+            instructions=["Cook carrots"],
+            active_time_minutes=20,
+            total_time_minutes=40,
+            servings=4,
+            state=RecipeState.PLANNED,
+        )
+        session.add(existing_recipe)
+        session.commit()
+        session.refresh(existing_recipe)
+
+        # Create a RESERVED claim for 3 pounds of carrots
+        claim = IngredientClaim(
+            recipe_id=existing_recipe.id,
+            inventory_item_id=carrots.id,
+            ingredient_name="carrots",
+            quantity=3.0,
+            unit="pounds",
+            state=ClaimState.RESERVED,
+        )
+        session.add(claim)
+        session.commit()
+
+        # Create pitches
+        # Available: 5 - 3 = 2 pounds of carrots
+        valid_pitch = Pitch(
+            criterion_id=criterion.id,
+            name="Small Carrot Salad",
+            blurb="Uses 1 pound",
+            why_make_this="Light meal",
+            inventory_ingredients=[
+                {"name": "carrots", "quantity": 1.0, "unit": "pounds"}  # Valid (1 <= 2)
+            ],
+            active_time_minutes=15,
+        )
+
+        invalid_pitch = Pitch(
+            criterion_id=criterion.id,
+            name="Big Carrot Soup",
+            blurb="Uses 4 pounds",
+            why_make_this="Hearty soup",
+            inventory_ingredients=[
+                {
+                    "name": "carrots",
+                    "quantity": 4.0,
+                    "unit": "pounds",
+                }  # Invalid (4 > 2 available)
+            ],
+            active_time_minutes=45,
+        )
+
+        session.add_all([valid_pitch, invalid_pitch])
+        session.commit()
+
+        # Fetch pitches via API
+        response = client.get(f"/api/sessions/{planning_session.id}/pitches")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Only the valid pitch should be returned (after accounting for reserved claims)
+        assert len(data) == 1
+        assert data[0]["name"] == "Small Carrot Salad"
