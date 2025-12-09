@@ -36,6 +36,7 @@ from schemas import (
 )
 from services import (
     calculate_available_inventory,
+    calculate_pitch_generation_delta,
     create_recipe_with_claims,
     filter_valid_pitches,
 )
@@ -323,6 +324,20 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
             grocery_stores_text = "\n".join(
                 f"- {store.name}: {store.description}" for store in grocery_stores
             )
+            # Calculate smart pitch generation delta
+            total_delta = calculate_pitch_generation_delta(db, session_id)
+
+            if total_delta == 0:
+                # All slots filled or enough pitches already exist
+                completion_data = json.dumps(
+                    {
+                        "complete": True,
+                        "message": "All meals planned - no generation needed",
+                    }
+                )
+                yield f"data: {completion_data}\n\n"
+                return
+
             # Build structured inventory for BAML
             from baml_client import types as baml_types
 
@@ -336,9 +351,14 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 for item in available_inventory
             ]
 
+            # Distribute delta across criteria proportionally by slots
+            total_slots = sum(c.slots for c in criteria)
             total_criteria = len(criteria)
+
             for criterion_index, criterion in enumerate(criteria, start=1):
-                num_pitches = 3 * criterion.slots
+                # Calculate this criterion's share of the delta
+                criterion_share = (criterion.slots / total_slots) * total_delta
+                num_pitches = max(1, round(criterion_share))  # At least 1 if delta > 0
 
                 progress_data = json.dumps(
                     {

@@ -11,6 +11,7 @@ from models import (
     GroceryStore,
     IngredientClaim,
     InventoryItem,
+    MealCriterion,
     Pitch,
     Recipe,
     RecipeState,
@@ -250,3 +251,68 @@ def filter_valid_pitches(
         List of valid pitches (preserves original order)
     """
     return [pitch for pitch in pitches if is_pitch_valid(pitch, available_inventory)]
+
+
+def calculate_pitch_generation_delta(session: Session, session_id) -> int:
+    """
+    Calculate how many pitches to generate for a planning session.
+
+    Formula:
+    - total_slots = sum of all criterion slots
+    - fleshed_recipes = count of PLANNED recipes
+    - unfilled_slots = total_slots - fleshed_recipes
+    - target_pitches = unfilled_slots * 3
+    - delta = max(0, target_pitches - valid_pitches)
+
+    Args:
+        session: Database session
+        session_id: UUID of the planning session
+
+    Returns:
+        Number of pitches to generate (0 if all slots filled or enough pitches)
+    """
+    # Get all criteria for this session
+    criteria = session.exec(
+        select(MealCriterion).where(MealCriterion.session_id == session_id)
+    ).all()
+
+    if not criteria:
+        return 0
+
+    # Calculate total slots across all criteria
+    total_slots = sum(criterion.slots for criterion in criteria)
+
+    # Count fleshed-out recipes (PLANNED state only)
+    fleshed_recipes_count = session.exec(
+        select(Recipe).where(
+            Recipe.session_id == session_id,
+            Recipe.state == RecipeState.PLANNED,
+        )
+    ).all()
+    fleshed_count = len(fleshed_recipes_count)
+
+    # Calculate unfilled slots
+    unfilled_slots = max(0, total_slots - fleshed_count)
+
+    if unfilled_slots == 0:
+        # All slots filled, no generation needed
+        return 0
+
+    # Calculate target: 3 pitches per unfilled slot
+    target_pitches = unfilled_slots * 3
+
+    # Get all pitches for these criteria
+    criterion_ids = [c.id for c in criteria]
+    pitches = session.exec(
+        select(Pitch).where(Pitch.criterion_id.in_(criterion_ids))
+    ).all()
+
+    # Filter to only valid pitches (can be made with available inventory)
+    available_inventory = calculate_available_inventory(session)
+    valid_pitches = filter_valid_pitches(list(pitches), available_inventory)
+    valid_count = len(valid_pitches)
+
+    # Calculate delta: how many more pitches needed
+    delta = max(0, target_pitches - valid_count)
+
+    return delta

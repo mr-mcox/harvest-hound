@@ -104,6 +104,15 @@
   let fleshedOutPitchIds: Set<string> = $state(new Set());
   let selectedCount = $derived(selectedPitchIds.size);
 
+  // Calculate if all meal slots are filled
+  let allSlotsFilled = $derived(
+    (() => {
+      const totalSlots = criteria.reduce((sum, c) => sum + c.slots, 0);
+      const plannedCount = plannedRecipes.length;
+      return totalSlots > 0 && totalSlots === plannedCount;
+    })()
+  );
+
   function togglePitchSelection(pitchId: string) {
     if (selectedPitchIds.has(pitchId)) {
       selectedPitchIds.delete(pitchId);
@@ -258,7 +267,7 @@
         generating = false;
         eventSource.close();
       } else if (data.complete) {
-        generationProgress = "Generation complete!";
+        generationProgress = data.message || "Generation complete!";
         generating = false;
         eventSource.close();
         setTimeout(() => {
@@ -680,10 +689,16 @@
         <div class="flex gap-3 flex-wrap">
           <button
             class="btn preset-filled-secondary-500"
-            disabled={generating}
+            disabled={generating || allSlotsFilled}
             onclick={generatePitches}
           >
-            {generating ? "Generating..." : "Generate Pitches"}
+            {#if generating}
+              Generating...
+            {:else if allSlotsFilled}
+              All Meals Planned
+            {:else}
+              Generate Pitches
+            {/if}
           </button>
 
           {#if selectedCount > 0}
