@@ -2,7 +2,7 @@
 
 **Status**: Living document - update as we learn, delete when MVP complete
 **Created**: 2025-12-02
-**Last Updated**: 2025-12-06
+**Last Updated**: 2025-12-09
 
 ---
 
@@ -62,11 +62,21 @@ Prove the loop first, polish second. The thread: **CSA delivery → planning ses
 
 ### Phase 2: Fidelity Pass (After Loop Works)
 
-- Inventory: Table view, location filtering, portioning hint display
+**Priority 1** (biggest pain points from production use):
+- **Ingredient management improvements**: Top priority - table view, better UX for editing
+- **Recipe formatting for cooking**: Reduce need to flip back/forth while cooking
+- **Pantry accuracy refinement**: Guesses not as accurate as expected, affects both ranking and recipe generation
+
+**Priority 2**:
 - Claims: Visibility UI ("why no radish recipes?")
-- Pitches: Invalidation/removal when ingredients claimed
-- Shopping: Essential vs optional, likelihood ordering
+- Pitches: ✅ Invalidation/removal when ingredients claimed (DONE)
+- Shopping: ✅ Essential vs optional, likelihood ordering (DONE)
+- Inventory: Location filtering, portioning hint display
+
+**Priority 3**:
 - General UI polish
+- Ingredient substitution preferences ("don't like dill")
+- Grocery list feedback loops to improve pantry accuracy
 
 ### New Entities for MVP
 
@@ -109,6 +119,7 @@ Relationships: Session → MealCriteria → Pitches → Recipe (with criterion r
 - **Technique diversity in prompts** - multiple options for same ingredient
 - **Three-tier ingredient source architecture** - clean claiming logic (Inventory, Pantry Staples, Grocery)
 - **Svelte + Skeleton v3** - layout solid, styling minimal, reactive state natural
+- **Component-based page organization** - Session page complexity wrestled down into reusable components (MealCriteria, PlannedRecipes, ShoppingList)
 
 ### Patterns to Change
 
@@ -123,7 +134,9 @@ Relationships: Session → MealCriteria → Pitches → Recipe (with criterion r
 ### Acceptable Technical Debt
 
 - **Error handling**: Minimal, happy-path focus
-- **Migrations**: Blow away DB during steel thread; add migrations post-steel-thread for authentic use
+- **Migrations**: Alembic migrations in place; bad data can propagate (acceptable for hobby project)
+- **Testing strategy**: Light test coverage - integration bugs slip through to production, annoying but acceptable for hobby project
+- **Database safety**: dev.db for development, harvest.db protected by convention and tooling
 - **API naming**: Refine later
 - **Styling**: Skeleton defaults, don't overthink
 
@@ -147,12 +160,14 @@ Relationships: Session → MealCriteria → Pitches → Recipe (with criterion r
 
 ### Steel Thread Complete When
 
-Used for **one actual week** of meal planning:
-- CSA arrived → inventory entered
-- Planning session created with constraints
-- Meals planned from pitches
-- Went shopping from generated list
-- Cooked at least 3 recipes through the system
+✅ **VALIDATED** (2025-12-09): Used for actual meal planning:
+- ✅ CSA arrived → inventory entered
+- ✅ Planning session created with constraints
+- ✅ Meals planned from pitches
+- ✅ Went shopping from generated list
+- ✅ Cooked first recipe through the system
+
+**Key Validation**: Recipe timing "pretty close", workflow feels smooth, system used authentically in production.
 
 ### Code Quality Bar
 

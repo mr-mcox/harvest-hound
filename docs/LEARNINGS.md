@@ -90,7 +90,8 @@
   - Auto-save on flesh-out feels natural (no "don't save" needed since abandon is low effort)
   - Models how user wants to use system: plan for week → cook or abandon as week progresses
   - User reaction: "That model seemed to work quite well"
-  - (discovered: recipe-persistence experiment, 2025-12-01)
+  - **VALIDATED IN PRODUCTION**: First recipe cooked 2025-12-08, steel thread complete
+  - (discovered: recipe-persistence experiment, 2025-12-01; validated: production use, 2025-12-08)
 
 - [x] **IngredientClaim as persistent entity**: Works invisibly in background
   - Two claim states: reserved (planned), consumed (cooked)
@@ -164,7 +165,22 @@
   - Want: active + total time visible
   - Future idea: Quadrant visualization (total time vs passive time, 4 quadrants)
   - Progressive reveal: Hover for time breakdown?
-  - (discovered: recipe-pitch-selection experiment, 2025-11-29)
+  - **Production validation**: Recipe timing "pretty close" - time estimates are accurate enough for planning
+  - (discovered: recipe-pitch-selection experiment, 2025-11-29; validated: production use, 2025-12-09)
+
+- [x] **Recipe formatting affects cooking efficiency**: Instructions need better ergonomics
+  - Production pain point: Flipping back and forth between recipe sections while cooking
+  - Recipe format should minimize context switching during active cooking
+  - Opportunity: Improve recipe instruction layout/formatting for cooking workflow
+  - Not just about correctness - ergonomics matter for real use
+  - (discovered: production use, 2025-12-09)
+
+- [x] **Ingredient substitution preferences emerging**: User food preferences affect recipe selection
+  - Example: "What if we could substitute dill because I really don't like dill"
+  - Not just dietary restrictions - personal taste preferences matter
+  - Different from recipe editing (which is "tweak this recipe") - this is "avoid X in all recipes"
+  - Opportunity: Capture user ingredient preferences to guide generation
+  - (discovered: production use, 2025-12-09)
 
 - [x] **Week-level planning criteria**: Real need for structured constraints
   - Example: "1 weekend meal, 1 guest meal (weeknight), 2 quick meals, 1 leftovers meal"
@@ -213,7 +229,9 @@
   - Gap reveals Pantry Staples definition is fuzzy, user-specific
   - Opportunity: Use Grocery assignments to refine Pantry Staples definition over time
   - Question: How does system learn what user considers Pantry Staples?
-  - (discovered: store-based-claiming experiment, 2025-12-01)
+  - **Production validation**: Pantry guesses not as accurate as expected - affects both grocery list ranking and recipe generation
+  - **Feedback loop opportunity**: Grocery list selections could inform pantry definitions and improve ranking accuracy
+  - (discovered: store-based-claiming experiment, 2025-12-01; validated: production use, 2025-12-09)
 
 - [x] **Multiple grocery sources, not singleton**: Different grocery stores for different rhythms
   - Not "the grocery store" but: Cub (regular), Costco (bulk runs), Co-op, Asian grocery
