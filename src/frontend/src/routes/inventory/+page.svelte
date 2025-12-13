@@ -1,5 +1,6 @@
 <script lang="ts">
   type Priority = "Low" | "Medium" | "High" | "Urgent";
+  type ClaimFilter = "All" | "Unclaimed only" | "Claimed only";
 
   interface RecipeClaimSummary {
     recipe_id: string;
@@ -23,6 +24,8 @@
   let items = $state<InventoryItem[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let claimFilter = $state<ClaimFilter>("All");
+  let claimsPopoverItemId = $state<number | null>(null);
   let editingItemId = $state<number | null>(null);
   let editingQuantity = $state<number>(0);
   let editingPriorityItemId = $state<number | null>(null);
@@ -37,7 +40,18 @@
 
   let sortedItems = $derived(
     [...items]
-      .filter((item) => item.quantity > 0)
+      .filter((item) => {
+        // Existing filter: quantity > 0
+        if (item.quantity <= 0) return false;
+
+        // New claim filter
+        if (claimFilter === "Unclaimed only") {
+          return item.available > 0;
+        } else if (claimFilter === "Claimed only") {
+          return item.claims.length > 0;
+        }
+        return true; // "All"
+      })
       .sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority])
   );
 
@@ -60,16 +74,24 @@
     }
   }
 
-  function getPriorityColor(priority: Priority): string {
-    switch (priority) {
-      case "Urgent":
-        return "text-error-500";
-      case "High":
-        return "text-warning-500";
-      case "Medium":
-        return "text-primary-500";
-      case "Low":
-        return "text-surface-500";
+  function getAvailabilityShade(available: number, total: number): string {
+    if (available === total) {
+      return "text-surface-900-100"; // Unclaimed - normal/black
+    } else if (available === 0) {
+      return "text-surface-400"; // Fully claimed - light grey
+    } else {
+      return "text-surface-600"; // Partially claimed - grey
+    }
+  }
+
+  function formatAmount(item: InventoryItem): string {
+    const baseAmount = `${item.quantity} ${item.unit}`;
+    if (item.available === item.quantity) {
+      return baseAmount; // Unclaimed
+    } else if (item.available === 0) {
+      return `${baseAmount} (0 avail)`; // Fully claimed
+    } else {
+      return `${baseAmount} (${item.available} avail)`; // Partially claimed
     }
   }
 
@@ -204,6 +226,19 @@
     >
   </div>
 
+  <div class="flex items-center gap-2">
+    <label for="claim-filter" class="text-sm font-medium">Filter:</label>
+    <select
+      id="claim-filter"
+      bind:value={claimFilter}
+      class="px-3 py-2 border border-surface-500 rounded text-sm"
+    >
+      <option value="All">All</option>
+      <option value="Unclaimed only">Unclaimed only</option>
+      <option value="Claimed only">Claimed only</option>
+    </select>
+  </div>
+
   {#if error}
     <div class="card preset-outlined-error-500 p-4">
       <p class="text-error-500">{error}</p>
@@ -225,19 +260,60 @@
         <thead>
           <tr class="border-b border-surface-500/20">
             <th class="text-left p-4 font-semibold">Ingredient</th>
-            <th class="text-left p-4 font-semibold">Quantity</th>
-            <th class="text-left p-4 font-semibold">Available</th>
-            <th class="text-left p-4 font-semibold">Unit</th>
+            <th class="text-left p-4 font-semibold">Amount</th>
             <th class="text-left p-4 font-semibold">Priority</th>
-            <th class="text-left p-4 font-semibold">Claimed By</th>
-            <th class="text-left p-4 font-semibold">Portion Size</th>
             <th class="text-left p-4 font-semibold">Actions</th>
           </tr>
         </thead>
         <tbody>
           {#each sortedItems as item}
             <tr class="border-b border-surface-500/20 last:border-b-0">
-              <td class="p-4 font-medium">{item.ingredient_name}</td>
+              <td class="p-4 font-medium relative">
+                <div class="flex items-center gap-2">
+                  <span>{item.ingredient_name}</span>
+                  {#if item.claims.length > 0}
+                    <span
+                      class="text-primary-500 cursor-help relative inline-flex items-center"
+                      onmouseenter={() => (claimsPopoverItemId = item.id)}
+                      onmouseleave={() => (claimsPopoverItemId = null)}
+                      role="button"
+                      tabindex="0"
+                      aria-label="View {item.claims.length} claiming recipe{item.claims
+                        .length > 1
+                        ? 's'
+                        : ''}"
+                    >
+                      🔗
+                      {#if claimsPopoverItemId === item.id}
+                        <div
+                          class="absolute left-6 top-0 z-10 w-64 bg-surface-100-900 border border-surface-500 rounded-lg shadow-lg p-3 space-y-2"
+                          role="tooltip"
+                          aria-label="Claiming recipes"
+                        >
+                          <h3 class="font-semibold text-sm text-surface-900-100">
+                            Claimed by:
+                          </h3>
+                          {#each item.claims as claim}
+                            <div class="text-sm">
+                              <a
+                                href="/recipes/{claim.recipe_id}"
+                                class="text-primary-500 hover:text-primary-600 transition-colors block"
+                                aria-label="View recipe {claim.recipe_name}"
+                              >
+                                {claim.recipe_name}
+                              </a>
+                              <span class="text-surface-500 text-xs">
+                                {claim.quantity}
+                                {claim.unit}
+                              </span>
+                            </div>
+                          {/each}
+                        </div>
+                      {/if}
+                    </span>
+                  {/if}
+                </div>
+              </td>
               <td class="p-4">
                 {#if editingItemId === item.id}
                   <input
@@ -258,21 +334,13 @@
                 {:else}
                   <button
                     type="button"
-                    class="hover:text-primary-500 transition-colors cursor-pointer"
+                    class={`hover:text-primary-500 transition-colors cursor-pointer ${getAvailabilityShade(item.available, item.quantity)}`}
                     onclick={() => startEditingQuantity(item.id, item.quantity)}
                   >
-                    {item.quantity}
+                    {formatAmount(item)}
                   </button>
                 {/if}
               </td>
-              <td class="p-4 text-surface-600-400">
-                {#if item.available === 0}
-                  <span class="text-surface-500">Fully claimed</span>
-                {:else}
-                  {item.available}
-                {/if}
-              </td>
-              <td class="p-4 text-surface-600-400">{item.unit}</td>
               <td class="p-4">
                 {#if editingPriorityItemId === item.id}
                   <select
@@ -290,41 +358,11 @@
                 {:else}
                   <button
                     type="button"
-                    class={`text-sm ${getPriorityColor(item.priority)} hover:opacity-75 transition-opacity cursor-pointer`}
+                    class="text-sm hover:opacity-75 transition-opacity cursor-pointer"
                     onclick={() => startEditingPriority(item.id, item.priority)}
                   >
                     {item.priority}
                   </button>
-                {/if}
-              </td>
-              <td class="p-4 text-surface-600-400">
-                {#if item.claims.length === 0}
-                  <span class="text-surface-500">—</span>
-                {:else}
-                  <div class="space-y-1">
-                    {#each item.claims as claim}
-                      <div>
-                        <a
-                          href="/recipes/{claim.recipe_id}"
-                          class="text-primary-500 hover:text-primary-600 transition-colors"
-                          aria-label="View recipe {claim.recipe_name}"
-                        >
-                          {claim.recipe_name}
-                        </a>
-                        <span class="text-surface-500 text-sm">
-                          ({claim.quantity}
-                          {claim.unit})
-                        </span>
-                      </div>
-                    {/each}
-                  </div>
-                {/if}
-              </td>
-              <td class="p-4 text-surface-600-400">
-                {#if item.portion_size}
-                  {item.portion_size} portions
-                {:else}
-                  —
                 {/if}
               </td>
               <td class="p-4">

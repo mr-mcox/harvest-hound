@@ -120,7 +120,7 @@ Users need to see which inventory ingredients are claimed by planned recipes and
 
 **Complexity**: S
 
-### Phase 4: Claim Status Filter & E2E Validation
+### Phase 4: Claim Status Filter & E2E Validation ✓
 
 **Purpose**: Add dropdown filter above table to show all/unclaimed/claimed ingredients. Enables quick discovery of unused ingredients. Validate complete workflow across all features. Sequenced last after all display features are working.
 
