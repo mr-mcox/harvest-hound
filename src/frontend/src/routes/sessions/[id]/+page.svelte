@@ -107,7 +107,6 @@
   let shoppingListError = $state("");
 
   let selectedPitchIds: Set<string> = $state(new Set());
-  let fleshedOutPitchIds: Set<string> = $state(new Set());
   let selectedCount = $derived(selectedPitchIds.size);
 
   // Calculate if all meal slots are filled
@@ -132,15 +131,6 @@
     return selectedPitchIds.has(pitchId);
   }
 
-  function markPitchesAsFleshedOut(pitchIds: string[]) {
-    for (const id of pitchIds) {
-      fleshedOutPitchIds.add(id);
-      selectedPitchIds.delete(id);
-    }
-    fleshedOutPitchIds = new Set(fleshedOutPitchIds);
-    selectedPitchIds = new Set(selectedPitchIds);
-  }
-
   function getSelectedPitches(): Pitch[] {
     return pitches.filter((p) => selectedPitchIds.has(p.id));
   }
@@ -148,8 +138,6 @@
   let pitchesByCriterion = $derived(() => {
     const grouped: Record<string, Pitch[]> = {};
     for (const pitch of pitches) {
-      if (fleshedOutPitchIds.has(pitch.id)) continue;
-
       if (!grouped[pitch.criterion_id]) {
         grouped[pitch.criterion_id] = [];
       }
@@ -355,8 +343,11 @@
       // Add new recipes to planned list
       plannedRecipes = [...plannedRecipes, ...data.recipes];
 
-      // Mark pitches as fleshed out (removes from display)
-      markPitchesAsFleshedOut(selectedPitches.map((p) => p.id));
+      // Clear selected pitches
+      selectedPitchIds = new Set();
+
+      // Reload pitches (backend filters out fleshed-out pitches)
+      await loadPitches();
 
       // Load shopping list with new recipes
       await loadShoppingList();
@@ -576,8 +567,9 @@
                     <h3 class="h4 text-surface-700-300">
                       {criterion.description}
                       <span class="text-sm font-normal text-surface-500">
-                        ({criterionRecipes.length} planned, {criterionPitches.length} / {criterion.slots *
-                          3} pitches)
+                        ({criterionRecipes.length} / {criterion.slots} slots filled{#if criterionPitches.length > 0},
+                          {criterionPitches.length}
+                          {criterionPitches.length === 1 ? "pitch" : "pitches"} available{/if})
                       </span>
                     </h3>
 

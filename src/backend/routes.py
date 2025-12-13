@@ -242,10 +242,12 @@ def list_pitches(
     if not criterion_ids:
         return []
 
-    # Get all pitches for these criteria
+    # Get all pitches for these criteria (only unfleshed, non-rejected)
     pitches = db.exec(
         select(Pitch)
         .where(Pitch.criterion_id.in_(criterion_ids))
+        .where(Pitch.recipe_id.is_(None))
+        .where(~Pitch.rejected)
         .order_by(Pitch.criterion_id, Pitch.created_at)
     ).all()
 
