@@ -4,7 +4,7 @@ Tests for pitch rejection endpoint
 
 from uuid import uuid4
 
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from models import MealCriterion, Pitch, PlanningSession
 

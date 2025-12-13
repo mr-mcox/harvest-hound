@@ -335,6 +335,244 @@ class TestShoppingListComputation:
         assert result.grocery_items[0].ingredient_name == "boundary_item"
         assert len(result.pantry_staples) == 0
 
+    def test_aggregate_same_unit_sums_quantities(self, session: Session):
+        """Same ingredient with same unit should sum numeric quantities"""
+        planning_session = _create_session(session)
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 1",
+            [
+                {
+                    "name": "garlic",
+                    "quantity": "6",
+                    "unit": "clove",
+                    "purchase_likelihood": 0.8,
+                }
+            ],
+        )
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 2",
+            [
+                {
+                    "name": "garlic",
+                    "quantity": "4",
+                    "unit": "clove",
+                    "purchase_likelihood": 0.7,
+                }
+            ],
+        )
+
+        result = compute_shopping_list(session, planning_session.id)
+
+        # Should sum to 10 clove (or cloves)
+        assert len(result.grocery_items) == 1
+        assert result.grocery_items[0].ingredient_name == "garlic"
+        # Accept either "10 clove" or "10 cloves" - pluralization can go either way
+        assert result.grocery_items[0].total_quantity in ["10 clove", "10 cloves"]
+        assert result.grocery_items[0].used_in_recipes == ["Recipe 1", "Recipe 2"]
+
+    def test_aggregate_normalizes_plural_units(self, session: Session):
+        """Ingredient with 'clove' and 'cloves' should be treated as same unit"""
+        planning_session = _create_session(session)
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 1",
+            [
+                {
+                    "name": "garlic",
+                    "quantity": "6",
+                    "unit": "clove",
+                    "purchase_likelihood": 0.8,
+                }
+            ],
+        )
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 2",
+            [
+                {
+                    "name": "garlic",
+                    "quantity": "4",
+                    "unit": "clove",
+                    "purchase_likelihood": 0.7,
+                }
+            ],
+        )
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 3",
+            [
+                {
+                    "name": "garlic",
+                    "quantity": "6",
+                    "unit": "cloves",  # Plural
+                    "purchase_likelihood": 0.9,
+                }
+            ],
+        )
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 4",
+            [
+                {
+                    "name": "garlic",
+                    "quantity": "6",
+                    "unit": "cloves",  # Plural
+                    "purchase_likelihood": 0.85,
+                }
+            ],
+        )
+
+        result = compute_shopping_list(session, planning_session.id)
+
+        # Should aggregate all garlic regardless of clove/cloves
+        assert len(result.grocery_items) == 1
+        assert result.grocery_items[0].ingredient_name == "garlic"
+        # Should sum to 22 (6+4+6+6)
+        assert result.grocery_items[0].total_quantity in ["22 clove", "22 cloves"]
+        assert len(result.grocery_items[0].used_in_recipes) == 4
+
+    def test_aggregate_non_numeric_quantities_concatenated(self, session: Session):
+        """Non-numeric quantities like 'to taste' should be concatenated, not summed"""
+        planning_session = _create_session(session)
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 1",
+            [
+                {
+                    "name": "salt",
+                    "quantity": "to taste",
+                    "unit": "pinch",
+                    "purchase_likelihood": 0.1,
+                }
+            ],
+        )
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 2",
+            [
+                {
+                    "name": "salt",
+                    "quantity": "to taste",
+                    "unit": "pinch",
+                    "purchase_likelihood": 0.2,
+                }
+            ],
+        )
+
+        result = compute_shopping_list(session, planning_session.id)
+
+        # Non-numeric should still concatenate
+        assert len(result.pantry_staples) == 1
+        assert result.pantry_staples[0].ingredient_name == "salt"
+        assert (
+            result.pantry_staples[0].total_quantity == "to taste pinch + to taste pinch"
+        )
+
+    def test_aggregate_mixed_numeric_and_non_numeric(self, session: Session):
+        """Mix of numeric and non-numeric quantities should concatenate"""
+        planning_session = _create_session(session)
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 1",
+            [
+                {
+                    "name": "pepper",
+                    "quantity": "2",
+                    "unit": "tsp",
+                    "purchase_likelihood": 0.2,
+                }
+            ],
+        )
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 2",
+            [
+                {
+                    "name": "pepper",
+                    "quantity": "to taste",
+                    "unit": "tsp",
+                    "purchase_likelihood": 0.15,
+                }
+            ],
+        )
+
+        result = compute_shopping_list(session, planning_session.id)
+
+        # Can't sum when one is non-numeric, so concatenate
+        assert len(result.pantry_staples) == 1
+        assert result.pantry_staples[0].ingredient_name == "pepper"
+        assert result.pantry_staples[0].total_quantity == "2 tsp + to taste tsp"
+
+    def test_aggregate_non_pluralizing_units(self, session: Session):
+        """Units like 'each' should not be pluralized"""
+        planning_session = _create_session(session)
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 1",
+            [
+                {
+                    "name": "shallots",
+                    "quantity": "3",
+                    "unit": "each",
+                    "purchase_likelihood": 0.8,
+                }
+            ],
+        )
+
+        result = compute_shopping_list(session, planning_session.id)
+
+        # Should be "3 each", not "3 eachs"
+        assert len(result.grocery_items) == 1
+        assert result.grocery_items[0].total_quantity == "3 each"
+
+    def test_aggregate_size_descriptor_units(self, session: Session):
+        """Size descriptors like 'medium' should not be pluralized"""
+        planning_session = _create_session(session)
+
+        _create_recipe(
+            session,
+            planning_session,
+            "Recipe 1",
+            [
+                {
+                    "name": "shallot",
+                    "quantity": "2",
+                    "unit": "medium",
+                    "purchase_likelihood": 0.9,
+                }
+            ],
+        )
+
+        result = compute_shopping_list(session, planning_session.id)
+
+        # Should be "2 medium", not "2 mediums"
+        assert len(result.grocery_items) == 1
+        assert result.grocery_items[0].total_quantity == "2 medium"
+
 
 class TestShoppingListAPIEndpoint:
     """Tests for GET /sessions/{session_id}/shopping-list API endpoint"""

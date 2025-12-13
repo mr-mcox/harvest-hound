@@ -5,6 +5,7 @@ Computes grocery shopping lists from planned recipes, subtracting claimed invent
 """
 
 from collections import defaultdict
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -27,6 +28,122 @@ class ShoppingListResponse(BaseModel):
 
     grocery_items: list[ShoppingListItem]  # likelihood >= 0.3, sorted DESC
     pantry_staples: list[ShoppingListItem]  # likelihood < 0.3
+
+
+def normalize_unit(unit: str) -> str:
+    """
+    Normalize unit for comparison by removing trailing 's' for plurals.
+
+    Examples:
+        "cloves" -> "clove"
+        "cups" -> "cup"
+        "tsp" -> "tsp" (unchanged)
+    """
+    if unit.endswith("s") and len(unit) > 1:
+        return unit[:-1]
+    return unit
+
+
+def pluralize_unit(unit: str, quantity: Decimal) -> str:
+    """
+    Return appropriate unit form based on quantity.
+
+    Args:
+        unit: Base unit (normalized or original)
+        quantity: Numeric quantity
+
+    Returns:
+        Pluralized unit if quantity != 1, otherwise singular
+
+    Examples:
+        "cup", 2 -> "cups"
+        "clove", 5 -> "cloves"
+        "each", 3 -> "each" (no pluralization)
+        "medium", 2 -> "medium" (size descriptor, no pluralization)
+    """
+    # Units that never pluralize (already represent plural/collective form)
+    NON_PLURALIZING_UNITS = {
+        "each",
+        # Size descriptors
+        "small",
+        "medium",
+        "large",
+        "extra-large",
+        "xl",
+        # Already plural or collective
+        "to taste",
+    }
+
+    unit_lower = unit.lower()
+
+    # If unit is in the non-pluralizing set, return as-is
+    if unit_lower in NON_PLURALIZING_UNITS:
+        return unit
+
+    # Singular form for quantity = 1
+    if quantity == 1:
+        return unit
+
+    # Add 's' if not already present
+    if not unit.endswith("s"):
+        return unit + "s"
+    return unit
+
+
+def try_parse_quantity(quantity_str: str) -> Decimal | None:
+    """
+    Try to parse quantity string as a decimal number.
+
+    Args:
+        quantity_str: String like "6", "1.5", "2-3", "to taste"
+
+    Returns:
+        Decimal if parseable, None otherwise
+    """
+    try:
+        return Decimal(quantity_str.strip())
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def aggregate_quantities(quantities: list[str], units: list[str]) -> str:
+    """
+    Aggregate quantities intelligently: sum if all numeric and same normalized unit,
+    otherwise concatenate with " + ".
+
+    Args:
+        quantities: List of quantity strings (e.g., ["6", "4", "6"])
+        units: List of unit strings (e.g., ["clove", "clove", "cloves"])
+
+    Returns:
+        Aggregated quantity string (e.g., "16 cloves" or "6 clove + to taste clove")
+    """
+    # Normalize all units
+    normalized_units = [normalize_unit(u) for u in units]
+
+    # Check if all units normalize to the same thing
+    if len(set(normalized_units)) != 1:
+        # Different units, just concatenate
+        return " + ".join(f"{q} {u}" for q, u in zip(quantities, units))
+
+    base_unit = normalized_units[0]
+
+    # Try to parse all quantities as numbers
+    parsed = [try_parse_quantity(q) for q in quantities]
+
+    # If all are numeric, sum them
+    if all(p is not None for p in parsed):
+        total = sum(parsed)  # type: ignore
+        # Use appropriate plural form
+        display_unit = pluralize_unit(base_unit, total)
+        # Format without unnecessary decimal places
+        if total % 1 == 0:
+            return f"{int(total)} {display_unit}"
+        else:
+            return f"{total} {display_unit}"
+
+    # Otherwise, fall back to concatenation
+    return " + ".join(f"{q} {u}" for q, u in zip(quantities, units))
 
 
 def compute_shopping_list(
@@ -75,9 +192,9 @@ def compute_shopping_list(
 
     # Aggregate ingredients
     # Key: ingredient_name (lowercase for matching)
-    # Value: {quantities: [str], likelihoods: [float], recipes: [str]}
+    # Value: {quantities: [str], units: [str], likelihoods: [float], recipes: [str]}
     aggregated = defaultdict(
-        lambda: {"quantities": [], "likelihoods": [], "recipes": []}
+        lambda: {"quantities": [], "units": [], "likelihoods": [], "recipes": []}
     )
 
     for recipe in recipes:
@@ -89,10 +206,10 @@ def compute_shopping_list(
             if (recipe.id, ingredient_name_lower) in claimed_ingredients:
                 continue
 
-            # Aggregate
+            # Aggregate - store quantities and units separately
             key = ingredient_name_lower
-            quantity_str = f"{ing['quantity']} {ing['unit']}"
-            aggregated[key]["quantities"].append(quantity_str)
+            aggregated[key]["quantities"].append(ing["quantity"])
+            aggregated[key]["units"].append(ing["unit"])
             aggregated[key]["likelihoods"].append(ing.get("purchase_likelihood", 0.5))
             aggregated[key]["recipes"].append(recipe.name)
             # Store original name (first occurrence) for display
@@ -104,8 +221,8 @@ def compute_shopping_list(
     pantry_staples = []
 
     for ingredient_key, data in aggregated.items():
-        # Aggregate quantities with " + "
-        total_quantity = " + ".join(data["quantities"])
+        # Intelligently aggregate quantities (sum if possible, otherwise concatenate)
+        total_quantity = aggregate_quantities(data["quantities"], data["units"])
 
         # Average likelihood across recipes
         avg_likelihood = sum(data["likelihoods"]) / len(data["likelihoods"])
