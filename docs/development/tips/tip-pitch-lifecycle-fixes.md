@@ -188,7 +188,7 @@ From MVP-CHARTER.md:
 
 ---
 
-### Phase 5: Add Pitch Rejection
+### Phase 5: Add Pitch Rejection ✓
 
 **Purpose**: Allow users to dismiss pitches they're not interested in, preventing regeneration of similar options.
 

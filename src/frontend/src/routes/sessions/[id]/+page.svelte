@@ -77,6 +77,7 @@
     inventory_ingredients: PitchIngredient[];
     active_time_minutes: number;
     created_at: string;
+    rejected: boolean;
   }
 
   let session: Session | null = $state(null);
@@ -294,6 +295,7 @@
           inventory_ingredients: data.data.inventory_ingredients,
           active_time_minutes: data.data.active_time_minutes,
           created_at: new Date().toISOString(),
+          rejected: false,
         };
         pitches = [...pitches, newPitch];
         generationProgress = `Generated "${newPitch.name}" (${data.pitch_index} of ${data.total_for_criterion})`;
@@ -368,6 +370,28 @@
       fleshOutProgress = "";
     } finally {
       fleshingOut = false;
+    }
+  }
+
+  async function rejectPitch(pitchId: string) {
+    const id = $page.params.id;
+
+    // Optimistic update: remove pitch from UI immediately
+    pitches = pitches.filter((p) => p.id !== pitchId);
+
+    try {
+      const response = await fetch(`/api/sessions/${id}/pitches/${pitchId}/reject`, {
+        method: "PATCH",
+      });
+
+      if (!response.ok) {
+        // Revert on failure: reload pitches
+        await loadPitches();
+        throw new Error(`Reject failed: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Failed to reject pitch:", err);
+      // Pitches already reloaded in error case
     }
   }
 
@@ -639,9 +663,16 @@
 
                         <!-- Then show remaining pitches -->
                         {#each criterionPitches as pitch}
-                          <button
-                            type="button"
+                          <div
+                            role="button"
+                            tabindex="0"
                             onclick={() => togglePitchSelection(pitch.id)}
+                            onkeydown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                togglePitchSelection(pitch.id);
+                              }
+                            }}
                             class="card p-4 space-y-2 text-left w-full transition-all cursor-pointer
                       {isPitchSelected(pitch.id)
                               ? 'preset-outlined-primary-500 ring-2 ring-primary-500 bg-primary-500/10'
@@ -673,9 +704,34 @@
                                 </span>
                                 <h4 class="font-semibold text-lg">{pitch.name}</h4>
                               </div>
-                              <span class="text-sm text-surface-500">
-                                {pitch.active_time_minutes} min
-                              </span>
+                              <div class="flex items-center gap-2">
+                                <span class="text-sm text-surface-500">
+                                  {pitch.active_time_minutes} min
+                                </span>
+                                <button
+                                  type="button"
+                                  onclick={(e) => {
+                                    e.stopPropagation();
+                                    rejectPitch(pitch.id);
+                                  }}
+                                  class="text-surface-400 hover:text-error-500 transition-colors p-1"
+                                  title="Dismiss this pitch"
+                                >
+                                  <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M6 18L18 6M6 6l12 12"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
                             <p class="text-surface-600-400 italic">{pitch.blurb}</p>
                             <p class="text-sm text-surface-600-400">
@@ -689,7 +745,7 @@
                                   .join(", ")}
                               </div>
                             {/if}
-                          </button>
+                          </div>
                         {/each}
                       </div>
                     {/if}

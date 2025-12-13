@@ -209,6 +209,7 @@ class PitchResponse(BaseModel):
     inventory_ingredients: list[dict]
     active_time_minutes: int
     created_at: str
+    rejected: bool
 
     @classmethod
     def from_model(cls, pitch: Pitch) -> "PitchResponse":
@@ -221,6 +222,7 @@ class PitchResponse(BaseModel):
             inventory_ingredients=pitch.inventory_ingredients,
             active_time_minutes=pitch.active_time_minutes,
             created_at=pitch.created_at.isoformat(),
+            rejected=pitch.rejected,
         )
 
 
@@ -581,6 +583,42 @@ async def flesh_out_pitches(
             errors.append(f"Failed to flesh out '{pitch.name}': {str(e)}")
 
     return FleshOutResponse(recipes=recipes_out, errors=errors)
+
+
+@router.patch("/sessions/{session_id}/pitches/{pitch_id}/reject")
+def reject_pitch(
+    session_id: UUID,
+    pitch_id: UUID,
+    db: Session = Depends(get_session),
+) -> PitchResponse:
+    """
+    Mark a pitch as rejected.
+
+    This soft-deletes the pitch by setting rejected=True.
+    Rejected pitches are filtered from UI queries.
+    """
+    # Verify session exists
+    session = db.get(PlanningSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Get pitch
+    pitch = db.get(Pitch, pitch_id)
+    if not pitch:
+        raise HTTPException(status_code=404, detail="Pitch not found")
+
+    # Verify pitch belongs to this session
+    criterion = db.get(MealCriterion, pitch.criterion_id)
+    if not criterion or criterion.session_id != session_id:
+        raise HTTPException(status_code=404, detail="Pitch not found")
+
+    # Mark as rejected
+    pitch.rejected = True
+    db.add(pitch)
+    db.commit()
+    db.refresh(pitch)
+
+    return PitchResponse.from_model(pitch)
 
 
 # --- Recipe Lifecycle Endpoints ---
