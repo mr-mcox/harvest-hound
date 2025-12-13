@@ -10,6 +10,7 @@ from models import GroceryStore, InventoryItem, get_session
 from schemas import (
     InventoryBulkRequest,
     InventoryItemResponse,
+    InventoryItemUpdate,
     InventoryParseRequest,
     InventoryParseResponse,
     ParsedIngredient,
@@ -76,8 +77,10 @@ async def bulk_save_inventory(
 
 @router.get("", response_model=list[InventoryItemResponse])
 async def list_inventory(session: Session = Depends(get_session)):
-    """List all inventory items."""
-    items = session.exec(select(InventoryItem)).all()
+    """List all inventory items (excludes soft-deleted items)."""
+    items = session.exec(
+        select(InventoryItem).where(InventoryItem.deleted_at.is_(None))
+    ).all()
     return [
         InventoryItemResponse(
             id=item.id,
@@ -90,3 +93,64 @@ async def list_inventory(session: Session = Depends(get_session)):
         )
         for item in items
     ]
+
+
+@router.delete("/{item_id}")
+async def delete_inventory_item(item_id: int, session: Session = Depends(get_session)):
+    """Soft delete an inventory item by setting deleted_at timestamp."""
+    from datetime import UTC, datetime
+
+    from fastapi import HTTPException
+
+    # Find the item
+    item = session.get(InventoryItem, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+
+    # Soft delete by setting deleted_at
+    item.deleted_at = datetime.now(UTC)
+    session.add(item)
+    session.commit()
+
+    return {"deleted": True, "id": item_id}
+
+
+@router.patch("/{item_id}", response_model=InventoryItemResponse)
+async def update_inventory_item(
+    item_id: int,
+    update: InventoryItemUpdate,
+    session: Session = Depends(get_session),
+):
+    """Update inventory item (partial update for quantity and/or priority)."""
+    from fastapi import HTTPException
+
+    # Find the item
+    item = session.get(InventoryItem, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+
+    # Validate quantity > 0 if provided
+    if update.quantity is not None:
+        if update.quantity <= 0:
+            raise HTTPException(
+                status_code=400, detail="Quantity must be greater than 0"
+            )
+        item.quantity = update.quantity
+
+    # Update priority if provided
+    if update.priority is not None:
+        item.priority = update.priority
+
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+
+    return InventoryItemResponse(
+        id=item.id,
+        ingredient_name=item.ingredient_name,
+        quantity=item.quantity,
+        unit=item.unit,
+        priority=item.priority,
+        portion_size=item.portion_size,
+        added_at=item.added_at,
+    )

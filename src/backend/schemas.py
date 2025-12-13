@@ -89,6 +89,13 @@ class InventoryItemResponse(BaseModel):
     added_at: datetime
 
 
+class InventoryItemUpdate(BaseModel):
+    """Request schema for updating inventory item (partial updates)"""
+
+    quantity: float | None = None
+    priority: Priority | None = None
+
+
 # --- Flesh-Out Schemas ---
 
 
