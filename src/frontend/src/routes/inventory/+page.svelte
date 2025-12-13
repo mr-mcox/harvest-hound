@@ -23,7 +23,9 @@
   };
 
   let sortedItems = $derived(
-    [...items].sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority])
+    [...items]
+      .filter((item) => item.quantity > 0)
+      .sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority])
   );
 
   async function fetchInventory() {
@@ -87,26 +89,43 @@
       </p>
     </div>
   {:else}
-    <div class="card preset-outlined-surface-500">
-      <ul class="divide-y divide-surface-500/20">
-        {#each sortedItems as item}
-          <li class="flex items-center justify-between p-4">
-            <div class="flex-1">
-              <span class="font-medium">{item.ingredient_name}</span>
-              <span class="text-surface-600-400 ml-2">
-                {item.quantity}
-                {item.unit}
+    <div class="card preset-outlined-surface-500 overflow-x-auto">
+      <table class="table-auto w-full">
+        <thead>
+          <tr class="border-b border-surface-500/20">
+            <th class="text-left p-4 font-semibold">Ingredient</th>
+            <th class="text-left p-4 font-semibold">Quantity</th>
+            <th class="text-left p-4 font-semibold">Unit</th>
+            <th class="text-left p-4 font-semibold">Priority</th>
+            <th class="text-left p-4 font-semibold">Portion Size</th>
+            <th class="text-left p-4 font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each sortedItems as item}
+            <tr class="border-b border-surface-500/20 last:border-b-0">
+              <td class="p-4 font-medium">{item.ingredient_name}</td>
+              <td class="p-4">{item.quantity}</td>
+              <td class="p-4 text-surface-600-400">{item.unit}</td>
+              <td class="p-4">
+                <span class={`text-sm ${getPriorityColor(item.priority)}`}>
+                  {item.priority}
+                </span>
+              </td>
+              <td class="p-4 text-surface-600-400">
                 {#if item.portion_size}
-                  ({item.portion_size} portions)
+                  {item.portion_size} portions
+                {:else}
+                  —
                 {/if}
-              </span>
-            </div>
-            <span class={`text-sm ${getPriorityColor(item.priority)}`}>
-              {item.priority}
-            </span>
-          </li>
-        {/each}
-      </ul>
+              </td>
+              <td class="p-4">
+                <!-- Actions placeholder -->
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
     </div>
   {/if}
 </main>

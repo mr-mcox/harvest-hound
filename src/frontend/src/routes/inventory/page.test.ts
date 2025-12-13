@@ -112,12 +112,12 @@ describe("Inventory List Page", () => {
       expect(screen.getByText("Spinach")).toBeInTheDocument();
     });
 
-    // Get all list items and verify order
-    const items = screen.getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("Spinach"); // Urgent first
-    expect(items[1]).toHaveTextContent("Tomatoes"); // High second
-    expect(items[2]).toHaveTextContent("Onions"); // Medium third
-    expect(items[3]).toHaveTextContent("Carrots"); // Low last
+    // Get all table rows (excluding header) and verify order
+    const rows = screen.getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Spinach"); // Urgent first (index 1 skips header)
+    expect(rows[2]).toHaveTextContent("Tomatoes"); // High second
+    expect(rows[3]).toHaveTextContent("Onions"); // Medium third
+    expect(rows[4]).toHaveTextContent("Carrots"); // Low last
   });
 
   it("displays quantity, unit, and priority for each item", async () => {
@@ -200,5 +200,55 @@ describe("Inventory List Page", () => {
     await waitFor(() => {
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
     });
+  });
+
+  it("hides items with quantity = 0 from display", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+          {
+            id: 2,
+            ingredient_name: "Consumed Item",
+            quantity: 0,
+            unit: "lb",
+            priority: "Medium",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+          {
+            id: 3,
+            ingredient_name: "Kale",
+            quantity: 1,
+            unit: "bunch",
+            priority: "Urgent",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+        ]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Items with quantity > 0 should be visible
+    expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    expect(screen.getByText("Kale")).toBeInTheDocument();
+
+    // Item with quantity = 0 should NOT be visible
+    expect(screen.queryByText("Consumed Item")).not.toBeInTheDocument();
   });
 });
