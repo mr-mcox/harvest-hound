@@ -37,9 +37,10 @@ Pitch regeneration has three interconnected bugs causing unexpected behavior:
 - System should only generate pitches for criteria with unfilled slots
 - Criteria with all slots filled should be skipped
 
-**Story 2: Accurate pitch distribution**
-- If delta = 2 pitches needed, system should generate exactly 2 total (not 4+)
-- Distribution math should sum correctly across criteria
+**Story 2: Per-criterion pitch generation**
+- Each criterion is independent (e.g., "3 quick meals" vs "2 weekend meals")
+- Generate pitches based on each criterion's own unfilled slots
+- No global distribution needed - criteria don't compete for a shared budget
 
 **Story 3: Track pitch lifecycle**
 - Link pitches to recipes when fleshed out (via recipe_id)
@@ -53,7 +54,7 @@ Pitch regeneration has three interconnected bugs causing unexpected behavior:
 ### Key Acceptance Criteria
 
 - [ ] Backend only generates pitches for criteria with unfilled slots
-- [ ] Pitch distribution sums to requested delta (not over-generates)
+- [ ] Each criterion generates pitches independently (no global distribution)
 - [ ] Pitches linked to recipes when fleshed out (recipe_id set)
 - [ ] Pitches can be rejected (rejected = true)
 - [ ] UI filters pitches: WHERE recipe_id IS NULL AND rejected = FALSE
@@ -113,7 +114,7 @@ From MVP-CHARTER.md:
 
 ---
 
-### Phase 2: Fix Backend Generation Logic
+### Phase 2: Fix Backend Generation Logic ✓
 
 **Purpose**: Fix critical bug where system generates pitches for filled criteria and over-generates total count. This is the highest-value fix.
 
@@ -129,9 +130,9 @@ From MVP-CHARTER.md:
 
 **Key Considerations**:
 - Current logic: `num_pitches = max(1, round(criterion_share))` forces ALL criteria to get ≥1 pitch
-- Need to filter criteria BEFORE distribution loop
-- Need to ensure sum of distributed pitches equals delta
-- Distribution should be proportional to unfilled slots per criterion
+- **Design insight**: Criteria are independent - no global distribution needed
+- For each criterion: calculate unfilled_slots, skip if ≤0, generate based on criterion's own needs
+- Much simpler than proportional distribution across criteria
 
 **Dependencies**: Phase 1 (schema exists)
 

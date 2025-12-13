@@ -36,6 +36,7 @@ from schemas import (
 )
 from services import (
     calculate_available_inventory,
+    calculate_generation_plan,
     calculate_pitch_generation_delta,
     create_recipe_with_claims,
     filter_valid_pitches,
@@ -351,15 +352,15 @@ async def generate_pitches(session_id: UUID, db: Session = Depends(get_session))
                 for item in available_inventory
             ]
 
-            # Distribute delta across criteria proportionally by slots
-            total_slots = sum(c.slots for c in criteria)
-            total_criteria = len(criteria)
+            # Calculate which criteria need pitches (business logic)
+            criteria_to_generate = calculate_generation_plan(
+                db, session_id, available_inventory
+            )
+            total_criteria = len(criteria_to_generate)
 
-            for criterion_index, criterion in enumerate(criteria, start=1):
-                # Calculate this criterion's share of the delta
-                criterion_share = (criterion.slots / total_slots) * total_delta
-                num_pitches = max(1, round(criterion_share))  # At least 1 if delta > 0
-
+            for criterion_index, (criterion, num_pitches) in enumerate(
+                criteria_to_generate, start=1
+            ):
                 progress_data = json.dumps(
                     {
                         "progress": True,

@@ -316,3 +316,65 @@ def calculate_pitch_generation_delta(session: Session, session_id) -> int:
     delta = max(0, target_pitches - valid_count)
 
     return delta
+
+
+def calculate_criterion_pitch_delta(
+    session: Session, session_id, criterion: MealCriterion, available_inventory: list
+) -> int:
+    """
+    Calculate how many pitches to generate for a single criterion.
+
+    Returns 0 if criterion has all slots filled or already has enough pitches.
+    """
+    # Count PLANNED recipes for this criterion
+    planned_recipes = session.exec(
+        select(Recipe).where(
+            Recipe.session_id == session_id,
+            Recipe.criterion_id == criterion.id,
+            Recipe.state == RecipeState.PLANNED,
+        )
+    ).all()
+    unfilled_slots = max(0, criterion.slots - len(planned_recipes))
+
+    if unfilled_slots == 0:
+        return 0
+
+    # Target: 3 pitches per unfilled slot
+    target = unfilled_slots * 3
+
+    # Count existing valid pitches for this criterion
+    criterion_pitches = session.exec(
+        select(Pitch).where(Pitch.criterion_id == criterion.id)
+    ).all()
+    valid_pitches = filter_valid_pitches(list(criterion_pitches), available_inventory)
+    delta = max(0, target - len(valid_pitches))
+
+    return delta
+
+
+def calculate_generation_plan(
+    session: Session, session_id, available_inventory: list
+) -> list[tuple[MealCriterion, int]]:
+    """
+    Determine which criteria need pitches and how many.
+
+    Returns list of (criterion, num_pitches) tuples.
+    Criteria with all slots filled are excluded (delta = 0).
+
+    This is pure business logic - testable without SSE or BAML.
+    """
+    criteria = session.exec(
+        select(MealCriterion)
+        .where(MealCriterion.session_id == session_id)
+        .order_by(MealCriterion.created_at)
+    ).all()
+
+    plan = []
+    for criterion in criteria:
+        delta = calculate_criterion_pitch_delta(
+            session, session_id, criterion, available_inventory
+        )
+        if delta > 0:
+            plan.append((criterion, delta))
+
+    return plan
