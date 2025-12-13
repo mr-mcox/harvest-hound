@@ -76,8 +76,10 @@ async def bulk_save_inventory(
 
 @router.get("", response_model=list[InventoryItemResponse])
 async def list_inventory(session: Session = Depends(get_session)):
-    """List all inventory items."""
-    items = session.exec(select(InventoryItem)).all()
+    """List all inventory items (excludes soft-deleted items)."""
+    items = session.exec(
+        select(InventoryItem).where(InventoryItem.deleted_at.is_(None))
+    ).all()
     return [
         InventoryItemResponse(
             id=item.id,
@@ -90,3 +92,23 @@ async def list_inventory(session: Session = Depends(get_session)):
         )
         for item in items
     ]
+
+
+@router.delete("/{item_id}")
+async def delete_inventory_item(item_id: int, session: Session = Depends(get_session)):
+    """Soft delete an inventory item by setting deleted_at timestamp."""
+    from datetime import UTC, datetime
+
+    from fastapi import HTTPException
+
+    # Find the item
+    item = session.get(InventoryItem, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+
+    # Soft delete by setting deleted_at
+    item.deleted_at = datetime.now(UTC)
+    session.add(item)
+    session.commit()
+
+    return {"deleted": True, "id": item_id}

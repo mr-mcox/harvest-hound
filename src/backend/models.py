@@ -76,6 +76,7 @@ class InventoryItem(SQLModel, table=True):
     priority: str = Field(default="medium")  # low, medium, high, urgent
     portion_size: str | None = Field(default=None)  # e.g., "1 pound", "16 ounce"
     added_at: datetime = Field(default_factory=_utc_now)
+    deleted_at: datetime | None = Field(default=None)  # Soft delete timestamp
 
 
 class PlanningSession(SQLModel, table=True):
