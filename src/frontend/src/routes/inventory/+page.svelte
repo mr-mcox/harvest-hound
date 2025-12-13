@@ -14,6 +14,8 @@
   let items = $state<InventoryItem[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let editingItemId = $state<number | null>(null);
+  let editingQuantity = $state<number>(0);
 
   const priorityOrder: Record<Priority, number> = {
     Urgent: 4,
@@ -86,6 +88,55 @@
     }
   }
 
+  function startEditingQuantity(itemId: number, currentQuantity: number) {
+    editingItemId = itemId;
+    editingQuantity = currentQuantity;
+  }
+
+  function cancelEditing() {
+    editingItemId = null;
+    editingQuantity = 0;
+  }
+
+  async function saveQuantity(itemId: number) {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const previousQuantity = item.quantity;
+
+    // Validate quantity > 0
+    if (editingQuantity <= 0) {
+      cancelEditing();
+      return;
+    }
+
+    // Optimistic update
+    item.quantity = editingQuantity;
+    items = [...items];
+    cancelEditing();
+
+    try {
+      const response = await fetch(`/api/inventory/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: editingQuantity }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update: ${response.status}`);
+      }
+    } catch (e) {
+      // Rollback on error
+      item.quantity = previousQuantity;
+      items = [...items];
+      error = e instanceof Error ? e.message : "Failed to update quantity";
+
+      setTimeout(() => {
+        error = null;
+      }, 3000);
+    }
+  }
+
   $effect(() => {
     fetchInventory();
   });
@@ -131,7 +182,33 @@
           {#each sortedItems as item}
             <tr class="border-b border-surface-500/20 last:border-b-0">
               <td class="p-4 font-medium">{item.ingredient_name}</td>
-              <td class="p-4">{item.quantity}</td>
+              <td class="p-4">
+                {#if editingItemId === item.id}
+                  <input
+                    type="number"
+                    step="0.01"
+                    class="w-20 px-2 py-1 border border-primary-500 rounded"
+                    bind:value={editingQuantity}
+                    onblur={() => saveQuantity(item.id)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter") {
+                        saveQuantity(item.id);
+                      } else if (e.key === "Escape") {
+                        cancelEditing();
+                      }
+                    }}
+                    autofocus
+                  />
+                {:else}
+                  <button
+                    type="button"
+                    class="hover:text-primary-500 transition-colors cursor-pointer"
+                    onclick={() => startEditingQuantity(item.id, item.quantity)}
+                  >
+                    {item.quantity}
+                  </button>
+                {/if}
+              </td>
               <td class="p-4 text-surface-600-400">{item.unit}</td>
               <td class="p-4">
                 <span class={`text-sm ${getPriorityColor(item.priority)}`}>

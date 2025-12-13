@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/svelte";
+import { render, screen, waitFor, fireEvent } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import InventoryPage from "./+page.svelte";
 
@@ -351,5 +351,79 @@ describe("Inventory List Page", () => {
 
     // Error message should be shown
     expect(screen.getByText(/failed to delete/i)).toBeInTheDocument();
+  });
+
+  it("shows input when quantity is clicked for editing", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+        ]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Click on quantity to edit
+    const quantityButton = screen.getByRole("button", { name: "3" });
+    quantityButton.click();
+
+    // Input should appear with current quantity
+    const input = await waitFor(() => screen.getByRole("spinbutton"));
+    expect(input).toHaveValue(3);
+  });
+
+  it("rejects quantity <= 0 and cancels editing", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+        ]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Click on quantity to edit
+    const quantityButton = screen.getByRole("button", { name: "3" });
+    quantityButton.click();
+
+    const input = await waitFor(() => screen.getByRole("spinbutton"));
+    await fireEvent.input(input, { target: { value: "0" } });
+    await fireEvent.blur(input);
+
+    // Quantity should remain 3 (rejected)
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "3" })).toBeInTheDocument();
+    });
+
+    // PATCH should not have been called
+    expect(mockFetch).toHaveBeenCalledTimes(1); // Only GET
   });
 });
