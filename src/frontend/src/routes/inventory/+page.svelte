@@ -229,6 +229,7 @@
             <th class="text-left p-4 font-semibold">Available</th>
             <th class="text-left p-4 font-semibold">Unit</th>
             <th class="text-left p-4 font-semibold">Priority</th>
+            <th class="text-left p-4 font-semibold">Claimed By</th>
             <th class="text-left p-4 font-semibold">Portion Size</th>
             <th class="text-left p-4 font-semibold">Actions</th>
           </tr>
@@ -294,6 +295,29 @@
                   >
                     {item.priority}
                   </button>
+                {/if}
+              </td>
+              <td class="p-4 text-surface-600-400">
+                {#if item.claims.length === 0}
+                  <span class="text-surface-500">—</span>
+                {:else}
+                  <div class="space-y-1">
+                    {#each item.claims as claim}
+                      <div>
+                        <a
+                          href="/recipes/{claim.recipe_id}"
+                          class="text-primary-500 hover:text-primary-600 transition-colors"
+                          aria-label="View recipe {claim.recipe_name}"
+                        >
+                          {claim.recipe_name}
+                        </a>
+                        <span class="text-surface-500 text-sm">
+                          ({claim.quantity}
+                          {claim.unit})
+                        </span>
+                      </div>
+                    {/each}
+                  </div>
                 {/if}
               </td>
               <td class="p-4 text-surface-600-400">

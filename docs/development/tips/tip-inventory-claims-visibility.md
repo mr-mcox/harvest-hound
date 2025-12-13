@@ -96,7 +96,7 @@ Users need to see which inventory ingredients are claimed by planned recipes and
 
 **Complexity**: S
 
-### Phase 3: Claims Detail Column
+### Phase 3: Claims Detail Column ✓
 
 **Purpose**: Add "Claimed By" column showing which recipes are claiming each ingredient, with clickable links to recipe detail page. Enables user workflow of reviewing/abandoning recipes when plans change.
 
