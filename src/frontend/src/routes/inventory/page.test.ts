@@ -251,4 +251,105 @@ describe("Inventory List Page", () => {
     // Item with quantity = 0 should NOT be visible
     expect(screen.queryByText("Consumed Item")).not.toBeInTheDocument();
   });
+
+  it("deletes item when delete button is clicked (optimistic update)", async () => {
+    const mockFetch = vi.fn();
+    // First call: GET inventory
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+          {
+            id: 2,
+            ingredient_name: "Kale",
+            quantity: 1,
+            unit: "bunch",
+            priority: "Urgent",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+        ]),
+    });
+    // Second call: DELETE item
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ deleted: true, id: 1 }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Kale")).toBeInTheDocument();
+
+    // Click delete button for Tomatoes
+    const deleteButton = screen.getByLabelText("Delete Tomatoes");
+    deleteButton.click();
+
+    // Item should be removed immediately (optimistic update)
+    await waitFor(() => {
+      expect(screen.queryByText("Tomatoes")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Kale")).toBeInTheDocument();
+
+    // Verify DELETE API was called
+    expect(mockFetch).toHaveBeenCalledWith("/api/inventory/1", {
+      method: "DELETE",
+    });
+  });
+
+  it("restores item when delete fails", async () => {
+    const mockFetch = vi.fn();
+    // First call: GET inventory
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+        ]),
+    });
+    // Second call: DELETE fails
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Click delete button
+    const deleteButton = screen.getByLabelText("Delete Tomatoes");
+    deleteButton.click();
+
+    // Item should be restored after failed delete
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Error message should be shown
+    expect(screen.getByText(/failed to delete/i)).toBeInTheDocument();
+  });
 });

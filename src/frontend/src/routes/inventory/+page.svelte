@@ -60,6 +60,32 @@
     }
   }
 
+  async function deleteItem(itemId: number) {
+    const itemToDelete = items.find((item) => item.id === itemId);
+    if (!itemToDelete) return;
+
+    // Optimistic update: remove from items immediately
+    items = items.filter((item) => item.id !== itemId);
+
+    try {
+      const response = await fetch(`/api/inventory/${itemId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete: ${response.status}`);
+      }
+    } catch (e) {
+      // Rollback: restore the item on error
+      items = [...items, itemToDelete];
+      error = e instanceof Error ? e.message : "Failed to delete item";
+
+      setTimeout(() => {
+        error = null;
+      }, 3000);
+    }
+  }
+
   $effect(() => {
     fetchInventory();
   });
@@ -120,7 +146,27 @@
                 {/if}
               </td>
               <td class="p-4">
-                <!-- Actions placeholder -->
+                <button
+                  type="button"
+                  class="text-error-500 hover:text-error-600 transition-colors"
+                  aria-label="Delete {item.ingredient_name}"
+                  title="Delete item"
+                  onclick={() => deleteItem(item.id)}
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
               </td>
             </tr>
           {/each}
