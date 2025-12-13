@@ -70,7 +70,7 @@ Users need to see which inventory ingredients are claimed by planned recipes and
 
 **Complexity**: S
 
-### Phase 2: Frontend Available Column
+### Phase 2: Frontend Available Column ✓
 
 **Purpose**: Add "Available" column to inventory table showing physical qty - reserved claims. Sequenced after Phase 1 because it requires aggregated data from backend.
 

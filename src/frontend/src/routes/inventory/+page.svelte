@@ -1,14 +1,23 @@
 <script lang="ts">
   type Priority = "Low" | "Medium" | "High" | "Urgent";
 
+  interface RecipeClaimSummary {
+    recipe_id: string;
+    recipe_name: string;
+    quantity: number;
+    unit: string;
+  }
+
   interface InventoryItem {
     id: number;
     ingredient_name: string;
     quantity: number;
+    available: number;
     unit: string;
     priority: Priority;
     portion_size: string | null;
     added_at: string;
+    claims: RecipeClaimSummary[];
   }
 
   let items = $state<InventoryItem[]>([]);
@@ -37,7 +46,7 @@
     error = null;
 
     try {
-      const response = await fetch("/api/inventory");
+      const response = await fetch("/api/inventory/with-claims");
 
       if (!response.ok) {
         throw new Error(`Failed to load: ${response.status}`);
@@ -217,6 +226,7 @@
           <tr class="border-b border-surface-500/20">
             <th class="text-left p-4 font-semibold">Ingredient</th>
             <th class="text-left p-4 font-semibold">Quantity</th>
+            <th class="text-left p-4 font-semibold">Available</th>
             <th class="text-left p-4 font-semibold">Unit</th>
             <th class="text-left p-4 font-semibold">Priority</th>
             <th class="text-left p-4 font-semibold">Portion Size</th>
@@ -252,6 +262,13 @@
                   >
                     {item.quantity}
                   </button>
+                {/if}
+              </td>
+              <td class="p-4 text-surface-600-400">
+                {#if item.available === 0}
+                  <span class="text-surface-500">Fully claimed</span>
+                {:else}
+                  {item.available}
                 {/if}
               </td>
               <td class="p-4 text-surface-600-400">{item.unit}</td>
