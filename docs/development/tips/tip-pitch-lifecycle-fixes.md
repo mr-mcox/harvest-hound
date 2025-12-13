@@ -1,4 +1,4 @@
----
+docs/development/tips/tip-pitch-lifecycle-fixes.md---
 date: 2025-12-13
 feature: pitch-lifecycle-fixes
 status: draft

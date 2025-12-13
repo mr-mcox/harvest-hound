@@ -125,6 +125,10 @@ class Pitch(SQLModel, table=True):
     )  # List of {name, quantity, unit} dicts
     active_time_minutes: int = Field()
     created_at: datetime = Field(default_factory=_utc_now)
+    recipe_id: UUID | None = Field(
+        default=None, foreign_key="recipe.id", nullable=True
+    )  # Set when pitch is fleshed out
+    rejected: bool = Field(default=False)  # True when user dismisses pitch
 
 
 class RecipeIngredient(BaseModel):
