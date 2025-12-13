@@ -529,6 +529,14 @@ async def flesh_out_pitches(
             # Create recipe with atomic claim creation
             recipe, claims = create_recipe_with_claims(db, recipe_data)
 
+            # Link pitch to recipe (update pitch.recipe_id)
+            pitch_record = db.get(Pitch, pitch.pitch_id)
+            if pitch_record:
+                pitch_record.recipe_id = recipe.id
+                db.add(pitch_record)
+                db.commit()
+                db.refresh(pitch_record)
+
             # Build response
             recipes_out.append(
                 FleshedOutRecipe(

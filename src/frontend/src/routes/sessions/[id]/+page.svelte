@@ -329,6 +329,7 @@
 
     const selectedPitches = getSelectedPitches();
     const pitchesToFleshOut = selectedPitches.map((p) => ({
+      pitch_id: p.id,
       name: p.name,
       blurb: p.blurb,
       inventory_ingredients: p.inventory_ingredients,
