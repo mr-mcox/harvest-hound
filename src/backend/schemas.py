@@ -125,6 +125,7 @@ class InventoryWithClaimsResponse(BaseModel):
 class PitchToFleshOut(BaseModel):
     """A pitch selected for flesh-out"""
 
+    pitch_id: UUID  # ID of the pitch being fleshed out
     name: str
     blurb: str
     inventory_ingredients: list[dict]  # [{name, quantity, unit}]

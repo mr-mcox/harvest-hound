@@ -13,7 +13,7 @@ from models import (
     Recipe,
     RecipeState,
 )
-from services import calculate_pitch_generation_delta
+from services import calculate_generation_plan, calculate_pitch_generation_delta
 
 
 def _create_session(db: Session) -> PlanningSession:
@@ -336,3 +336,123 @@ class TestCalculatePitchGenerationDelta:
         # Valid pitches: 4
         # Delta: 9 - 4 = 5
         assert delta == 5
+
+
+class TestCalculateGenerationPlan:
+    """
+    Tests for calculate_generation_plan() - the core business logic.
+
+    These tests verify the bug fix: criteria with all slots filled should be
+    excluded from the generation plan.
+    """
+
+    def test_fully_filled_criterion_excluded_from_plan(self, session: Session):
+        """
+        BUG FIX TEST: Criterion with all slots filled should be excluded.
+
+        Old buggy code: Would include this criterion (forced min 1 pitch)
+        New fixed code: Excludes it (delta = 0)
+        """
+        planning_session = _create_session(session)
+        store, _ = _create_store_with_inventory(session, "carrots", 10.0, "pounds")
+
+        # Create criterion with 2 slots, fill both slots
+        criterion = _create_criterion(session, planning_session, "Quick meals", slots=2)
+        _create_recipe(session, planning_session, criterion, "Recipe 1")
+        _create_recipe(session, planning_session, criterion, "Recipe 2")
+
+        # Get available inventory
+        from services import calculate_available_inventory
+
+        available_inventory = calculate_available_inventory(session)
+
+        # Calculate plan
+        plan = calculate_generation_plan(
+            session, planning_session.id, available_inventory
+        )
+
+        # Plan should be EMPTY (criterion is fully filled)
+        assert len(plan) == 0
+
+    def test_unfilled_criterion_included_in_plan(self, session: Session):
+        """Criterion with unfilled slots should be included in plan"""
+        planning_session = _create_session(session)
+        store, _ = _create_store_with_inventory(session, "carrots", 10.0, "pounds")
+
+        # Create criterion with 2 slots, fill 0 slots
+        criterion = _create_criterion(session, planning_session, "Quick meals", slots=2)
+
+        from services import calculate_available_inventory
+
+        available_inventory = calculate_available_inventory(session)
+        plan = calculate_generation_plan(
+            session, planning_session.id, available_inventory
+        )
+
+        # Plan should include this criterion
+        assert len(plan) == 1
+        assert plan[0][0].id == criterion.id
+        assert plan[0][1] == 6  # 2 unfilled slots * 3 pitches per slot
+
+    def test_mixed_criteria_only_unfilled_in_plan(self, session: Session):
+        """
+        BUG FIX TEST: Multiple criteria, only unfilled ones in plan.
+
+        Old buggy code: Would include both (all criteria get min 1 pitch)
+        New fixed code: Only includes criterion2 (criterion1 is filled)
+        """
+        planning_session = _create_session(session)
+        store, _ = _create_store_with_inventory(session, "carrots", 10.0, "pounds")
+
+        # Criterion 1: 2 slots, 2 recipes (FULLY FILLED)
+        criterion1 = _create_criterion(
+            session, planning_session, "Quick meals", slots=2
+        )
+        _create_recipe(session, planning_session, criterion1, "Recipe 1")
+        _create_recipe(session, planning_session, criterion1, "Recipe 2")
+
+        # Criterion 2: 3 slots, 1 recipe (HAS UNFILLED SLOTS)
+        criterion2 = _create_criterion(
+            session, planning_session, "Weekend cooking", slots=3
+        )
+        _create_recipe(session, planning_session, criterion2, "Recipe 3")
+
+        from services import calculate_available_inventory
+
+        available_inventory = calculate_available_inventory(session)
+        plan = calculate_generation_plan(
+            session, planning_session.id, available_inventory
+        )
+
+        # Plan should ONLY include criterion2 (criterion1 is filled)
+        assert len(plan) == 1
+        assert plan[0][0].id == criterion2.id
+        # criterion2: 2 unfilled slots * 3 pitches = 6
+        assert plan[0][1] == 6
+
+    def test_plan_respects_existing_pitches(self, session: Session):
+        """Plan should account for existing valid pitches when calculating delta"""
+        planning_session = _create_session(session)
+        store, _ = _create_store_with_inventory(session, "carrots", 10.0, "pounds")
+
+        criterion = _create_criterion(session, planning_session, "Quick meals", slots=2)
+
+        # Create 3 existing valid pitches (out of target 6)
+        for i in range(3):
+            _create_pitch(
+                session,
+                criterion,
+                f"Existing Pitch {i}",
+                [{"name": "carrots", "quantity": 1.0, "unit": "pounds"}],
+            )
+
+        from services import calculate_available_inventory
+
+        available_inventory = calculate_available_inventory(session)
+        plan = calculate_generation_plan(
+            session, planning_session.id, available_inventory
+        )
+
+        # Should generate 3 more pitches (6 target - 3 existing = 3 delta)
+        assert len(plan) == 1
+        assert plan[0][1] == 3
