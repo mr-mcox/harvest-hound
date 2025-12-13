@@ -60,6 +60,24 @@ def _create_item_via_bulk(client, item=None):
     client.post("/api/inventory/bulk", json={"items": [item]})
 
 
+def _create_inventory_item(session, item_dict=None, **overrides):
+    """Create inventory item directly in DB and return it. Defaults to CARROT."""
+    from models import GroceryStore
+
+    if item_dict is None:
+        item_dict = CARROT
+
+    # Merge item_dict with overrides
+    data = {**item_dict, **overrides}
+
+    store = session.exec(select(GroceryStore)).first()
+    item = InventoryItem(store_id=store.id, **data)
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return item
+
+
 class TestInventoryParseAPI:
     """Tests for POST /api/inventory/parse endpoint"""
 
@@ -374,3 +392,301 @@ class TestInventoryUpdateAPI:
         )
 
         assert response.status_code == 404
+
+
+class TestInventoryWithClaimsAPI:
+    """Tests for GET /api/inventory/with-claims endpoint"""
+
+    def test_unclaimed_item_shows_full_availability(self, client, session):
+        """Inventory item with no claims shows available = quantity"""
+        _create_item_via_bulk(client, CARROT)
+
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        item = data[0]
+        assert item["ingredient_name"] == CARROT["ingredient_name"]
+        assert item["quantity"] == CARROT["quantity"]
+        assert item["available"] == CARROT["quantity"]  # No claims, fully available
+        assert item["claims"] == []
+
+    def test_partially_claimed_item_shows_reduced_availability(self, client, session):
+        """Inventory item with claims shows available = quantity - reserved"""
+        from models import IngredientClaim, Recipe
+
+        # Create inventory item with 5 pounds
+        inventory_item = _create_inventory_item(session, quantity=5.0)
+        claimed_qty = 2.0
+
+        # Create recipe claiming 2 pounds
+        recipe = Recipe(
+            name="Carrot Soup",
+            description="Delicious soup",
+            ingredients=[{"name": "carrot", "quantity": "2", "unit": "pound"}],
+            instructions=["Cook"],
+            active_time_minutes=10,
+            total_time_minutes=30,
+            servings=2,
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+
+        # Create claim
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=claimed_qty,
+            unit="pound",
+        )
+        session.add(claim)
+        session.commit()
+
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        result = data[0]
+        assert result["ingredient_name"] == inventory_item.ingredient_name
+        assert result["quantity"] == inventory_item.quantity
+        assert result["available"] == inventory_item.quantity - claimed_qty
+        assert len(result["claims"]) == 1
+        assert result["claims"][0]["recipe_name"] == recipe.name
+        assert result["claims"][0]["quantity"] == claimed_qty
+        assert result["claims"][0]["unit"] == inventory_item.unit
+
+    def test_fully_claimed_item_shows_zero_availability(self, client, session):
+        """Inventory item fully claimed shows available = 0"""
+        from models import IngredientClaim, Recipe
+
+        # Create inventory item (CARROT defaults to 2.0 pounds)
+        inventory_item = _create_inventory_item(session)
+        claimed_qty = inventory_item.quantity  # Claim all of it
+
+        # Create recipe claiming all quantity
+        recipe = Recipe(
+            name="Carrot Cake",
+            description="Sweet cake",
+            ingredients=[{"name": "carrot", "quantity": "2", "unit": "pound"}],
+            instructions=["Bake"],
+            active_time_minutes=20,
+            total_time_minutes=60,
+            servings=8,
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+
+        # Create claim for full quantity
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=claimed_qty,
+            unit="pound",
+        )
+        session.add(claim)
+        session.commit()
+
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        result = data[0]
+        assert result["quantity"] == inventory_item.quantity
+        assert result["available"] == 0.0  # Fully claimed
+        assert len(result["claims"]) == 1
+
+    def test_multiple_recipes_claiming_same_ingredient(self, client, session):
+        """Multiple recipes claiming same ingredient aggregates correctly"""
+        from models import IngredientClaim, Recipe
+
+        # Create inventory item with 10 pounds
+        inventory_item = _create_inventory_item(session, quantity=10.0)
+        claim1_qty = 3.0
+        claim2_qty = 4.0
+
+        # Create first recipe claiming 3 pounds
+        recipe1 = Recipe(
+            name="Carrot Soup",
+            description="Soup",
+            ingredients=[{"name": "carrot", "quantity": "3", "unit": "pound"}],
+            instructions=["Cook"],
+            active_time_minutes=10,
+            total_time_minutes=30,
+            servings=2,
+        )
+        session.add(recipe1)
+        session.commit()
+        session.refresh(recipe1)
+
+        claim1 = IngredientClaim(
+            recipe_id=recipe1.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=claim1_qty,
+            unit="pound",
+        )
+        session.add(claim1)
+
+        # Create second recipe claiming 4 pounds
+        recipe2 = Recipe(
+            name="Carrot Cake",
+            description="Cake",
+            ingredients=[{"name": "carrot", "quantity": "4", "unit": "pound"}],
+            instructions=["Bake"],
+            active_time_minutes=20,
+            total_time_minutes=60,
+            servings=8,
+        )
+        session.add(recipe2)
+        session.commit()
+        session.refresh(recipe2)
+
+        claim2 = IngredientClaim(
+            recipe_id=recipe2.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=claim2_qty,
+            unit="pound",
+        )
+        session.add(claim2)
+        session.commit()
+
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        result = data[0]
+        total_claimed = claim1_qty + claim2_qty
+        assert result["quantity"] == inventory_item.quantity
+        assert result["available"] == inventory_item.quantity - total_claimed
+        assert len(result["claims"]) == 2
+        # Verify both recipes are in claims
+        recipe_names = {claim["recipe_name"] for claim in result["claims"]}
+        assert recipe_names == {recipe1.name, recipe2.name}
+
+    def test_all_returned_claims_are_reserved(self, client, session):
+        """Endpoint only returns RESERVED claims (others are deleted)"""
+        from models import ClaimState, IngredientClaim, Recipe
+
+        # Create inventory item with 10 pounds
+        inventory_item = _create_inventory_item(session, quantity=10.0)
+        claimed_qty = 2.0
+
+        # Create recipe with RESERVED claim
+        recipe = Recipe(
+            name="Carrot Soup",
+            description="Soup",
+            ingredients=[{"name": "carrot", "quantity": "2", "unit": "pound"}],
+            instructions=["Cook"],
+            active_time_minutes=10,
+            total_time_minutes=30,
+            servings=2,
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=claimed_qty,
+            unit="pound",
+            state=ClaimState.RESERVED,
+        )
+        session.add(claim)
+        session.commit()
+
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        result = data[0]
+        assert result["available"] == inventory_item.quantity - claimed_qty
+        assert len(result["claims"]) == 1
+        assert result["claims"][0]["recipe_name"] == recipe.name
+
+    def test_empty_inventory_returns_empty_list(self, client, session):
+        """Endpoint returns empty list when no inventory exists"""
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data == []
+
+    def test_excludes_soft_deleted_items(self, client, session):
+        """Endpoint excludes soft-deleted inventory items"""
+        _create_item_via_bulk(client, CARROT)
+        _create_item_via_bulk(client, SPINACH)
+
+        # Get item IDs
+        items = session.exec(select(InventoryItem)).all()
+        carrot_id = items[0].id
+
+        # Soft delete the carrot
+        client.delete(f"/api/inventory/{carrot_id}")
+
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        result = data[0]
+        assert result["ingredient_name"] == SPINACH["ingredient_name"]
+
+    def test_over_claimed_item_shows_zero_not_negative(self, client, session):
+        """Inventory item claimed beyond physical quantity shows 0, not negative"""
+        from models import IngredientClaim, Recipe
+
+        # Create inventory item (CARROT defaults to 2.0 pounds)
+        inventory_item = _create_inventory_item(session)
+        claimed_qty = 5.0  # More than available
+
+        # Create recipe claiming more than available
+        recipe = Recipe(
+            name="Carrot Soup",
+            description="Soup",
+            ingredients=[{"name": "carrot", "quantity": "5", "unit": "pound"}],
+            instructions=["Cook"],
+            active_time_minutes=10,
+            total_time_minutes=30,
+            servings=4,
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=claimed_qty,
+            unit="pound",
+        )
+        session.add(claim)
+        session.commit()
+
+        response = client.get("/api/inventory/with-claims")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        result = data[0]
+        assert result["quantity"] == inventory_item.quantity
+        assert result["available"] == 0.0  # Should be 0, not negative

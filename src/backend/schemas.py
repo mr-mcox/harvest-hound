@@ -96,6 +96,29 @@ class InventoryItemUpdate(BaseModel):
     priority: Priority | None = None
 
 
+class RecipeClaimSummary(BaseModel):
+    """Summary of a recipe claiming an inventory item"""
+
+    recipe_id: str  # UUID as string
+    recipe_name: str
+    quantity: float
+    unit: str
+
+
+class InventoryWithClaimsResponse(BaseModel):
+    """Response schema for inventory item enriched with claims data"""
+
+    id: int
+    ingredient_name: str
+    quantity: float  # Physical quantity in inventory
+    available: float  # Physical quantity - reserved claims
+    unit: str
+    priority: Priority
+    portion_size: str | None = None
+    added_at: datetime
+    claims: list[RecipeClaimSummary]  # Recipes claiming this ingredient
+
+
 # --- Flesh-Out Schemas ---
 
 

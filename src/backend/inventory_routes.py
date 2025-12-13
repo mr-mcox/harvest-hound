@@ -6,14 +6,23 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 
 from baml_client import b
-from models import GroceryStore, InventoryItem, get_session
+from models import (
+    ClaimState,
+    GroceryStore,
+    IngredientClaim,
+    InventoryItem,
+    Recipe,
+    get_session,
+)
 from schemas import (
     InventoryBulkRequest,
     InventoryItemResponse,
     InventoryItemUpdate,
     InventoryParseRequest,
     InventoryParseResponse,
+    InventoryWithClaimsResponse,
     ParsedIngredient,
+    RecipeClaimSummary,
 )
 
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
@@ -154,3 +163,64 @@ async def update_inventory_item(
         portion_size=item.portion_size,
         added_at=item.added_at,
     )
+
+
+@router.get("/with-claims", response_model=list[InventoryWithClaimsResponse])
+async def list_inventory_with_claims(session: Session = Depends(get_session)):
+    """List inventory items with claims (available qty and claiming recipes)."""
+    # Get all non-deleted inventory items
+    items = session.exec(
+        select(InventoryItem).where(InventoryItem.deleted_at.is_(None))
+    ).all()
+
+    # Get all RESERVED claims with recipe names (using join)
+    reserved_claims = session.exec(
+        select(IngredientClaim, Recipe)
+        .join(Recipe, IngredientClaim.recipe_id == Recipe.id)
+        .where(IngredientClaim.state == ClaimState.RESERVED)
+    ).all()
+
+    # Build a mapping: inventory_item_id -> list of claims
+    claims_by_item: dict[int, list[RecipeClaimSummary]] = {}
+    reserved_by_item: dict[int, float] = {}
+
+    for claim, recipe in reserved_claims:
+        item_id = claim.inventory_item_id
+
+        # Track total reserved quantity
+        reserved_by_item[item_id] = reserved_by_item.get(item_id, 0.0) + claim.quantity
+
+        # Build claim summary
+        if item_id not in claims_by_item:
+            claims_by_item[item_id] = []
+
+        claims_by_item[item_id].append(
+            RecipeClaimSummary(
+                recipe_id=str(recipe.id),
+                recipe_name=recipe.name,
+                quantity=claim.quantity,
+                unit=claim.unit,
+            )
+        )
+
+    # Build response with available quantities
+    result = []
+    for item in items:
+        reserved = reserved_by_item.get(item.id, 0.0)
+        available = max(0.0, item.quantity - reserved)
+
+        result.append(
+            InventoryWithClaimsResponse(
+                id=item.id,
+                ingredient_name=item.ingredient_name,
+                quantity=item.quantity,
+                available=available,
+                unit=item.unit,
+                priority=item.priority,
+                portion_size=item.portion_size,
+                added_at=item.added_at,
+                claims=claims_by_item.get(item.id, []),
+            )
+        )
+
+    return result
