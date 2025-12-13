@@ -589,6 +589,13 @@
   - Nice to have, not blocking (auto-pivot works well enough)
   - (discovered: ingredient-claiming experiment, 2025-11-30)
 
+- [ ] **Quick generation for unclaimed ingredients**: One-click side dish generation
+  - When viewing unclaimed ingredients ("beets not being used this week"), offer quick action to generate side dish recipes
+  - Workflow: Filter to unclaimed → see beets → click "Generate side dishes" → pitches using unclaimed ingredients
+  - Reduces friction for "oh I should use these" moments
+  - Different from main meal planning (opportunistic vs structured)
+  - (discovered: inventory-claims-visibility feature framing, 2025-12-13)
+
 - [ ] **5 recipes per week** (vs current 3) - easy parameter tweak, not blocking
 - [ ] **Prioritize expiring ingredients** - could be solved via context field
 
