@@ -16,6 +16,8 @@
   let error = $state<string | null>(null);
   let editingItemId = $state<number | null>(null);
   let editingQuantity = $state<number>(0);
+  let editingPriorityItemId = $state<number | null>(null);
+  let editingPriority = $state<Priority>("Low");
 
   const priorityOrder: Record<Priority, number> = {
     Urgent: 4,
@@ -137,6 +139,48 @@
     }
   }
 
+  function startEditingPriority(itemId: number, currentPriority: Priority) {
+    editingPriorityItemId = itemId;
+    editingPriority = currentPriority;
+  }
+
+  function cancelPriorityEditing() {
+    editingPriorityItemId = null;
+  }
+
+  async function savePriority(itemId: number, newPriority: Priority) {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const previousPriority = item.priority;
+
+    // Optimistic update
+    item.priority = newPriority;
+    items = [...items];
+    cancelPriorityEditing();
+
+    try {
+      const response = await fetch(`/api/inventory/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update: ${response.status}`);
+      }
+    } catch (e) {
+      // Rollback on error
+      item.priority = previousPriority;
+      items = [...items];
+      error = e instanceof Error ? e.message : "Failed to update priority";
+
+      setTimeout(() => {
+        error = null;
+      }, 3000);
+    }
+  }
+
   $effect(() => {
     fetchInventory();
   });
@@ -211,9 +255,28 @@
               </td>
               <td class="p-4 text-surface-600-400">{item.unit}</td>
               <td class="p-4">
-                <span class={`text-sm ${getPriorityColor(item.priority)}`}>
-                  {item.priority}
-                </span>
+                {#if editingPriorityItemId === item.id}
+                  <select
+                    class="px-2 py-1 border border-primary-500 rounded text-sm"
+                    bind:value={editingPriority}
+                    onchange={() => savePriority(item.id, editingPriority)}
+                    onblur={cancelPriorityEditing}
+                    autofocus
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                {:else}
+                  <button
+                    type="button"
+                    class={`text-sm ${getPriorityColor(item.priority)} hover:opacity-75 transition-opacity cursor-pointer`}
+                    onclick={() => startEditingPriority(item.id, item.priority)}
+                  >
+                    {item.priority}
+                  </button>
+                {/if}
               </td>
               <td class="p-4 text-surface-600-400">
                 {#if item.portion_size}

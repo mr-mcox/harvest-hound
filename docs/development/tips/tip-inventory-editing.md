@@ -161,7 +161,7 @@ tags: [inventory, crud, ui-table]
 
 ---
 
-### Phase 6: Inline Priority Editing
+### Phase 6: Inline Priority Editing ✓
 
 **Purpose**: Allow users to bump urgency as items approach spoiling.
 

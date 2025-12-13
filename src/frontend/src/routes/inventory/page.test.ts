@@ -426,4 +426,46 @@ describe("Inventory List Page", () => {
     // PATCH should not have been called
     expect(mockFetch).toHaveBeenCalledTimes(1); // Only GET
   });
+
+  it("shows dropdown when priority is clicked for editing", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+          },
+        ]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Click on priority to edit
+    const priorityButton = screen.getByRole("button", { name: "High" });
+    priorityButton.click();
+
+    // Dropdown should appear with all priority options
+    const dropdown = await waitFor(() => screen.getByRole("combobox"));
+    expect(dropdown).toBeInTheDocument();
+    expect(dropdown).toHaveValue("High");
+
+    // Verify all options are present
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(4);
+    expect(options[0]).toHaveTextContent("Low");
+    expect(options[1]).toHaveTextContent("Medium");
+    expect(options[2]).toHaveTextContent("High");
+    expect(options[3]).toHaveTextContent("Urgent");
+  });
 });
