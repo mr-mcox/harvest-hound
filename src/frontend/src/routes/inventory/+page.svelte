@@ -105,15 +105,16 @@
     if (!item) return;
 
     const previousQuantity = item.quantity;
+    const newQuantity = editingQuantity; // Capture value before cancelEditing()
 
     // Validate quantity > 0
-    if (editingQuantity <= 0) {
+    if (newQuantity <= 0) {
       cancelEditing();
       return;
     }
 
     // Optimistic update
-    item.quantity = editingQuantity;
+    item.quantity = newQuantity;
     items = [...items];
     cancelEditing();
 
@@ -121,7 +122,7 @@
       const response = await fetch(`/api/inventory/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity: editingQuantity }),
+        body: JSON.stringify({ quantity: newQuantity }),
       });
 
       if (!response.ok) {
@@ -230,7 +231,7 @@
                 {#if editingItemId === item.id}
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     class="w-20 px-2 py-1 border border-primary-500 rounded"
                     bind:value={editingQuantity}
                     onblur={() => saveQuantity(item.id)}
