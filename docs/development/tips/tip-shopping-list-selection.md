@@ -276,7 +276,7 @@ The shopping list currently shows what to buy but doesn't support the actual sho
 
 ---
 
-### Phase 6: Frontend - Filter & Copy Features
+### Phase 6: Frontend - Filter & Copy Features ✓
 
 **Purpose**: Allow filtering to checked items and copying only what's needed. This completes the shopping workflow UX.
 

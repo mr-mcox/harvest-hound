@@ -28,6 +28,8 @@
   }: Props = $props();
 
   let selections: Map<string, boolean> = $state(new Map());
+  let filterCheckedOnly: boolean = $state(false);
+  let copySuccess: boolean = $state(false);
 
   // Initialize selections from props
   $effect(() => {
@@ -38,6 +40,56 @@
 
   function isChecked(ingredientName: string): boolean {
     return selections.get(ingredientName) ?? false;
+  }
+
+  // Compute checked count
+  let checkedCount = $derived(Array.from(selections.values()).filter(Boolean).length);
+
+  // Compute filtered lists
+  let visibleGroceryItems = $derived(
+    filterCheckedOnly
+      ? (shoppingList?.grocery_items ?? []).filter((item) =>
+          isChecked(item.ingredient_name)
+        )
+      : (shoppingList?.grocery_items ?? [])
+  );
+
+  let visiblePantryStaples = $derived(
+    filterCheckedOnly
+      ? (shoppingList?.pantry_staples ?? []).filter((item) =>
+          isChecked(item.ingredient_name)
+        )
+      : (shoppingList?.pantry_staples ?? [])
+  );
+
+  // Get all checked items for copy functionality
+  function getCheckedItems(): ShoppingListItem[] {
+    const allItems = [
+      ...(shoppingList?.grocery_items ?? []),
+      ...(shoppingList?.pantry_staples ?? []),
+    ];
+    return allItems.filter((item) => isChecked(item.ingredient_name));
+  }
+
+  async function copyCheckedItems() {
+    const checkedItems = getCheckedItems();
+    const text = checkedItems
+      .map((item) => `${item.ingredient_name} ${item.total_quantity}`)
+      .join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      copySuccess = true;
+      setTimeout(() => {
+        copySuccess = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+    }
+  }
+
+  function toggleFilter() {
+    filterCheckedOnly = !filterCheckedOnly;
   }
 
   async function toggleSelection(ingredientName: string) {
@@ -77,7 +129,33 @@
 
 {#if shoppingList && (shoppingList.grocery_items.length > 0 || shoppingList.pantry_staples.length > 0)}
   <div class="card preset-outlined-secondary-500 p-6 space-y-4">
-    <h3 class="h4">Shopping List</h3>
+    <div class="flex items-center justify-between">
+      <h3 class="h4">Shopping List</h3>
+      <div class="flex items-center gap-2">
+        {#if checkedCount > 0}
+          <button
+            type="button"
+            onclick={copyCheckedItems}
+            class="btn btn-sm preset-outlined-primary-500"
+          >
+            {#if copySuccess}
+              Copied!
+            {:else}
+              Copy Checked ({checkedCount})
+            {/if}
+          </button>
+        {/if}
+        <button
+          type="button"
+          onclick={toggleFilter}
+          class="btn btn-sm {filterCheckedOnly
+            ? 'preset-filled-primary-500'
+            : 'preset-outlined-surface-500'}"
+        >
+          {filterCheckedOnly ? "Items to Buy" : "All Items"}
+        </button>
+      </div>
+    </div>
 
     {#if loading}
       <p class="text-surface-600-400 text-sm">Loading shopping list...</p>
@@ -87,7 +165,7 @@
       </div>
     {:else}
       <!-- Grocery Items (high confidence) -->
-      {#if shoppingList.grocery_items.length > 0}
+      {#if visibleGroceryItems.length > 0}
         <div class="space-y-2">
           <h4 class="font-semibold text-surface-700-300">
             Grocery Items
@@ -96,7 +174,7 @@
             </span>
           </h4>
           <ul class="space-y-2">
-            {#each shoppingList.grocery_items as item}
+            {#each visibleGroceryItems as item}
               {@const checked = isChecked(item.ingredient_name)}
               <li
                 class="p-3 rounded bg-surface-100-900 transition-opacity {checked
@@ -140,7 +218,7 @@
       {/if}
 
       <!-- Pantry Staples (low confidence) -->
-      {#if shoppingList.pantry_staples.length > 0}
+      {#if visiblePantryStaples.length > 0}
         <div class="space-y-2 pt-4 border-t border-surface-300-700">
           <h4 class="font-semibold text-surface-700-300">
             Pantry Staples to Verify
@@ -149,7 +227,7 @@
             </span>
           </h4>
           <ul class="space-y-2">
-            {#each shoppingList.pantry_staples as item}
+            {#each visiblePantryStaples as item}
               {@const checked = isChecked(item.ingredient_name)}
               <li
                 class="p-3 rounded bg-surface-100-900 transition-opacity {checked
@@ -190,6 +268,14 @@
             {/each}
           </ul>
         </div>
+      {/if}
+
+      <!-- Empty state when filtering -->
+      {#if filterCheckedOnly && visibleGroceryItems.length === 0 && visiblePantryStaples.length === 0}
+        <p class="text-surface-500 text-sm italic">
+          No items checked. Check items you need to buy, then use this filter to see
+          only those items.
+        </p>
       {/if}
     {/if}
   </div>

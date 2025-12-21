@@ -126,4 +126,151 @@ describe("ShoppingList", () => {
     expect(checkboxes[0].checked).toBe(true);
     expect(checkboxes[1].checked).toBe(false);
   });
+
+  describe("Filter toggle", () => {
+    it("shows filter toggle button", () => {
+      render(ShoppingList, {
+        props: {
+          shoppingList: mockShoppingList,
+          loading: false,
+          error: "",
+          sessionId: "test-session-id",
+        },
+      });
+
+      expect(screen.getByRole("button", { name: /all items/i })).toBeInTheDocument();
+    });
+
+    it("filters to show only checked items when toggled", async () => {
+      render(ShoppingList, {
+        props: {
+          shoppingList: mockShoppingList,
+          loading: false,
+          error: "",
+          sessionId: "test-session-id",
+          initialSelections: { "Chicken Breast": true },
+        },
+      });
+
+      // All items visible initially
+      expect(screen.getByText("Chicken Breast")).toBeInTheDocument();
+      expect(screen.getByText("Bell Peppers")).toBeInTheDocument();
+      expect(screen.getByText("Olive Oil")).toBeInTheDocument();
+
+      // Click filter toggle
+      const filterButton = screen.getByRole("button", { name: /all items/i });
+      await fireEvent.click(filterButton);
+
+      // Only checked item visible
+      expect(screen.getByText("Chicken Breast")).toBeInTheDocument();
+      expect(screen.queryByText("Bell Peppers")).not.toBeInTheDocument();
+      expect(screen.queryByText("Olive Oil")).not.toBeInTheDocument();
+    });
+
+    it("toggles back to show all items", async () => {
+      render(ShoppingList, {
+        props: {
+          shoppingList: mockShoppingList,
+          loading: false,
+          error: "",
+          sessionId: "test-session-id",
+          initialSelections: { "Chicken Breast": true },
+        },
+      });
+
+      // Toggle to filtered view
+      const filterButton = screen.getByRole("button", { name: /all items/i });
+      await fireEvent.click(filterButton);
+
+      // Toggle back to all items
+      const itemsToBuyButton = screen.getByRole("button", { name: /items to buy/i });
+      await fireEvent.click(itemsToBuyButton);
+
+      // All items visible again
+      expect(screen.getByText("Chicken Breast")).toBeInTheDocument();
+      expect(screen.getByText("Bell Peppers")).toBeInTheDocument();
+      expect(screen.getByText("Olive Oil")).toBeInTheDocument();
+    });
+  });
+
+  describe("Copy checked items", () => {
+    it("shows copy button only when items are checked", async () => {
+      render(ShoppingList, {
+        props: {
+          shoppingList: mockShoppingList,
+          loading: false,
+          error: "",
+          sessionId: "test-session-id",
+          initialSelections: {},
+        },
+      });
+
+      // No items checked - button should not be visible
+      expect(
+        screen.queryByRole("button", { name: /copy checked/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows copy button when items are checked", async () => {
+      render(ShoppingList, {
+        props: {
+          shoppingList: mockShoppingList,
+          loading: false,
+          error: "",
+          sessionId: "test-session-id",
+          initialSelections: { "Chicken Breast": true },
+        },
+      });
+
+      expect(screen.getByRole("button", { name: /copy checked/i })).toBeInTheDocument();
+    });
+
+    it("copies checked items to clipboard in correct format", async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, {
+        clipboard: { writeText: writeTextMock },
+      });
+
+      render(ShoppingList, {
+        props: {
+          shoppingList: mockShoppingList,
+          loading: false,
+          error: "",
+          sessionId: "test-session-id",
+          initialSelections: { "Chicken Breast": true, "Olive Oil": true },
+        },
+      });
+
+      const copyButton = screen.getByRole("button", { name: /copy checked/i });
+      await fireEvent.click(copyButton);
+
+      expect(writeTextMock).toHaveBeenCalledWith(
+        "Chicken Breast 2 lbs\nOlive Oil 2 tbsp"
+      );
+    });
+
+    it("shows success feedback after copying", async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, {
+        clipboard: { writeText: writeTextMock },
+      });
+
+      render(ShoppingList, {
+        props: {
+          shoppingList: mockShoppingList,
+          loading: false,
+          error: "",
+          sessionId: "test-session-id",
+          initialSelections: { "Chicken Breast": true },
+        },
+      });
+
+      const copyButton = screen.getByRole("button", { name: /copy checked/i });
+      await fireEvent.click(copyButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/copied/i)).toBeInTheDocument();
+      });
+    });
+  });
 });
