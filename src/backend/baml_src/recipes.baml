@@ -37,7 +37,7 @@ function GenerateRecipePitches(
   additional_context: string,
   num_pitches: int
 ) -> RecipePitch[] {
-  client Anthropic
+  client AnthropicCreative
   prompt #"
     You are a culinary AI assistant helping plan meals for a household.
 
