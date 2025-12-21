@@ -182,7 +182,7 @@ The shopping list currently shows what to buy but doesn't support the actual sho
 
 ---
 
-### Phase 3: Backend - Review Endpoint
+### Phase 3: Backend - Review Endpoint ✓
 
 **Purpose**: Capture user engagement signal by marking selections as reviewed. Stats are derived from reviewed selections at query time (Phase 4).
 

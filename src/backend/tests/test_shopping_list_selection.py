@@ -366,3 +366,75 @@ class TestShoppingListWithSelections:
 
         assert len(result.pantry_staples) == 1
         assert result.pantry_staples[0].checked is True
+
+
+class TestReviewEndpoint:
+    """Tests for POST /api/sessions/{session_id}/shopping-list/review"""
+
+    def test_review_sets_reviewed_at_on_all_selections(self, client: TestClient):
+        """POST review sets reviewed_at timestamp on all selections in session"""
+        # Create session with selections
+        response = client.post("/api/sessions", json={"name": "Test Session"})
+        session_id = response.json()["id"]
+
+        client.patch(
+            f"/api/sessions/{session_id}/shopping-list/selections",
+            json={"ingredient_name": "tomatoes", "checked": True},
+        )
+        client.patch(
+            f"/api/sessions/{session_id}/shopping-list/selections",
+            json={"ingredient_name": "onions", "checked": False},
+        )
+
+        # Mark as reviewed
+        response = client.post(f"/api/sessions/{session_id}/shopping-list/review")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "reviewed_at" in data
+        assert data["reviewed_at"] is not None
+
+    def test_review_returns_404_for_nonexistent_session(self, client: TestClient):
+        """POST review returns 404 if session doesn't exist"""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+        response = client.post(f"/api/sessions/{fake_id}/shopping-list/review")
+
+        assert response.status_code == 404
+
+    def test_review_can_be_called_multiple_times(self, client: TestClient):
+        """Re-reviewing updates the timestamp (user checks more items while shopping)"""
+        # Create session with selection
+        response = client.post("/api/sessions", json={"name": "Test Session"})
+        session_id = response.json()["id"]
+
+        client.patch(
+            f"/api/sessions/{session_id}/shopping-list/selections",
+            json={"ingredient_name": "tomatoes", "checked": True},
+        )
+
+        # First review
+        response1 = client.post(f"/api/sessions/{session_id}/shopping-list/review")
+        first_reviewed_at = response1.json()["reviewed_at"]
+
+        # Small delay to ensure timestamp differs
+        import time
+
+        time.sleep(0.01)
+
+        # Second review
+        response2 = client.post(f"/api/sessions/{session_id}/shopping-list/review")
+        second_reviewed_at = response2.json()["reviewed_at"]
+
+        assert response2.status_code == 200
+        assert second_reviewed_at >= first_reviewed_at
+
+    def test_review_with_no_selections_succeeds(self, client: TestClient):
+        """Reviewing empty shopping list succeeds (valid edge case)"""
+        response = client.post("/api/sessions", json={"name": "Test Session"})
+        session_id = response.json()["id"]
+
+        response = client.post(f"/api/sessions/{session_id}/shopping-list/review")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "reviewed_at" in data
