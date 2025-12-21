@@ -131,7 +131,7 @@ From `src/backend/services.py:21-46`:
 
 ---
 
-### Phase 4: Unit-Aware Claim Matching
+### Phase 4: Unit-Aware Claim Matching ✓
 
 **Purpose**: Update claim matching to consider both ingredient name AND unit, preventing impossible claims from being created. Currently matches by name only, which breaks with UNIQUE(name, unit) constraint.
 

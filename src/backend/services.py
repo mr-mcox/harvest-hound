@@ -18,32 +18,41 @@ from models import (
 )
 
 
-def build_inventory_lookup(session: Session) -> dict[str, InventoryItem]:
+def build_inventory_lookup(
+    session: Session,
+) -> dict[tuple[str, str], InventoryItem]:
     """
-    Build a lookup dict mapping ingredient names (lowercased) to InventoryItem.
+    Build a lookup dict mapping (ingredient_name, unit) tuples to InventoryItem.
+
+    Uses lowercased ingredient names for case-insensitive matching.
+    Unit matching is exact (case-sensitive) since BAML normalizes units.
 
     Returns:
-        Dict with lowercased ingredient names as keys, InventoryItem as values
+        Dict with (lowercased_name, unit) tuples as keys, InventoryItem as values
     """
     items = session.exec(select(InventoryItem)).all()
-    return {item.ingredient_name.lower(): item for item in items}
+    return {(item.ingredient_name.lower(), item.unit): item for item in items}
 
 
 def match_ingredient_to_inventory(
     ingredient_name: str,
-    lookup: dict[str, InventoryItem],
+    unit: str,
+    lookup: dict[tuple[str, str], InventoryItem],
 ) -> InventoryItem | None:
     """
-    Match an ingredient name to an inventory item using exact (case-insensitive) match.
+    Match an ingredient to an inventory item using (name, unit) identity.
+
+    Name matching is case-insensitive. Unit matching is exact.
 
     Args:
         ingredient_name: Name from recipe ingredient
+        unit: Unit from recipe ingredient
         lookup: Dict from build_inventory_lookup()
 
     Returns:
         InventoryItem if matched, None otherwise
     """
-    return lookup.get(ingredient_name.lower())
+    return lookup.get((ingredient_name.lower(), unit))
 
 
 def parse_quantity(quantity_str: str) -> float:
@@ -100,7 +109,8 @@ def create_recipe_with_claims(
     claims = []
     for ingredient in recipe_data["ingredients"]:
         ing_name = ingredient["name"]
-        inventory_item = match_ingredient_to_inventory(ing_name, lookup)
+        ing_unit = ingredient["unit"]
+        inventory_item = match_ingredient_to_inventory(ing_name, ing_unit, lookup)
 
         if inventory_item is not None:
             quantity = parse_quantity(ingredient["quantity"])
@@ -196,8 +206,7 @@ def is_pitch_valid(pitch: Pitch, available_inventory: list[InventoryItem]) -> bo
     Check if a pitch can be made with available inventory.
 
     Validation rules (aggressive approach - prefer false negatives):
-    - All ingredients must exist in inventory (case-insensitive matching)
-    - Units must match exactly (unit mismatch = invalid pitch)
+    - All ingredients must exist in inventory with matching (name, unit)
     - Available quantity must be >= required quantity
 
     Args:
@@ -207,9 +216,9 @@ def is_pitch_valid(pitch: Pitch, available_inventory: list[InventoryItem]) -> bo
     Returns:
         True if all pitch ingredients can be satisfied, False otherwise
     """
-    # Build lookup for fast case-insensitive matching
+    # Build lookup for (name, unit) matching
     inventory_lookup = {
-        item.ingredient_name.lower(): item for item in available_inventory
+        (item.ingredient_name.lower(), item.unit): item for item in available_inventory
     }
 
     # Check each ingredient requirement
@@ -218,15 +227,11 @@ def is_pitch_valid(pitch: Pitch, available_inventory: list[InventoryItem]) -> bo
         required_quantity = pitch_ingredient["quantity"]
         required_unit = pitch_ingredient["unit"]
 
-        # Find matching inventory item (case-insensitive)
-        inventory_item = inventory_lookup.get(ingredient_name.lower())
+        # Find matching inventory item by (name, unit)
+        inventory_item = inventory_lookup.get((ingredient_name.lower(), required_unit))
 
         if inventory_item is None:
-            # Ingredient not in inventory
-            return False
-
-        if inventory_item.unit != required_unit:
-            # Aggressive invalidation: unit mismatch
+            # Ingredient not in inventory (or unit mismatch)
             return False
 
         if inventory_item.quantity < required_quantity:
