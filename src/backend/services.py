@@ -141,11 +141,14 @@ def calculate_available_inventory(session: Session) -> list[InventoryItem]:
     Only RESERVED claims reduce availability (cooked/abandoned recipes have
     claims deleted).
 
+    Items with zero available quantity are excluded from the result to prevent
+    the LLM from generating pitches with unavailable ingredients.
+
     Args:
         session: Database session
 
     Returns:
-        List of InventoryItem copies with adjusted quantities
+        List of InventoryItem copies with adjusted quantities (quantity > 0)
     """
     items = session.exec(select(InventoryItem)).all()
     reserved_claims = session.exec(
@@ -162,7 +165,9 @@ def calculate_available_inventory(session: Session) -> list[InventoryItem]:
         adjusted = copy(item)  # Avoid modifying the original
         claimed = claimed_by_item.get(item.id, 0.0)
         adjusted.quantity = max(0.0, item.quantity - claimed)
-        available.append(adjusted)
+        # Only include items with available quantity
+        if adjusted.quantity > 0:
+            available.append(adjusted)
 
     return available
 
