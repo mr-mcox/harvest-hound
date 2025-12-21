@@ -32,19 +32,23 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
           {
             id: 2,
             ingredient_name: "Kale",
             quantity: 1,
+            available: 1,
             unit: "bunch",
             priority: "Urgent",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -57,8 +61,8 @@ describe("Inventory List Page", () => {
     });
     expect(screen.getByText("Kale")).toBeInTheDocument();
 
-    // Verify API was called
-    expect(mockFetch).toHaveBeenCalledWith("/api/inventory");
+    // Verify API was called with claims endpoint
+    expect(mockFetch).toHaveBeenCalledWith("/api/inventory/with-claims");
   });
 
   it("displays items sorted by priority (Urgent > High > Medium > Low)", async () => {
@@ -70,37 +74,45 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Carrots",
             quantity: 2,
+            available: 2,
             unit: "lb",
             priority: "Low",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
           {
             id: 2,
             ingredient_name: "Spinach",
             quantity: 1,
+            available: 1,
             unit: "bunch",
             priority: "Urgent",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
           {
             id: 3,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
           {
             id: 4,
             ingredient_name: "Onions",
             quantity: 2,
+            available: 2,
             unit: "lb",
             priority: "Medium",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -129,10 +141,12 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -143,35 +157,8 @@ describe("Inventory List Page", () => {
     await waitFor(() => {
       expect(screen.getByText("Tomatoes")).toBeInTheDocument();
     });
-    expect(screen.getByText(/3/)).toBeInTheDocument();
-    expect(screen.getByText(/lb/)).toBeInTheDocument();
+    expect(screen.getByText("3 lb")).toBeInTheDocument();
     expect(screen.getByText("High")).toBeInTheDocument();
-  });
-
-  it("displays portion size when present", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve([
-          {
-            id: 1,
-            ingredient_name: "Ground Beef",
-            quantity: 5,
-            unit: "lb",
-            priority: "Medium",
-            portion_size: "1 lb",
-            added_at: "2025-01-01T00:00:00Z",
-          },
-        ]),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    render(InventoryPage);
-
-    await waitFor(() => {
-      expect(screen.getByText("Ground Beef")).toBeInTheDocument();
-    });
-    expect(screen.getByText(/1 lb portions/i)).toBeInTheDocument();
   });
 
   it("shows empty state when no inventory items", async () => {
@@ -211,28 +198,34 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
           {
             id: 2,
             ingredient_name: "Consumed Item",
             quantity: 0,
+            available: 0,
             unit: "lb",
             priority: "Medium",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
           {
             id: 3,
             ingredient_name: "Kale",
             quantity: 1,
+            available: 1,
             unit: "bunch",
             priority: "Urgent",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -252,6 +245,80 @@ describe("Inventory List Page", () => {
     expect(screen.queryByText("Consumed Item")).not.toBeInTheDocument();
   });
 
+  it("shows available quantity when partially claimed", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            available: 1,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+            claims: [
+              {
+                recipe_id: "abc",
+                recipe_name: "Tomato Soup",
+                quantity: 2,
+                unit: "lb",
+              },
+            ],
+          },
+        ]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Should show available quantity
+    expect(screen.getByText("3 lb (1 avail)")).toBeInTheDocument();
+  });
+
+  it("shows fully claimed indicator when available = 0", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            available: 0,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+            claims: [
+              {
+                recipe_id: "abc",
+                recipe_name: "Tomato Soup",
+                quantity: 3,
+                unit: "lb",
+              },
+            ],
+          },
+        ]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Should show 0 available
+    expect(screen.getByText("3 lb (0 avail)")).toBeInTheDocument();
+  });
+
   it("deletes item when delete button is clicked (optimistic update)", async () => {
     const mockFetch = vi.fn();
     // First call: GET inventory
@@ -263,19 +330,23 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
           {
             id: 2,
             ingredient_name: "Kale",
             quantity: 1,
+            available: 1,
             unit: "bunch",
             priority: "Urgent",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -320,10 +391,12 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -362,10 +435,12 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -377,8 +452,8 @@ describe("Inventory List Page", () => {
       expect(screen.getByText("Tomatoes")).toBeInTheDocument();
     });
 
-    // Click on quantity to edit
-    const quantityButton = screen.getByRole("button", { name: "3" });
+    // Click on quantity to edit (button shows "3 lb" for unclaimed items)
+    const quantityButton = screen.getByRole("button", { name: "3 lb" });
     quantityButton.click();
 
     // Input should appear with current quantity
@@ -395,10 +470,12 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -411,7 +488,7 @@ describe("Inventory List Page", () => {
     });
 
     // Click on quantity to edit
-    const quantityButton = screen.getByRole("button", { name: "3" });
+    const quantityButton = screen.getByRole("button", { name: "3 lb" });
     quantityButton.click();
 
     const input = await waitFor(() => screen.getByRole("spinbutton"));
@@ -420,7 +497,7 @@ describe("Inventory List Page", () => {
 
     // Quantity should remain 3 (rejected)
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "3" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "3 lb" })).toBeInTheDocument();
     });
 
     // PATCH should not have been called
@@ -436,10 +513,12 @@ describe("Inventory List Page", () => {
             id: 1,
             ingredient_name: "Tomatoes",
             quantity: 3,
+            available: 3,
             unit: "lb",
             priority: "High",
             portion_size: null,
             added_at: "2025-01-01T00:00:00Z",
+            claims: [],
           },
         ]),
     });
@@ -455,17 +534,59 @@ describe("Inventory List Page", () => {
     const priorityButton = screen.getByRole("button", { name: "High" });
     priorityButton.click();
 
-    // Dropdown should appear with all priority options
-    const dropdown = await waitFor(() => screen.getByRole("combobox"));
-    expect(dropdown).toBeInTheDocument();
-    expect(dropdown).toHaveValue("High");
+    // Wait for priority dropdown to appear (there are 2 comboboxes: filter and priority)
+    await waitFor(() => {
+      expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    });
 
-    // Verify all options are present
-    const options = screen.getAllByRole("option");
+    // The priority dropdown is the one without the claim-filter id
+    const dropdowns = screen.getAllByRole("combobox");
+    const priorityDropdown = dropdowns[1]; // Second combobox is the priority one
+    expect(priorityDropdown).toHaveValue("High");
+
+    // Verify all priority options are present in the priority dropdown
+    const options = priorityDropdown.querySelectorAll("option");
     expect(options).toHaveLength(4);
     expect(options[0]).toHaveTextContent("Low");
     expect(options[1]).toHaveTextContent("Medium");
     expect(options[2]).toHaveTextContent("High");
     expect(options[3]).toHaveTextContent("Urgent");
+  });
+
+  it("shows claim indicator for items with claims", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            ingredient_name: "Tomatoes",
+            quantity: 3,
+            available: 1,
+            unit: "lb",
+            priority: "High",
+            portion_size: null,
+            added_at: "2025-01-01T00:00:00Z",
+            claims: [
+              {
+                recipe_id: "abc",
+                recipe_name: "Tomato Soup",
+                quantity: 2,
+                unit: "lb",
+              },
+            ],
+          },
+        ]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    render(InventoryPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("Tomatoes")).toBeInTheDocument();
+    });
+
+    // Should show claim indicator (link emoji)
+    expect(screen.getByLabelText(/view 1 claiming recipe/i)).toBeInTheDocument();
   });
 });

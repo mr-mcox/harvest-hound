@@ -46,6 +46,28 @@ from shopping_list import ShoppingListResponse, compute_shopping_list
 router = APIRouter(prefix="/api")
 
 
+def build_claim_summaries(
+    claims: list[IngredientClaim], db: Session
+) -> list[ClaimSummary]:
+    """Build ClaimSummary list with current inventory quantities."""
+    summaries = []
+    for claim in claims:
+        # Look up current inventory quantity
+        inventory_item = db.get(InventoryItem, claim.inventory_item_id)
+        inventory_qty = inventory_item.quantity if inventory_item else 0.0
+
+        summaries.append(
+            ClaimSummary(
+                ingredient_name=claim.ingredient_name,
+                quantity=claim.quantity,
+                unit=claim.unit,
+                inventory_item_id=claim.inventory_item_id,
+                inventory_quantity=inventory_qty,
+            )
+        )
+    return summaries
+
+
 @router.get("/health")
 def health():
     """Health check endpoint - verifies stack is working"""
@@ -567,15 +589,7 @@ async def flesh_out_pitches(
                     servings=recipe.servings,
                     notes=recipe.notes,
                     state=recipe.state.value,
-                    claims=[
-                        ClaimSummary(
-                            ingredient_name=claim.ingredient_name,
-                            quantity=claim.quantity,
-                            unit=claim.unit,
-                            inventory_item_id=claim.inventory_item_id,
-                        )
-                        for claim in claims
-                    ],
+                    claims=build_claim_summaries(claims, db),
                 )
             )
 
@@ -765,16 +779,6 @@ def get_session_recipes(
             select(IngredientClaim).where(IngredientClaim.recipe_id == recipe.id)
         ).all()
 
-        claim_summaries = [
-            ClaimSummary(
-                ingredient_name=c.ingredient_name,
-                quantity=c.quantity,
-                unit=c.unit,
-                inventory_item_id=c.inventory_item_id,
-            )
-            for c in claims
-        ]
-
         recipes_out.append(
             FleshedOutRecipe(
                 id=str(recipe.id),
@@ -790,7 +794,7 @@ def get_session_recipes(
                 servings=recipe.servings,
                 notes=recipe.notes,
                 state=recipe.state.value,
-                claims=claim_summaries,
+                claims=build_claim_summaries(claims, db),
             )
         )
 
@@ -817,16 +821,6 @@ def get_recipe(
         select(IngredientClaim).where(IngredientClaim.recipe_id == recipe_id)
     ).all()
 
-    claim_summaries = [
-        ClaimSummary(
-            ingredient_name=c.ingredient_name,
-            quantity=c.quantity,
-            unit=c.unit,
-            inventory_item_id=c.inventory_item_id,
-        )
-        for c in claims
-    ]
-
     return FleshedOutRecipe(
         id=str(recipe.id),
         criterion_id=str(recipe.criterion_id) if recipe.criterion_id else None,
@@ -839,7 +833,7 @@ def get_recipe(
         servings=recipe.servings,
         notes=recipe.notes,
         state=recipe.state.value,
-        claims=claim_summaries,
+        claims=build_claim_summaries(claims, db),
     )
 
 

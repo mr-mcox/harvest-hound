@@ -145,6 +145,7 @@ class ClaimSummary(BaseModel):
     quantity: float
     unit: str
     inventory_item_id: int
+    inventory_quantity: float  # Current inventory quantity (0 = deleted/insufficient)
 
 
 class RecipeIngredientResponse(BaseModel):
