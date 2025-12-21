@@ -31,6 +31,11 @@
   let filterCheckedOnly: boolean = $state(false);
   let copySuccess: boolean = $state(false);
 
+  // Review state
+  let reviewedAt: string | null = $state(null);
+  let reviewing: boolean = $state(false);
+  let reviewSuccess: boolean = $state(false);
+
   // Initialize selections from props
   $effect(() => {
     if (initialSelections) {
@@ -124,6 +129,41 @@
       selections = new Map(selections);
       console.error("Failed to update selection:", err);
     }
+  }
+
+  async function markAsReviewed() {
+    reviewing = true;
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/shopping-list/review`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        reviewedAt = data.reviewed_at;
+        reviewSuccess = true;
+        setTimeout(() => {
+          reviewSuccess = false;
+        }, 3000);
+      } else {
+        console.error("Failed to mark as reviewed");
+      }
+    } catch (err) {
+      console.error("Failed to mark as reviewed:", err);
+    } finally {
+      reviewing = false;
+    }
+  }
+
+  function formatReviewDate(isoDate: string): string {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
   }
 </script>
 
@@ -277,6 +317,35 @@
           only those items.
         </p>
       {/if}
+
+      <!-- Review action -->
+      <div
+        class="pt-4 border-t border-surface-300-700 flex items-center justify-between"
+      >
+        <div class="text-sm text-surface-500">
+          {#if reviewSuccess}
+            <span class="text-success-500">Shopping list reviewed!</span>
+          {:else if reviewedAt}
+            Last reviewed: {formatReviewDate(reviewedAt)}
+          {:else}
+            Mark as reviewed when done shopping
+          {/if}
+        </div>
+        <button
+          type="button"
+          onclick={markAsReviewed}
+          disabled={reviewing}
+          class="btn btn-sm preset-filled-secondary-500"
+        >
+          {#if reviewing}
+            Reviewing...
+          {:else if reviewedAt}
+            Update Review
+          {:else}
+            Mark as Reviewed
+          {/if}
+        </button>
+      </div>
     {/if}
   </div>
 {/if}
