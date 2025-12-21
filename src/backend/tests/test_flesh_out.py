@@ -77,31 +77,30 @@ class TestIngredientMatching:
     """Tests for matching recipe ingredients to inventory items"""
 
     def test_exact_match_returns_inventory_item(self, session: Session):
-        """Exact name match finds the inventory item"""
+        """Exact (name, unit) match finds the inventory item"""
         from services import build_inventory_lookup
 
         store, items = _create_store_with_inventory(session)
 
         lookup = build_inventory_lookup(session)
 
-        assert "carrots" in lookup
-        assert lookup["carrots"].id == items[0].id
+        assert ("carrots", "pounds") in lookup
+        assert lookup[("carrots", "pounds")].id == items[0].id
 
     def test_case_insensitive_match(self, session: Session):
-        """Matching is case-insensitive"""
-        from services import build_inventory_lookup
+        """Name matching is case-insensitive"""
+        from services import build_inventory_lookup, match_ingredient_to_inventory
 
         store, items = _create_store_with_inventory(session)
 
         lookup = build_inventory_lookup(session)
 
-        # Lookup should work regardless of case
-        assert "carrots" in lookup
-        assert "Carrots" not in lookup  # Keys are lowercased
-        # But we need case-insensitive lookup in the matching function
-        from services import match_ingredient_to_inventory
+        # Lookup should work regardless of name case
+        assert ("carrots", "pounds") in lookup
+        assert ("Carrots", "pounds") not in lookup  # Name keys are lowercased
 
-        result = match_ingredient_to_inventory("Carrots", lookup)
+        # But matching function handles case insensitivity
+        result = match_ingredient_to_inventory("Carrots", "pounds", lookup)
         assert result is not None
         assert result.id == items[0].id
 
@@ -112,7 +111,7 @@ class TestIngredientMatching:
         store, items = _create_store_with_inventory(session)
 
         lookup = build_inventory_lookup(session)
-        result = match_ingredient_to_inventory("chicken", lookup)
+        result = match_ingredient_to_inventory("chicken", "pounds", lookup)
 
         assert result is None
 
@@ -123,6 +122,162 @@ class TestIngredientMatching:
         lookup = build_inventory_lookup(session)
 
         assert lookup == {}
+
+
+class TestUnitAwareMatching:
+    """Tests for unit-aware ingredient matching (name + unit identity)"""
+
+    def test_lookup_uses_name_and_unit_tuple_keys(self, session: Session):
+        """build_inventory_lookup uses (name, unit) tuple as key"""
+        from services import build_inventory_lookup
+
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        # Create two items with same name but different units
+        item_pounds = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=2.0,
+            unit="pounds",
+        )
+        item_each = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=5.0,
+            unit="each",
+        )
+        session.add(item_pounds)
+        session.add(item_each)
+        session.commit()
+        session.refresh(item_pounds)
+        session.refresh(item_each)
+
+        lookup = build_inventory_lookup(session)
+
+        # Both items should be in lookup with (name, unit) keys
+        assert ("carrots", "pounds") in lookup
+        assert ("carrots", "each") in lookup
+        assert lookup[("carrots", "pounds")].id == item_pounds.id
+        assert lookup[("carrots", "each")].id == item_each.id
+
+    def test_match_requires_both_name_and_unit(self, session: Session):
+        """match_ingredient_to_inventory matches on name AND unit"""
+        from services import build_inventory_lookup, match_ingredient_to_inventory
+
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        item = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=2.0,
+            unit="pounds",
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+        lookup = build_inventory_lookup(session)
+
+        # Match with correct name and unit
+        result = match_ingredient_to_inventory("carrots", "pounds", lookup)
+        assert result is not None
+        assert result.id == item.id
+
+        # No match with wrong unit
+        result = match_ingredient_to_inventory("carrots", "each", lookup)
+        assert result is None
+
+    def test_different_units_create_separate_matches(self, session: Session):
+        """2 lb carrots doesn't match 3 each carrots inventory item"""
+        from services import build_inventory_lookup, match_ingredient_to_inventory
+
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        # Only have carrots by "each"
+        item = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=5.0,
+            unit="each",
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+        lookup = build_inventory_lookup(session)
+
+        # Recipe needs "pounds" but we only have "each"
+        result = match_ingredient_to_inventory("carrots", "pounds", lookup)
+        assert result is None
+
+        # Recipe needs "each" and we have "each"
+        result = match_ingredient_to_inventory("carrots", "each", lookup)
+        assert result is not None
+        assert result.id == item.id
+
+    def test_unit_matching_is_case_sensitive(self, session: Session):
+        """Unit matching is exact (case-sensitive)"""
+        from services import build_inventory_lookup, match_ingredient_to_inventory
+
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        item = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrots",
+            quantity=2.0,
+            unit="pounds",
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+        lookup = build_inventory_lookup(session)
+
+        # Exact unit match works
+        result = match_ingredient_to_inventory("carrots", "pounds", lookup)
+        assert result is not None
+
+        # Different case doesn't match (BAML normalizes, so this is expected)
+        result = match_ingredient_to_inventory("carrots", "Pounds", lookup)
+        assert result is None
+
+    def test_name_matching_remains_case_insensitive(self, session: Session):
+        """Name matching is still case-insensitive"""
+        from services import build_inventory_lookup, match_ingredient_to_inventory
+
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        item = InventoryItem(
+            store_id=store.id,
+            ingredient_name="Black Radish",
+            quantity=2.0,
+            unit="whole",
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+        lookup = build_inventory_lookup(session)
+
+        # Case-insensitive name match with exact unit
+        result = match_ingredient_to_inventory("black radish", "whole", lookup)
+        assert result is not None
+        assert result.id == item.id
 
 
 # --- Atomic Claim Creation Tests ---
@@ -178,7 +333,11 @@ class TestAtomicClaimCreation:
             "name": "Kale Carrot Stir Fry",
             "description": "Quick and healthy",
             "ingredients": [
-                {"name": "carrots", "quantity": "1", "unit": "pound"},
+                {
+                    "name": "carrots",
+                    "quantity": "1",
+                    "unit": "pounds",
+                },  # Match inventory
                 {"name": "kale", "quantity": "1", "unit": "bunch"},
             ],
             "instructions": ["Prep vegetables", "Stir fry"],
@@ -190,7 +349,7 @@ class TestAtomicClaimCreation:
 
         recipe, claims = create_recipe_with_claims(session, recipe_data)
 
-        # Both ingredients should have claims
+        # Both ingredients should have claims (unit must match inventory)
         assert len(claims) == 2
         claim_names = {c.ingredient_name for c in claims}
         assert claim_names == {"carrots", "kale"}

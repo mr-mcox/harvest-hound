@@ -191,6 +191,140 @@ class TestInventoryBulkAPI:
         assert data["saved_count"] == 0
 
 
+class TestInventoryBulkUpsertAPI:
+    """Tests for upsert behavior in POST /api/inventory/bulk endpoint"""
+
+    def test_duplicate_name_unit_increments_quantity(self, client, session):
+        """Adding duplicate (name, unit) sums quantities instead of creating new row"""
+        # First add 2 lb carrots
+        client.post("/api/inventory/bulk", json={"items": [CARROT]})
+
+        # Add 3 more lb carrots
+        more_carrots = {**CARROT, "quantity": 3.0}
+        response = client.post("/api/inventory/bulk", json={"items": [more_carrots]})
+
+        assert response.status_code == 200
+
+        # Should be single item with 5 lbs total
+        items = session.exec(select(InventoryItem)).all()
+        assert len(items) == 1
+        assert items[0].ingredient_name == "carrot"
+        assert items[0].quantity == 5.0  # 2 + 3
+
+    def test_different_units_create_separate_items(self, client, session):
+        """Same ingredient name with different units creates separate items"""
+        # Add 2 lb carrots
+        client.post("/api/inventory/bulk", json={"items": [CARROT]})
+
+        # Add 3 each carrots (different unit)
+        carrots_each = {**CARROT, "quantity": 3.0, "unit": "each"}
+        response = client.post("/api/inventory/bulk", json={"items": [carrots_each]})
+
+        assert response.status_code == 200
+
+        # Should be two separate items
+        items = session.exec(select(InventoryItem)).all()
+        assert len(items) == 2
+        units = {item.unit for item in items}
+        assert units == {"pound", "each"}
+
+    def test_upsert_preserves_existing_priority(self, client, session):
+        """Upsert does not change existing item's priority"""
+        # Add carrots with High priority
+        high_priority_carrot = {**CARROT, "priority": "High"}
+        client.post("/api/inventory/bulk", json={"items": [high_priority_carrot]})
+
+        # Add more carrots with Low priority
+        low_priority_carrot = {**CARROT, "quantity": 1.0, "priority": "Low"}
+        client.post("/api/inventory/bulk", json={"items": [low_priority_carrot]})
+
+        # Priority should remain High (original)
+        item = session.exec(select(InventoryItem)).first()
+        assert item.priority == "High"
+        assert item.quantity == 3.0  # 2 + 1
+
+    def test_upsert_preserves_existing_portion_size(self, client, session):
+        """Upsert does not change existing item's portion_size"""
+        # Add ground beef with portion size
+        client.post("/api/inventory/bulk", json={"items": [GROUND_BEEF]})
+
+        # Add more ground beef without portion size
+        more_beef = {**GROUND_BEEF, "quantity": 2.0, "portion_size": None}
+        client.post("/api/inventory/bulk", json={"items": [more_beef]})
+
+        # Portion size should remain from original
+        item = session.exec(select(InventoryItem)).first()
+        assert item.portion_size == GROUND_BEEF["portion_size"]
+        assert item.quantity == 5.0  # 3 + 2
+
+    def test_upsert_resurrects_zero_quantity_item(self, client, session):
+        """Adding to zero-quantity item increments from zero"""
+        # Create item directly with zero quantity (simulates deleted item)
+        from models import GroceryStore
+
+        store = session.exec(select(GroceryStore)).first()
+        item = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrot",
+            quantity=0.0,
+            unit="pound",
+            priority="Medium",
+        )
+        session.add(item)
+        session.commit()
+
+        # Add 2 lb carrots via bulk
+        response = client.post("/api/inventory/bulk", json={"items": [CARROT]})
+
+        assert response.status_code == 200
+
+        # Should update existing item, not create new one
+        session.expire_all()
+        items = session.exec(select(InventoryItem)).all()
+        assert len(items) == 1
+        assert items[0].quantity == 2.0  # 0 + 2
+
+    def test_bulk_upsert_multiple_items_mixed(self, client, session):
+        """Bulk with mix of new and existing items handles both correctly"""
+        # Add initial carrot
+        client.post("/api/inventory/bulk", json={"items": [CARROT]})
+
+        # Add more carrots AND new spinach in same request
+        more_carrots = {**CARROT, "quantity": 1.0}
+        response = client.post(
+            "/api/inventory/bulk", json={"items": [more_carrots, SPINACH]}
+        )
+
+        assert response.status_code == 200
+
+        items = session.exec(select(InventoryItem)).all()
+        assert len(items) == 2
+
+        carrot = next(i for i in items if i.ingredient_name == "carrot")
+        spinach = next(i for i in items if i.ingredient_name == "spinach")
+
+        assert carrot.quantity == 3.0  # 2 + 1
+        assert spinach.quantity == 1.0  # New item
+
+    def test_upsert_case_insensitive_match(self, client, session):
+        """Upsert matches ingredient names case-insensitively"""
+        # Add lowercase carrot
+        client.post("/api/inventory/bulk", json={"items": [CARROT]})
+
+        # Add uppercase CARROT
+        uppercase_carrot = {**CARROT, "ingredient_name": "CARROT", "quantity": 1.0}
+        response = client.post(
+            "/api/inventory/bulk", json={"items": [uppercase_carrot]}
+        )
+
+        assert response.status_code == 200
+
+        # Should aggregate into single item
+        items = session.exec(select(InventoryItem)).all()
+        assert len(items) == 1
+        assert items[0].quantity == 3.0  # 2 + 1
+
+
 class TestInventoryListAPI:
     """Tests for GET /api/inventory endpoint"""
 
@@ -220,8 +354,8 @@ class TestInventoryListAPI:
         data = response.json()
         assert data == []
 
-    def test_list_excludes_deleted_items(self, client, session):
-        """List endpoint filters out soft-deleted items"""
+    def test_list_excludes_zero_quantity_items(self, client, session):
+        """List endpoint filters out zero-quantity items"""
         client.post("/api/inventory/bulk", json={"items": [CARROT, SPINACH]})
 
         # Get item IDs
@@ -229,7 +363,7 @@ class TestInventoryListAPI:
         assert len(items) == 2
         carrot_id = items[0].id
 
-        # Soft delete the carrot
+        # Delete the carrot (sets quantity to 0)
         response = client.delete(f"/api/inventory/{carrot_id}")
         assert response.status_code == 200
 
@@ -244,8 +378,8 @@ class TestInventoryListAPI:
 class TestInventoryDeleteAPI:
     """Tests for DELETE /api/inventory/{id} endpoint"""
 
-    def test_delete_soft_deletes_item(self, client, session):
-        """Delete endpoint sets deleted_at timestamp instead of removing row"""
+    def test_delete_sets_quantity_to_zero(self, client, session):
+        """Delete endpoint sets quantity to zero instead of removing row"""
         _create_item_via_bulk(client)
         item = session.exec(select(InventoryItem)).first()
         assert item is not None
@@ -255,14 +389,14 @@ class TestInventoryDeleteAPI:
         response = client.delete(f"/api/inventory/{item_id}")
         assert response.status_code == 200
 
-        # Item should still exist in database but have deleted_at set
+        # Item should still exist in database but have quantity = 0
         session.expire_all()
         deleted_item = session.get(InventoryItem, item_id)
         assert deleted_item is not None
-        assert deleted_item.deleted_at is not None
+        assert deleted_item.quantity == 0
 
     def test_delete_preserves_foreign_key_integrity_with_claims(self, client, session):
-        """Soft delete preserves FK integrity - claims on deleted items still exist"""
+        """Delete preserves FK integrity - claims on deleted items still exist"""
         from models import GroceryStore, IngredientClaim, Recipe
 
         # Create inventory item
@@ -304,7 +438,7 @@ class TestInventoryDeleteAPI:
         session.commit()
         claim_id = claim.id
 
-        # Soft delete the inventory item
+        # Delete the inventory item (sets quantity to 0)
         response = client.delete(f"/api/inventory/{item.id}")
         assert response.status_code == 200
 
@@ -628,8 +762,8 @@ class TestInventoryWithClaimsAPI:
         data = response.json()
         assert data == []
 
-    def test_excludes_soft_deleted_items(self, client, session):
-        """Endpoint excludes soft-deleted inventory items"""
+    def test_excludes_zero_quantity_items(self, client, session):
+        """Endpoint excludes zero-quantity inventory items"""
         _create_item_via_bulk(client, CARROT)
         _create_item_via_bulk(client, SPINACH)
 
@@ -637,7 +771,7 @@ class TestInventoryWithClaimsAPI:
         items = session.exec(select(InventoryItem)).all()
         carrot_id = items[0].id
 
-        # Soft delete the carrot
+        # Delete the carrot (sets quantity to 0)
         client.delete(f"/api/inventory/{carrot_id}")
 
         response = client.get("/api/inventory/with-claims")

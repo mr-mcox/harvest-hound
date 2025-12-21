@@ -16,6 +16,7 @@
     quantity: number;
     unit: string;
     inventory_item_id: number;
+    inventory_quantity: number;
   }
 
   interface Recipe {
@@ -40,6 +41,11 @@
   let recipe = $derived(data.recipe);
   let sessionId = $derived($page.url.searchParams.get("session") || "");
   let processing = $state(false);
+
+  let insufficientClaims = $derived(
+    recipe.claims.filter((c) => c.inventory_quantity < c.quantity)
+  );
+  let hasInsufficientInventory = $derived(insufficientClaims.length > 0);
 
   async function handleCook() {
     if (processing) return;
@@ -124,6 +130,22 @@
     </div>
 
     <p class="text-surface-600-400">{recipe.description}</p>
+
+    {#if hasInsufficientInventory}
+      <div class="card preset-outlined-warning-500 bg-warning-500/10 p-4">
+        <p class="text-sm text-warning-700 font-medium">Insufficient Inventory</p>
+        <ul class="text-sm text-warning-600 mt-2 space-y-1">
+          {#each insufficientClaims as claim}
+            <li>
+              Needs {claim.quantity}
+              {claim.unit}
+              {claim.ingredient_name} (you have {claim.inventory_quantity}
+              {claim.unit} available)
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
 
     <div class="grid md:grid-cols-2 gap-6">
       <div>

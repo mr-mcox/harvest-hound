@@ -58,7 +58,16 @@ async def bulk_save_inventory(
     request: InventoryBulkRequest,
     session: Session = Depends(get_session),
 ):
-    """Bulk save inventory items to database."""
+    """Bulk save inventory items to database with upsert logic.
+
+    For each item:
+    - If (ingredient_name, unit) exists: increment quantity
+    - If not: create new item
+
+    Existing priority, portion_size, and store_id are preserved on upsert.
+    """
+    from sqlalchemy import func
+
     # Get default store (first one, auto-created by seed_defaults)
     store = session.exec(select(GroceryStore)).first()
     if not store:
@@ -69,15 +78,30 @@ async def bulk_save_inventory(
         session.refresh(store)
 
     for item in request.items:
-        inventory_item = InventoryItem(
-            store_id=store.id,
-            ingredient_name=item.ingredient_name,
-            quantity=item.quantity,
-            unit=item.unit,
-            priority=item.priority,
-            portion_size=item.portion_size,
-        )
-        session.add(inventory_item)
+        # Check if item with same (name, unit) exists (case-insensitive)
+        existing = session.exec(
+            select(InventoryItem).where(
+                func.lower(InventoryItem.ingredient_name)
+                == item.ingredient_name.lower(),
+                InventoryItem.unit == item.unit,
+            )
+        ).first()
+
+        if existing:
+            # Upsert: increment quantity, preserve other fields
+            existing.quantity += item.quantity
+            session.add(existing)
+        else:
+            # Insert new item
+            inventory_item = InventoryItem(
+                store_id=store.id,
+                ingredient_name=item.ingredient_name,
+                quantity=item.quantity,
+                unit=item.unit,
+                priority=item.priority,
+                portion_size=item.portion_size,
+            )
+            session.add(inventory_item)
 
     session.commit()
 
@@ -86,10 +110,8 @@ async def bulk_save_inventory(
 
 @router.get("", response_model=list[InventoryItemResponse])
 async def list_inventory(session: Session = Depends(get_session)):
-    """List all inventory items (excludes soft-deleted items)."""
-    items = session.exec(
-        select(InventoryItem).where(InventoryItem.deleted_at.is_(None))
-    ).all()
+    """List all inventory items (excludes zero-quantity items)."""
+    items = session.exec(select(InventoryItem).where(InventoryItem.quantity > 0)).all()
     return [
         InventoryItemResponse(
             id=item.id,
@@ -106,9 +128,12 @@ async def list_inventory(session: Session = Depends(get_session)):
 
 @router.delete("/{item_id}")
 async def delete_inventory_item(item_id: int, session: Session = Depends(get_session)):
-    """Soft delete an inventory item by setting deleted_at timestamp."""
-    from datetime import UTC, datetime
+    """Delete an inventory item by setting quantity to zero.
 
+    This preserves FK integrity with claims while effectively removing
+    the item from inventory lists. Re-adding the same (name, unit)
+    will resurrect the item via upsert.
+    """
     from fastapi import HTTPException
 
     # Find the item
@@ -116,8 +141,8 @@ async def delete_inventory_item(item_id: int, session: Session = Depends(get_ses
     if not item:
         raise HTTPException(status_code=404, detail="Inventory item not found")
 
-    # Soft delete by setting deleted_at
-    item.deleted_at = datetime.now(UTC)
+    # Delete by setting quantity to zero
+    item.quantity = 0
     session.add(item)
     session.commit()
 
@@ -168,10 +193,8 @@ async def update_inventory_item(
 @router.get("/with-claims", response_model=list[InventoryWithClaimsResponse])
 async def list_inventory_with_claims(session: Session = Depends(get_session)):
     """List inventory items with claims (available qty and claiming recipes)."""
-    # Get all non-deleted inventory items
-    items = session.exec(
-        select(InventoryItem).where(InventoryItem.deleted_at.is_(None))
-    ).all()
+    # Get all inventory items with positive quantity
+    items = session.exec(select(InventoryItem).where(InventoryItem.quantity > 0)).all()
 
     # Get all RESERVED claims with recipe names (using join)
     reserved_claims = session.exec(

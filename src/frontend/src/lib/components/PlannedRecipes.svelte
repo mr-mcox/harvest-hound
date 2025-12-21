@@ -4,6 +4,7 @@
     quantity: number;
     unit: string;
     inventory_item_id: number;
+    inventory_quantity: number;
   }
 
   interface FleshedOutRecipe {
@@ -27,6 +28,14 @@
   }
 
   let { sessionId, plannedRecipes, onCook, onAbandon }: Props = $props();
+
+  function getInsufficientClaims(claims: ClaimSummary[]): ClaimSummary[] {
+    return claims.filter((c) => c.inventory_quantity < c.quantity);
+  }
+
+  function hasInsufficientInventory(recipe: FleshedOutRecipe): boolean {
+    return getInsufficientClaims(recipe.claims).length > 0;
+  }
 </script>
 
 {#if plannedRecipes.length > 0}
@@ -34,11 +43,15 @@
     <h3 class="h4">My Planned Recipes</h3>
     <div class="grid gap-3">
       {#each plannedRecipes as recipe}
+        {@const insufficient = hasInsufficientInventory(recipe)}
+        {@const insufficientClaims = getInsufficientClaims(recipe.claims)}
         <div
           class="card p-4 space-y-3
             {recipe.state === 'cooked'
             ? 'preset-outlined-success-500 bg-success-500/5'
-            : 'preset-outlined-success-500 bg-success-500/10'}"
+            : insufficient
+              ? 'preset-outlined-warning-500 bg-warning-500/10'
+              : 'preset-outlined-success-500 bg-success-500/10'}"
         >
           <!-- Clickable area for navigation -->
           <button
@@ -51,21 +64,39 @@
               <div class="flex items-center gap-2">
                 <!-- Recipe indicator icon -->
                 <span
-                  class="w-5 h-5 rounded-full bg-success-500 text-white flex items-center justify-center flex-shrink-0"
+                  class="w-5 h-5 rounded-full {insufficient
+                    ? 'bg-warning-500'
+                    : 'bg-success-500'} text-white flex items-center justify-center flex-shrink-0"
                 >
-                  <svg
-                    class="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="3"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  {#if insufficient}
+                    <svg
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="3"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  {:else}
+                    <svg
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="3"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  {/if}
                 </span>
                 <h4 class="font-semibold text-lg">{recipe.name}</h4>
                 {#if recipe.state === "cooked"}
@@ -81,7 +112,17 @@
               </span>
             </div>
 
-            {#if recipe.claims.length > 0}
+            {#if insufficient}
+              <p class="text-xs text-warning-600">
+                <span class="font-medium">Insufficient inventory:</span>
+                {insufficientClaims
+                  .map(
+                    (c) =>
+                      `needs ${c.quantity} ${c.unit} ${c.ingredient_name} (have ${c.inventory_quantity})`
+                  )
+                  .join(", ")}
+              </p>
+            {:else if recipe.claims.length > 0}
               <p class="text-xs text-surface-600-400">
                 <span class="font-medium">From inventory:</span>
                 {recipe.claims

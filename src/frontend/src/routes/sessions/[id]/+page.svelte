@@ -39,6 +39,7 @@
     quantity: number;
     unit: string;
     inventory_item_id: number;
+    inventory_quantity: number;
   }
 
   interface FleshedOutRecipe {

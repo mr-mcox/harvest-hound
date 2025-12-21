@@ -133,3 +133,92 @@ class TestGetRecipe:
         assert response.status_code == 200
         data = response.json()
         assert data["state"] == "cooked"
+
+    def test_claim_includes_inventory_quantity(
+        self,
+        session: Session,
+        client: TestClient,
+        session_with_recipe: tuple[PlanningSession, Recipe],
+    ):
+        """Claim summary should include current inventory quantity"""
+        _, recipe = session_with_recipe
+
+        # Create grocery store
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        # Add inventory item with quantity 5
+        inventory_item = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrot",
+            quantity=5,
+            unit="whole",
+        )
+        session.add(inventory_item)
+        session.commit()
+        session.refresh(inventory_item)
+
+        # Create claim for 2
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=2,
+            unit="whole",
+        )
+        session.add(claim)
+        session.commit()
+
+        response = client.get(f"/api/recipes/{recipe.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["claims"]) == 1
+        assert data["claims"][0]["inventory_quantity"] == 5
+
+    def test_claim_shows_zero_when_inventory_deleted(
+        self,
+        session: Session,
+        client: TestClient,
+        session_with_recipe: tuple[PlanningSession, Recipe],
+    ):
+        """Claim shows 0 when inventory item deleted (quantity=0)"""
+        _, recipe = session_with_recipe
+
+        # Create grocery store
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        # Add inventory item with quantity 0 (deleted)
+        inventory_item = InventoryItem(
+            store_id=store.id,
+            ingredient_name="carrot",
+            quantity=0,
+            unit="whole",
+        )
+        session.add(inventory_item)
+        session.commit()
+        session.refresh(inventory_item)
+
+        # Create claim (claim exists but inventory is gone)
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=inventory_item.id,
+            ingredient_name="carrot",
+            quantity=2,
+            unit="whole",
+        )
+        session.add(claim)
+        session.commit()
+
+        response = client.get(f"/api/recipes/{recipe.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["claims"]) == 1
+        assert data["claims"][0]["quantity"] == 2  # Claim still wants 2
+        assert data["claims"][0]["inventory_quantity"] == 0  # But inventory has 0
