@@ -153,7 +153,7 @@ The shopping list currently shows what to buy but doesn't support the actual sho
 
 ---
 
-### Phase 2: Backend - Selection State Management
+### Phase 2: Backend - Selection State Management ✓
 
 **Purpose**: Enable reading and updating checkbox state per session. This allows frontend to persist user selections across page refreshes.
 

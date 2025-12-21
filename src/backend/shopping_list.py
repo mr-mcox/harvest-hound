@@ -11,7 +11,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
-from models import IngredientClaim, Recipe, RecipeState
+from models import IngredientClaim, Recipe, RecipeState, ShoppingListSelection
 
 
 class ShoppingListItem(BaseModel):
@@ -21,6 +21,7 @@ class ShoppingListItem(BaseModel):
     total_quantity: str  # Aggregated quantities as string (e.g., "2 cups + 1 whole")
     purchase_likelihood: float  # Average likelihood across recipes
     used_in_recipes: list[str]  # Recipe names that use this ingredient
+    checked: bool = False  # Selection state from ShoppingListSelection
 
 
 class ShoppingListResponse(BaseModel):
@@ -216,6 +217,14 @@ def compute_shopping_list(
             if "display_name" not in aggregated[key]:
                 aggregated[key]["display_name"] = ingredient_name
 
+    # Load selections for this session to populate checked state
+    selections = session.exec(
+        select(ShoppingListSelection).where(
+            ShoppingListSelection.session_id == planning_session_id
+        )
+    ).all()
+    selection_map = {s.ingredient_name.lower(): s.checked for s in selections}
+
     # Build shopping list items
     grocery_items = []
     pantry_staples = []
@@ -230,11 +239,15 @@ def compute_shopping_list(
         # Deduplicate recipe names
         unique_recipes = sorted(set(data["recipes"]))
 
+        # Look up checked state from selections (default False)
+        checked = selection_map.get(ingredient_key, False)
+
         item = ShoppingListItem(
             ingredient_name=data["display_name"],
             total_quantity=total_quantity,
             purchase_likelihood=avg_likelihood,
             used_in_recipes=unique_recipes,
+            checked=checked,
         )
 
         # Threshold: <0.3 = pantry, ≥0.3 = grocery
