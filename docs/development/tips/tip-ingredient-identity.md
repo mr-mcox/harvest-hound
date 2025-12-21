@@ -105,7 +105,7 @@ From `src/backend/services.py:21-46`:
 
 ---
 
-### Phase 3: Upsert Logic in Bulk Save
+### Phase 3: Upsert Logic in Bulk Save ✓
 
 **Purpose**: Enable automatic aggregation when adding ingredients. Transform bulk save from insert-only to intelligent upsert that sums quantities for existing (name, unit) pairs.
 
@@ -156,7 +156,7 @@ From `src/backend/services.py:21-46`:
 
 ---
 
-### Phase 5: Delete Sets Quantity to Zero
+### Phase 5: Delete Sets Quantity to Zero ✓
 
 **Purpose**: Replace soft-delete with quantity-based lifecycle. Simpler model that enables automatic aggregation on re-import.
 
