@@ -14,7 +14,7 @@ from enum import Enum
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, field_validator
-from sqlalchemy import JSON, Column, event
+from sqlalchemy import JSON, Column, UniqueConstraint, event
 from sqlmodel import Field, Session, SQLModel, create_engine, select, text
 
 
@@ -68,6 +68,12 @@ class GroceryStore(SQLModel, table=True):
 class InventoryItem(SQLModel, table=True):
     """Tracked inventory item from CSA delivery or other source"""
 
+    __table_args__ = (
+        UniqueConstraint(
+            "ingredient_name", "unit", name="uq_inventoryitem_ingredient_name_unit"
+        ),
+    )
+
     id: int | None = Field(default=None, primary_key=True)
     store_id: int = Field(foreign_key="grocerystore.id")
     ingredient_name: str = Field()
@@ -76,7 +82,6 @@ class InventoryItem(SQLModel, table=True):
     priority: str = Field(default="medium")  # low, medium, high, urgent
     portion_size: str | None = Field(default=None)  # e.g., "1 pound", "16 ounce"
     added_at: datetime = Field(default_factory=_utc_now)
-    deleted_at: datetime | None = Field(default=None)  # Soft delete timestamp
 
 
 class PlanningSession(SQLModel, table=True):
