@@ -15,9 +15,64 @@
     shoppingList: ShoppingListResponse | null;
     loading: boolean;
     error: string;
+    sessionId: string;
+    initialSelections?: Record<string, boolean>;
   }
 
-  let { shoppingList, loading, error }: Props = $props();
+  let {
+    shoppingList,
+    loading,
+    error,
+    sessionId,
+    initialSelections = {},
+  }: Props = $props();
+
+  let selections: Map<string, boolean> = $state(new Map());
+
+  // Initialize selections from props
+  $effect(() => {
+    if (initialSelections) {
+      selections = new Map(Object.entries(initialSelections));
+    }
+  });
+
+  function isChecked(ingredientName: string): boolean {
+    return selections.get(ingredientName) ?? false;
+  }
+
+  async function toggleSelection(ingredientName: string) {
+    const newChecked = !isChecked(ingredientName);
+
+    // Optimistic update
+    selections.set(ingredientName, newChecked);
+    selections = new Map(selections);
+
+    try {
+      const response = await fetch(
+        `/api/sessions/${sessionId}/shopping-list/selections`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ingredient_name: ingredientName,
+            checked: newChecked,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        // Rollback on failure
+        selections.set(ingredientName, !newChecked);
+        selections = new Map(selections);
+        console.error("Failed to update selection");
+      }
+    } catch (err) {
+      // Rollback on error
+      selections.set(ingredientName, !newChecked);
+      selections = new Map(selections);
+      console.error("Failed to update selection:", err);
+    }
+  }
 </script>
 
 {#if shoppingList && (shoppingList.grocery_items.length > 0 || shoppingList.pantry_staples.length > 0)}
@@ -42,25 +97,42 @@
           </h4>
           <ul class="space-y-2">
             {#each shoppingList.grocery_items as item}
-              <li class="p-3 rounded bg-surface-100-900">
-                <div class="flex items-start justify-between">
+              {@const checked = isChecked(item.ingredient_name)}
+              <li
+                class="p-3 rounded bg-surface-100-900 transition-opacity {checked
+                  ? 'opacity-60 bg-success-500/10'
+                  : ''}"
+              >
+                <div class="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    {checked}
+                    onchange={() => toggleSelection(item.ingredient_name)}
+                    class="mt-1 w-5 h-5 rounded border-2 border-surface-400 text-primary-500 focus:ring-primary-500 cursor-pointer"
+                  />
                   <div class="flex-1">
-                    <span class="font-medium">{item.ingredient_name}</span>
-                    <span class="text-surface-600-400 ml-2">
-                      {item.total_quantity}
-                    </span>
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <span class="font-medium {checked ? 'line-through' : ''}"
+                          >{item.ingredient_name}</span
+                        >
+                        <span class="text-surface-600-400 ml-2">
+                          {item.total_quantity}
+                        </span>
+                      </div>
+                      <span
+                        class="text-xs px-2 py-1 rounded bg-primary-500/20 text-primary-500"
+                      >
+                        {Math.round(item.purchase_likelihood * 100)}% confidence
+                      </span>
+                    </div>
+                    {#if item.used_in_recipes.length > 0}
+                      <div class="text-xs text-surface-500 mt-1">
+                        Used in: {item.used_in_recipes.join(", ")}
+                      </div>
+                    {/if}
                   </div>
-                  <span
-                    class="text-xs px-2 py-1 rounded bg-primary-500/20 text-primary-500"
-                  >
-                    {Math.round(item.purchase_likelihood * 100)}% confidence
-                  </span>
                 </div>
-                {#if item.used_in_recipes.length > 0}
-                  <div class="text-xs text-surface-500 mt-1">
-                    Used in: {item.used_in_recipes.join(", ")}
-                  </div>
-                {/if}
               </li>
             {/each}
           </ul>
@@ -78,25 +150,42 @@
           </h4>
           <ul class="space-y-2">
             {#each shoppingList.pantry_staples as item}
-              <li class="p-3 rounded bg-surface-100-900 opacity-75">
-                <div class="flex items-start justify-between">
+              {@const checked = isChecked(item.ingredient_name)}
+              <li
+                class="p-3 rounded bg-surface-100-900 transition-opacity {checked
+                  ? 'opacity-60 bg-success-500/10'
+                  : 'opacity-75'}"
+              >
+                <div class="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    {checked}
+                    onchange={() => toggleSelection(item.ingredient_name)}
+                    class="mt-1 w-5 h-5 rounded border-2 border-surface-400 text-primary-500 focus:ring-primary-500 cursor-pointer"
+                  />
                   <div class="flex-1">
-                    <span class="font-medium">{item.ingredient_name}</span>
-                    <span class="text-surface-600-400 ml-2">
-                      {item.total_quantity}
-                    </span>
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <span class="font-medium {checked ? 'line-through' : ''}"
+                          >{item.ingredient_name}</span
+                        >
+                        <span class="text-surface-600-400 ml-2">
+                          {item.total_quantity}
+                        </span>
+                      </div>
+                      <span
+                        class="text-xs px-2 py-1 rounded bg-surface-500/20 text-surface-500"
+                      >
+                        {Math.round(item.purchase_likelihood * 100)}% confidence
+                      </span>
+                    </div>
+                    {#if item.used_in_recipes.length > 0}
+                      <div class="text-xs text-surface-500 mt-1">
+                        Used in: {item.used_in_recipes.join(", ")}
+                      </div>
+                    {/if}
                   </div>
-                  <span
-                    class="text-xs px-2 py-1 rounded bg-surface-500/20 text-surface-500"
-                  >
-                    {Math.round(item.purchase_likelihood * 100)}% confidence
-                  </span>
                 </div>
-                {#if item.used_in_recipes.length > 0}
-                  <div class="text-xs text-surface-500 mt-1">
-                    Used in: {item.used_in_recipes.join(", ")}
-                  </div>
-                {/if}
               </li>
             {/each}
           </ul>
