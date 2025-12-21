@@ -206,7 +206,7 @@ The shopping list currently shows what to buy but doesn't support the actual sho
 
 ---
 
-### Phase 4: Backend - Bayesian Likelihood Refinement
+### Phase 4: Backend - Bayesian Likelihood Refinement ✓
 
 **Purpose**: Use historical purchase statistics to refine LLM-generated purchase likelihoods. This improves grocery/pantry split accuracy over time.
 
