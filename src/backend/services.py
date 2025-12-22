@@ -141,11 +141,14 @@ def calculate_available_inventory(session: Session) -> list[InventoryItem]:
     Only RESERVED claims reduce availability (cooked/abandoned recipes have
     claims deleted).
 
+    Items with zero available quantity are excluded from the result to prevent
+    the LLM from generating pitches with unavailable ingredients.
+
     Args:
         session: Database session
 
     Returns:
-        List of InventoryItem copies with adjusted quantities
+        List of InventoryItem copies with adjusted quantities (quantity > 0)
     """
     items = session.exec(select(InventoryItem)).all()
     reserved_claims = session.exec(
@@ -162,7 +165,9 @@ def calculate_available_inventory(session: Session) -> list[InventoryItem]:
         adjusted = copy(item)  # Avoid modifying the original
         claimed = claimed_by_item.get(item.id, 0.0)
         adjusted.quantity = max(0.0, item.quantity - claimed)
-        available.append(adjusted)
+        # Only include items with available quantity
+        if adjusted.quantity > 0:
+            available.append(adjusted)
 
     return available
 
@@ -306,10 +311,12 @@ def calculate_pitch_generation_delta(session: Session, session_id) -> int:
     # Calculate target: 3 pitches per unfilled slot
     target_pitches = unfilled_slots * 3
 
-    # Get all pitches for these criteria
+    # Get all non-rejected pitches for these criteria
     criterion_ids = [c.id for c in criteria]
     pitches = session.exec(
-        select(Pitch).where(Pitch.criterion_id.in_(criterion_ids))
+        select(Pitch)
+        .where(Pitch.criterion_id.in_(criterion_ids))
+        .where(~Pitch.rejected)
     ).all()
 
     # Filter to only valid pitches (can be made with available inventory)
@@ -347,9 +354,9 @@ def calculate_criterion_pitch_delta(
     # Target: 3 pitches per unfilled slot
     target = unfilled_slots * 3
 
-    # Count existing valid pitches for this criterion
+    # Count existing non-rejected valid pitches for this criterion
     criterion_pitches = session.exec(
-        select(Pitch).where(Pitch.criterion_id == criterion.id)
+        select(Pitch).where(Pitch.criterion_id == criterion.id).where(~Pitch.rejected)
     ).all()
     valid_pitches = filter_valid_pitches(list(criterion_pitches), available_inventory)
     delta = max(0, target - len(valid_pitches))

@@ -168,7 +168,7 @@ class TestCalculateAvailableInventory:
         assert available[0].quantity == 1.5  # 3.0 - 1.0 - 0.5
 
     def test_exhausted_inventory_shows_zero(self, session: Session):
-        """Fully claimed inventory shows zero, not negative"""
+        """Fully claimed inventory is excluded from available inventory"""
         from services import calculate_available_inventory
 
         store = _create_store(session)
@@ -191,10 +191,10 @@ class TestCalculateAvailableInventory:
 
         available = calculate_available_inventory(session)
 
-        assert available[0].quantity == 0.0
+        assert len(available) == 0
 
     def test_overclaimed_inventory_shows_zero(self, session: Session):
-        """Over-claimed inventory shows zero (handles edge case)"""
+        """Over-claimed inventory is excluded (handles edge case)"""
         from services import calculate_available_inventory
 
         store = _create_store(session)
@@ -217,7 +217,8 @@ class TestCalculateAvailableInventory:
 
         available = calculate_available_inventory(session)
 
-        assert available[0].quantity == 0.0  # Not negative
+        # Zero/negative-quantity items are excluded
+        assert len(available) == 0
 
     def test_consumed_claims_not_subtracted(self, session: Session):
         """Only reserved claims affect available inventory, not consumed"""
@@ -413,11 +414,12 @@ class TestMultiWaveWorkflow:
         }
         create_recipe_with_claims(session, recipe_data)
 
-        # Wave 2: Carrots should be exhausted
+        # Wave 2: Carrots should be exhausted (excluded from available inventory)
         wave2_available = calculate_available_inventory(session)
-        carrot_item = next(i for i in wave2_available if i.ingredient_name == "carrots")
+        carrot_items = [i for i in wave2_available if i.ingredient_name == "carrots"]
 
-        assert carrot_item.quantity == 0.0
+        # Zero-quantity items are excluded to prevent LLM from using them
+        assert len(carrot_items) == 0
 
     def test_multiple_recipes_accumulate_claims(self, session: Session):
         """Multiple fleshed-out recipes accumulate claims correctly"""

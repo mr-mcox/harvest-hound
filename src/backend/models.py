@@ -200,6 +200,25 @@ class IngredientClaim(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_utc_now)
 
 
+class ShoppingListSelection(SQLModel, table=True):
+    """Session-scoped checkbox state for shopping list items"""
+
+    __table_args__ = (
+        UniqueConstraint(
+            "session_id",
+            "ingredient_name",
+            name="uq_shoppinglistselection_session_ingredient",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    session_id: UUID = Field(foreign_key="planningsession.id", ondelete="CASCADE")
+    ingredient_name: str = Field()
+    checked: bool = Field(default=False)
+    reviewed_at: datetime | None = Field(default=None)
+    created_at: datetime = Field(default_factory=_utc_now)
+
+
 def get_session() -> Generator[Session, None, None]:
     """FastAPI dependency for database sessions"""
     with Session(engine) as session:

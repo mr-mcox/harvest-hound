@@ -107,6 +107,7 @@
   let shoppingList: ShoppingListResponse | null = $state(null);
   let loadingShoppingList = $state(false);
   let shoppingListError = $state("");
+  let shoppingListSelections: Record<string, boolean> = $state({});
 
   let selectedPitchIds: Set<string> = $state(new Set());
   let selectedCount = $derived(selectedPitchIds.size);
@@ -223,6 +224,18 @@
         err instanceof Error ? err.message : "Failed to load shopping list";
     } finally {
       loadingShoppingList = false;
+    }
+  }
+
+  async function loadShoppingListSelections() {
+    const id = $page.params.id;
+    try {
+      const response = await fetch(`/api/sessions/${id}/shopping-list/selections`);
+      if (response.ok) {
+        shoppingListSelections = await response.json();
+      }
+    } catch (err) {
+      console.error("Failed to load shopping list selections:", err);
     }
   }
 
@@ -454,6 +467,7 @@
       await loadPitches();
       await loadPlannedRecipes();
       await loadShoppingList();
+      await loadShoppingListSelections();
     }
   });
 </script>
@@ -828,6 +842,8 @@
               {shoppingList}
               loading={loadingShoppingList}
               error={shoppingListError}
+              sessionId={$page.params.id ?? ""}
+              initialSelections={shoppingListSelections}
             />
           </div>
         </Accordion.ItemContent>

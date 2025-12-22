@@ -3,6 +3,7 @@ API routes for Harvest Hound
 """
 
 import json
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,6 +23,7 @@ from models import (
     PlanningSession,
     Recipe,
     RecipeState,
+    ShoppingListSelection,
     _utc_now,
     db_health,
     get_session,
@@ -858,3 +860,116 @@ def get_shopping_list(
 
     # Compute and return shopping list
     return compute_shopping_list(db, session_id)
+
+
+class SelectionUpdate(BaseModel):
+    ingredient_name: str
+    checked: bool
+
+
+class SelectionResponse(BaseModel):
+    ingredient_name: str
+    checked: bool
+
+
+@router.patch("/sessions/{session_id}/shopping-list/selections")
+def update_selection(
+    session_id: UUID,
+    data: SelectionUpdate,
+    db: Session = Depends(get_session),
+) -> SelectionResponse:
+    """
+    Create or update a shopping list selection (upsert).
+
+    Used to persist checkbox state for a single ingredient in a session.
+    """
+    planning_session = db.get(PlanningSession, session_id)
+    if not planning_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    existing = db.exec(
+        select(ShoppingListSelection).where(
+            ShoppingListSelection.session_id == session_id,
+            ShoppingListSelection.ingredient_name == data.ingredient_name,
+        )
+    ).first()
+
+    if existing:
+        existing.checked = data.checked
+        db.add(existing)
+    else:
+        selection = ShoppingListSelection(
+            session_id=session_id,
+            ingredient_name=data.ingredient_name,
+            checked=data.checked,
+        )
+        db.add(selection)
+
+    db.commit()
+
+    return SelectionResponse(
+        ingredient_name=data.ingredient_name,
+        checked=data.checked,
+    )
+
+
+@router.get("/sessions/{session_id}/shopping-list/selections")
+def get_selections(
+    session_id: UUID,
+    db: Session = Depends(get_session),
+) -> dict[str, bool]:
+    """
+    Get all shopping list selections for a session.
+
+    Returns a dict of {ingredient_name: checked} for restoring checkbox state.
+    """
+    # Verify session exists
+    planning_session = db.get(PlanningSession, session_id)
+    if not planning_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    selections = db.exec(
+        select(ShoppingListSelection).where(
+            ShoppingListSelection.session_id == session_id
+        )
+    ).all()
+
+    return {s.ingredient_name: s.checked for s in selections}
+
+
+class ReviewResponse(BaseModel):
+    reviewed_at: datetime
+
+
+@router.post("/sessions/{session_id}/shopping-list/review")
+def review_shopping_list(
+    session_id: UUID,
+    db: Session = Depends(get_session),
+) -> ReviewResponse:
+    """
+    Mark shopping list selections as reviewed.
+
+    Sets reviewed_at timestamp on all selections in the session.
+    This signals that the user has engaged with the list, enabling
+    stats derivation for Bayesian likelihood refinement.
+    """
+    planning_session = db.get(PlanningSession, session_id)
+    if not planning_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    now = datetime.now(UTC)
+
+    # Update all selections in session
+    selections = db.exec(
+        select(ShoppingListSelection).where(
+            ShoppingListSelection.session_id == session_id
+        )
+    ).all()
+
+    for selection in selections:
+        selection.reviewed_at = now
+        db.add(selection)
+
+    db.commit()
+
+    return ReviewResponse(reviewed_at=now)

@@ -5,7 +5,15 @@ can be made with available inventory
 
 from sqlmodel import Session
 
-from models import GroceryStore, InventoryItem, Pitch
+from models import (
+    ClaimState,
+    GroceryStore,
+    IngredientClaim,
+    InventoryItem,
+    Pitch,
+    Recipe,
+    RecipeState,
+)
 from services import calculate_available_inventory, filter_valid_pitches, is_pitch_valid
 
 
@@ -388,3 +396,72 @@ class TestFilterValidPitches:
         assert filtered[0].name == "A Recipe"
         assert filtered[1].name == "B Recipe"
         assert filtered[2].name == "C Recipe"
+
+
+class TestCalculateAvailableInventory:
+    """Tests for calculate_available_inventory() - should exclude zero-quantity items"""
+
+    def test_excludes_items_with_zero_quantity_after_claims(self, session: Session):
+        store = GroceryStore(name="CSA Box", description="Weekly delivery")
+        session.add(store)
+        session.commit()
+        session.refresh(store)
+
+        curry_powder = InventoryItem(
+            store_id=store.id,
+            ingredient_name="japanese curry powder",
+            quantity=2.0,
+            unit="tablespoons",
+            priority="high",
+        )
+        onions = InventoryItem(
+            store_id=store.id,
+            ingredient_name="onions",
+            quantity=3.0,
+            unit="whole",
+            priority="medium",
+        )
+        session.add(curry_powder)
+        session.add(onions)
+        session.commit()
+        session.refresh(curry_powder)
+        session.refresh(onions)
+
+        # Create a recipe that claims ALL the curry powder
+        recipe = Recipe(
+            name="Curry Dish",
+            description="Used last week",
+            ingredients=[],
+            instructions="",
+            active_time_minutes=30,
+            total_time_minutes=60,
+            servings=4,
+            state=RecipeState.PLANNED,
+        )
+        session.add(recipe)
+        session.commit()
+        session.refresh(recipe)
+
+        # Create a claim that exhausts curry powder (2.0 - 2.0 = 0)
+        claim = IngredientClaim(
+            recipe_id=recipe.id,
+            inventory_item_id=curry_powder.id,
+            ingredient_name="japanese curry powder",
+            quantity=2.0,
+            unit="tablespoons",
+            state=ClaimState.RESERVED,
+        )
+        session.add(claim)
+        session.commit()
+
+        available_inventory = calculate_available_inventory(session)
+
+        ingredient_names = [item.ingredient_name for item in available_inventory]
+
+        assert "japanese curry powder" not in ingredient_names
+        assert "onions" in ingredient_names
+
+        onions_item = next(
+            item for item in available_inventory if item.ingredient_name == "onions"
+        )
+        assert onions_item.quantity == 3.0
