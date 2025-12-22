@@ -1,1 +1,0 @@
-"""Typed test implementations of service protocols."""

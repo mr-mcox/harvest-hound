@@ -1,1 +1,0 @@
-"""Test fixtures for Harvest Hound backend testing."""

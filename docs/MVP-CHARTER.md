@@ -1,8 +1,8 @@
 # Harvest Hound MVP Charter
 
-**Status**: Living document - update as we learn, delete when MVP complete
+**Status**: Steel thread complete (2025-12-21), ongoing refinement
 **Created**: 2025-12-02
-**Last Updated**: 2025-12-09
+**Last Updated**: 2025-12-21
 
 ---
 
@@ -62,21 +62,23 @@ Prove the loop first, polish second. The thread: **CSA delivery → planning ses
 
 ### Phase 2: Fidelity Pass (After Loop Works)
 
-**Priority 1** (biggest pain points from production use):
-- **Ingredient management improvements**: Top priority - table view, better UX for editing
-- **Recipe formatting for cooking**: Reduce need to flip back/forth while cooking
-- **Pantry accuracy refinement**: Guesses not as accurate as expected, affects both ranking and recipe generation
+**Status**: Most items addressed, new priorities from real use captured in `docs/roadmap/`
 
-**Priority 2**:
-- Claims: Visibility UI ("why no radish recipes?")
-- Pitches: ✅ Invalidation/removal when ingredients claimed (DONE)
-- Shopping: ✅ Essential vs optional, likelihood ordering (DONE)
-- Inventory: Location filtering, portioning hint display
+**Completed**:
+- ✅ Pitches: Invalidation/removal when ingredients claimed
+- ✅ Shopping: Essential vs optional, likelihood ordering
+- ✅ Claims: Visibility UI implemented (2025-12-13)
+- ✅ Ingredient management: Rough edges smoothed, table view not critical
+- ✅ Pantry accuracy: Gathering data for improvement
 
-**Priority 3**:
-- General UI polish
-- Ingredient substitution preferences ("don't like dill")
-- Grocery list feedback loops to improve pantry accuracy
+**New Priorities from Production Use** (see `docs/roadmap/PRIORITIES.md`):
+- **Recipe editing/substitutions**: Critical - essential cooking workflow (wine swaps, ingredient mistakes, recipe-specific guidance)
+- **Priority system gap**: Pantry items (dried beans, canned goods) need pairing with high-priority CSA items
+- **Recipe formatting**: Minor friction flipping back/forth while cooking
+- **Recipe feedback**: Time estimates unreliable, need "greatest hits" capture
+- **Saved recipes**: Revisit successful dishes
+
+**Note**: Charter anticipated some needs (pantry accuracy, recipe formatting), but real use surfaced sharper priorities (recipe editing, priority pairing). See roadmap for current strategic focus.
 
 ### New Entities for MVP
 
@@ -160,14 +162,16 @@ Relationships: Session → MealCriteria → Pitches → Recipe (with criterion r
 
 ### Steel Thread Complete When
 
-✅ **VALIDATED** (2025-12-09): Used for actual meal planning:
+✅ **COMPLETE** (2025-12-21): Three weeks of production use validates full loop:
 - ✅ CSA arrived → inventory entered
 - ✅ Planning session created with constraints
 - ✅ Meals planned from pitches
 - ✅ Went shopping from generated list
-- ✅ Cooked first recipe through the system
+- ✅ Cooked first recipe through the system (2025-12-08)
+- ✅ **Week 3 validation**: "Only rutabaga left" - produce utilization excellent
+- ✅ **Core value**: Variety + confidence in weekly meal planning
 
-**Key Validation**: Recipe timing "pretty close", workflow feels smooth, system used authentically in production.
+**Key Validation**: Recipe timing "pretty close", workflow feels smooth, system used authentically in production. Most fidelity pass items addressed through real use.
 
 ### Code Quality Bar
 

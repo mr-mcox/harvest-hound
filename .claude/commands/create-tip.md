@@ -14,20 +14,22 @@ This command creates a strategic implementation plan focused on sequencing, inte
 ## Available Agents
 
 **For focused context gathering:**
-- `prototype-explorer` - Explores prototype code for patterns and current implementation
-- `code-locator` - Finds implementation patterns and tests (if you need more examples)
-- `code-analyzer` - Explains current implementation (if you need to understand existing code)
-- `thoughts-locator` - Finds related past work (if context is needed)
+- `code-locator` - Finds implementation patterns and tests
+- `code-analyzer` - Explains current implementation
+- `docs-locator` - Finds relevant docs (use first for discovery)
+- `docs-synthesizer` - Extracts insights from docs (use after locator)
 
-**For MVP**: Primary context comes from `docs/LEARNINGS.md` and `prototype/` code. Use agents to explore prototype patterns worth preserving.
+**Pattern**: Use locator agents to find, analyzer/synthesizer agents to understand.
+
+**For MVP**: Primary context comes from feature frames, `docs/learnings/`, and `src/` code. Use agents when you need deeper synthesis across multiple docs or complex code.
 
 ---
 
 ## Input Sources (Check in Order)
 
-1. `.scratch/frame-[feature-name].md` - Feature frame from `frame-feature` (preferred for MVP)
-2. `docs/development/design-decisions/decision-[name].md` - Domain design from `explore-domain-design`
-3. `docs/LEARNINGS.md` + `prototype/` - Direct context for quick features
+1. `docs/implementation/frame-[feature-name].md` - Feature frame from `frame-feature` (preferred)
+2. `docs/decisions/decision-[name].md` - Design decisions (if applicable)
+3. `docs/roadmap/pain-[name].md` + `docs/learnings/` - Direct context for quick features
 
 ---
 
@@ -44,16 +46,16 @@ Then continue immediately...
 ### Step 2: Check for Existing Context
 
 **Check for feature frame first**:
-- Look for `.scratch/frame-[feature-name].md`
+- Look for `docs/implementation/frame-[feature-name].md`
 - If found: "Found feature frame. I'll use this for user stories, acceptance criteria, and scope boundaries."
 
 **Check for design decision**:
-- Look for `docs/development/design-decisions/decision-[name].md`
+- Look for `docs/decisions/decision-[name].md`
 - If found: "Found design decision. I'll use this for domain changes and integration points."
 
 **If neither exists** (quick feature mode):
 - "No frame or design decision found. This works for quick features."
-- "Let me gather context from LEARNINGS.md and the prototype..."
+- "Let me gather context from roadmap/pain points and learnings..."
 
 Read the relevant input document(s) fully.
 
@@ -75,10 +77,10 @@ Extract from design decision:
 - Integration points
 - Pain points to monitor
 
-**For all cases**, explore prototype for context:
+**For all cases**, explore current implementation for context:
 
-Use `prototype-explorer` or direct exploration to find:
-- Current implementation patterns worth preserving
+Use direct exploration to find:
+- Current implementation patterns worth preserving (`src/`)
 - Code examples to reference for similar features
 - Test patterns to follow
 
@@ -89,9 +91,11 @@ Use `prototype-explorer` or direct exploration to find:
 [Only if initial exploration flags areas needing deeper understanding]
 
 If you need deeper analysis:
-- Use `code-analyzer` on specific prototype files to understand current approach
-- Use `thoughts-locator` for historical context on design decisions
-- Read specific sections of `docs/LEARNINGS.md` for validated discoveries
+- Use `code-analyzer` on specific src files to understand current approach
+- Use `docs-locator` + `docs-synthesizer` for decisions/constraints/patterns across docs
+- Read specific sections of `docs/learnings/*.md` for validated discoveries
+
+**Pattern**: `docs-locator` finds files → `docs-synthesizer` extracts insights
 
 ### Step 5: Synthesize Understanding
 
@@ -109,14 +113,16 @@ Based on my research:
 - Integration points: [systems affected]
 - Pain points to monitor: [known complexity areas]
 
-**From Prototype Exploration**:
+**From Current Implementation** (`src/`):
 - Implementation pattern to follow: `[file:line]` - [pattern name]
 - Test pattern to follow: `[test file:line]` - [approach]
 - Similar feature for reference: `[file:line]` - [what's relevant]
 
-**From LEARNINGS.md**:
-- Relevant validated discoveries: [list]
-- Workflows that feel natural: [list]
+**From learnings/**:
+- Domain insights (`domain.md`): [relevant learnings]
+- Workflow patterns (`workflows.md`): [relevant learnings]
+- Technical discoveries (`technical.md`): [relevant learnings]
+- UX patterns (`ux.md`): [if applicable]
 
 ### Step 6: Ask Clarifying Questions
 
@@ -148,7 +154,7 @@ Thank you. Based on your input and the context, I'll create the strategic implem
 
 ### Step 8: Generate Strategic Implementation Plan
 
-Create a TIP at `docs/development/tips/tip-[feature-name].md`.
+Create a TIP at `docs/implementation/tip-[feature-name].md`.
 
 **IMPORTANT - What belongs in the TIP**:
 - ✅ Strategic phase groupings
@@ -256,7 +262,7 @@ For each phase:
 ### Step 9: Present for Review
 
 I've created the strategic implementation plan at:
-`docs/development/tips/tip-[feature-name].md`
+`docs/implementation/tip-[feature-name].md`
 
 **Plan Overview**:
 - **Phases**: [Number] phases
@@ -384,9 +390,9 @@ Complexity is per-phase; overall complexity considers how phases build on each o
 ## Integration with Other Commands
 
 **Input from**:
-- `frame-feature` (`.scratch/frame-[feature-name].md`) - preferred for MVP
-- `explore-domain-design` (`docs/development/design-decisions/decision-[name].md`) - for architectural decisions
-- Direct (LEARNINGS.md + prototype) - for quick features
+- `frame-feature` (`docs/implementation/frame-[feature-name].md`) - preferred
+- `explore-domain-design` (`docs/decisions/decision-[name].md`) - for architectural decisions (if we use this command)
+- Direct (`roadmap/pain-*.md` + `learnings/*.md` + `src/`) - for quick features
 
 **Output to**: `implement-tasks` uses TIP for phase-by-phase implementation
 
