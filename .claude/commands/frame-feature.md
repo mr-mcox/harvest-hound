@@ -1,10 +1,10 @@
 # Frame Feature Command
 
-Translate prototype learnings into problem framing for: $ARGUMENTS
+Translate pain points and learnings into problem framing for: $ARGUMENTS
 
 ## Purpose
 
-Bridge discovered pain points to implementation-ready user stories. This command extracts validated learnings from prototype discovery and frames them as problems to solve, with clear acceptance criteria that seed TDD.
+Bridge discovered pain points to implementation-ready user stories. This command extracts validated learnings and frames them as problems to solve, with clear acceptance criteria that seed TDD.
 
 **Key Principle**: Align on the nature of the problem before the nature of the solution. User stories capture WHAT users need; technical planning (create-tip) determines HOW.
 
@@ -14,20 +14,23 @@ Bridge discovered pain points to implementation-ready user stories. This command
 
 **IMPORTANT**: All file paths are relative to **project root** (`/Users/mcox/dev/harvest-hound/`), NOT current working directory.
 
-From `prototype/`, use `../` to reach project root files.
-
 ---
 
 ## Context Sources
 
 **Primary**:
-- `docs/MVP-CHARTER.md` - Scope, priorities, and architectural bets (if exists)
-- `docs/LEARNINGS.md` - Validated discoveries from prototype phase
-- `prototype/` - Current implementation to contrast against
+- `docs/roadmap/pain-[feature].md` - Pain point context, user examples, solution direction
+- `docs/roadmap/PRIORITIES.md` - Current priorities and strategic focus
+- `docs/MVP-CHARTER.md` - Scope, priorities, and architectural bets
+- `docs/learnings/` - Validated discoveries (domain, workflows, technical, ux, architectural)
+- `src/` - Current implementation to understand existing patterns
 
 **Secondary** (if relevant):
-- `docs/open-questions/` - Unresolved design questions
-- `.scratch/pain-*.md` - Recent pain analyses (if any remain)
+- `docs/decisions/` - Design decisions that may affect this feature
+
+**Available Agents**:
+- `docs-locator` - Find relevant docs (use first for discovery)
+- `docs-synthesizer` - Extract insights from docs (use after locator identifies files)
 
 ---
 
@@ -37,38 +40,54 @@ From `prototype/`, use `../` to reach project root files.
 
 "I'll help frame the feature: [topic from $ARGUMENTS]
 
-Let me gather context from our prototype learnings and current implementation..."
+Let me gather context from roadmap, learnings, and current implementation..."
 
-Read `docs/MVP-CHARTER.md` (if exists) to understand:
-- Is this feature in scope for MVP (steel thread vs fidelity pass)?
+**Check roadmap first**:
+- Read `docs/roadmap/pain-[feature].md` (if exists) for pain point context
+- Read `docs/roadmap/PRIORITIES.md` to see where this fits (Now/Next/Later)
+
+Read `docs/MVP-CHARTER.md` to understand:
+- Is this feature in scope for MVP?
 - What architectural bets apply?
 - Any explicit out-of-scope items to respect?
 
-Read `docs/LEARNINGS.md` to find relevant validated discoveries.
+Read relevant `docs/learnings/` files to find validated discoveries:
+- `domain.md` for entity relationships and boundaries
+- `workflows.md` for user behavior patterns
+- `technical.md` for proven patterns
+- `ux.md` for interaction patterns
 
-Explore `prototype/` to understand current implementation state.
+**Optional**: Use `docs-locator` to find additional relevant docs, then `docs-synthesizer` to extract key insights.
 
-### Step 2: Synthesize Relevant Learnings
+Explore `src/` to understand current implementation patterns.
+
+### Step 2: Synthesize Relevant Context
 
 Present what you found:
 
-**From MVP-CHARTER.md** (if exists):
-- Scope alignment: [Steel thread / Fidelity pass / Out of scope]
+**From Roadmap**:
+- Pain point: [Summary from `roadmap/pain-[feature].md`]
+- Priority: [Now / Next / Later from `roadmap/PRIORITIES.md`]
+- User examples: [Key quotes or scenarios]
+
+**From MVP-CHARTER.md**:
+- Scope alignment: [Steel thread complete, in refinement / Future enhancement]
 - Relevant architectural bets: [List any that apply]
 - Constraints to respect: [Any explicit boundaries]
 
-**From LEARNINGS.md** (discoveries that inform this feature):
-- [Specific learning with checkbox status]
-- [Specific learning]
-- [Specific learning]
+**From learnings/** (discoveries that inform this feature):
+- Domain: [Relevant entity/boundary learnings]
+- Workflows: [Relevant user behavior patterns]
+- Technical: [Relevant proven patterns]
+- UX: [Relevant interaction patterns]
 
-**Current Prototype State**:
-- What exists: [current implementation]
-- What's missing/broken: [gaps or regressions]
-- What works well: [to preserve]
+**Current Implementation**:
+- What exists: [relevant current code/patterns]
+- What's missing: [gaps this feature will fill]
+- What works well: [to preserve/build on]
 
-**Related Open Questions** (if any):
-- [Question that affects this feature]
+**Related Decisions** (if any from `decisions/`):
+- [Decision that affects this feature]
 
 ### Step 3: Ask Clarifying Questions
 
@@ -90,7 +109,7 @@ Then WAIT for user responses.
 
 ### Step 4: Generate Feature Frame
 
-After user input, create the frame document at `.scratch/frame-[feature-name].md`:
+After user input, create the frame document at `docs/implementation/frame-[feature-name].md`:
 
 ```markdown
 # Feature Frame: [Feature Name]
@@ -104,9 +123,13 @@ After user input, create the frame document at `.scratch/frame-[feature-name].md
 
 [2-3 sentences: What user need does this address? Why does it matter?]
 
-**From Prototype Discovery**:
-- [Key learning that validates this need]
-- [Key learning]
+**From Pain Point** (`roadmap/pain-[feature].md`):
+- [Key user quote or example]
+- [Impact on workflow]
+
+**From Learnings** (`learnings/`):
+- [Domain/workflow/technical learning that validates this need]
+- [Supporting learning]
 
 ---
 
@@ -122,7 +145,7 @@ After user input, create the frame document at `.scratch/frame-[feature-name].md
 - [ ] [Testable criterion]
 - [ ] [Testable criterion]
 
-**From LEARNINGS.md**: [Reference to validated discovery]
+**From learnings/**: [Reference to validated discovery with file]
 
 ### Story 2: [Secondary user need]
 **As a** [role]
@@ -133,27 +156,27 @@ After user input, create the frame document at `.scratch/frame-[feature-name].md
 - [ ] [Testable criterion]
 - [ ] [Testable criterion]
 
-**From LEARNINGS.md**: [Reference]
+**From learnings/**: [Reference]
 
 [Add more stories as needed - typically 2-4 per feature]
 
 ---
 
-## Prototype Contrast
+## Current State vs Target
 
-| Aspect | Prototype | MVP | Why Change |
-|--------|-----------|-----|------------|
-| [Aspect] | [Current state] | [Target state] | [Rationale from learnings] |
+| Aspect | Current | Target | Why Change |
+|--------|---------|--------|------------|
+| [Aspect] | [Current state] | [Target state] | [Rationale from learnings/pain point] |
 | [Aspect] | [Current state] | [Target state] | [Rationale] |
 
-**Preserve from Prototype**:
-- [What works well and should be kept]
+**Build On**:
+- [What works well in current implementation]
 
-**Fix from Prototype**:
-- [What's broken or missing]
+**Add**:
+- [New capabilities needed]
 
-**Change from Prototype**:
-- [Deliberate improvements based on learnings]
+**Change**:
+- [Deliberate improvements based on learnings/pain point]
 
 ---
 
@@ -189,7 +212,7 @@ Before proceeding to technical planning:
 
 ### Step 5: Present for Alignment
 
-"I've created a feature frame at `.scratch/frame-[feature-name].md`
+"I've created a feature frame at `docs/implementation/frame-[feature-name].md`
 
 **Problem**: [One sentence summary]
 
@@ -197,7 +220,7 @@ Before proceeding to technical planning:
 1. [Story 1 title] - [Essential/Nice-to-have]
 2. [Story 2 title] - [Essential/Nice-to-have]
 
-**Key Contrasts with Prototype**:
+**Key Changes from Current**:
 - [Main change 1]
 - [Main change 2]
 
@@ -205,7 +228,7 @@ Before proceeding to technical planning:
 - [Deferred item]
 
 Please review and let me know:
-- Are these the right stories for MVP?
+- Are these the right stories?
 - Is the scope appropriately constrained?
 - Any acceptance criteria missing or wrong?
 - Ready to proceed to technical planning?"
@@ -220,11 +243,11 @@ Incorporate user feedback:
 - Adjust scope boundaries
 - Add/remove stories as directed
 
-Update `.scratch/frame-[feature-name].md` with changes.
+Update `docs/implementation/frame-[feature-name].md` with changes.
 
 ### Step 7: After Alignment
 
-"Feature frame aligned and saved at `.scratch/frame-[feature-name].md`
+"Feature frame aligned and saved at `docs/implementation/frame-[feature-name].md`
 
 **Next step**: Use `create-tip [feature-name]` to plan the technical implementation.
 
@@ -232,25 +255,26 @@ The TIP will use this frame for:
 - User stories → Test case inspiration
 - Acceptance criteria → TDD seeds
 - Scope boundaries → Implementation constraints
-- Prototype contrast → Migration/evolution approach"
+- Current state contrast → Build/change/add approach"
 
 ---
 
 ## Quality Guidelines
 
 **Good Feature Frames**:
-- Stories grounded in validated learnings (not assumptions)
+- Stories grounded in pain points and validated learnings (not assumptions)
 - Acceptance criteria are testable (seed TDD)
 - Scope is constrained (out-of-scope section used)
-- Prototype contrast is specific (not vague "improvements")
+- Current state contrast is specific (not vague "improvements")
+- Builds on existing patterns where appropriate
 - Risks identified with resolution paths
 
 **Anti-patterns**:
-- Inventing requirements not from learnings
+- Inventing requirements not from pain points/learnings
 - Vague acceptance criteria ("it should work well")
 - Scope creep (trying to solve everything)
 - Technical solutions in user stories (HOW not WHAT)
-- Ignoring prototype - it has valuable learnings
+- Ignoring current implementation - it has valuable patterns
 
 **Story Sizing**:
 - Each story should be independently valuable
@@ -276,28 +300,31 @@ Would you like to frame them together? This can:
 
 ## Integration with Other Commands
 
-**This command produces**: `.scratch/frame-[feature-name].md`
+**This command produces**: `docs/implementation/frame-[feature-name].md`
+
+**Input from**:
+- `roadmap/pain-[feature].md` (pain point context)
+- `roadmap/PRIORITIES.md` (priority/timing)
 
 **Next command**: `create-tip [feature-name]` reads the frame and produces technical plan
 
-**If risks need exploration**: `explore-domain-design [topic]` for architectural decisions
-
-**After implementation**: Delete `.scratch/frame-[feature-name].md` (ephemeral)
+**After implementation**: `end-session` may distill learnings, then delete frame (ephemeral)
 
 ---
 
 ## Remember
 
 **Frame-feature is about WHAT, not HOW**:
-- WHAT problem are we solving?
-- WHAT does success look like for users?
-- WHAT scope constraints do we have?
+- WHAT problem are we solving? (from pain point)
+- WHAT does success look like for users? (acceptance criteria)
+- WHAT scope constraints do we have? (in/out of scope)
 
 Technical decisions (HOW) come in `create-tip`.
 
-**Learnings are your source of truth**:
-- LEARNINGS.md contains validated discoveries
-- Prototype code shows current reality
+**Pain points + learnings are your source of truth**:
+- `roadmap/pain-*.md` contains user context and examples
+- `learnings/*.md` contains validated discoveries
+- Current `src/` code shows working patterns
 - User input resolves ambiguity and priorities
 
 **Acceptance criteria seed TDD**:

@@ -107,6 +107,13 @@
   - Critical bug: Pitches must respect saved recipe claims to prevent double-booking ingredients
   - (discovered: recipe-persistence experiment, 2025-12-01)
 
+- [x] **Produce utilization validated**: System successfully minimizes CSA waste
+  - User reaction after week 3: "Only rutabaga left from delivery that week"
+  - Core loop works: Pick variety → get options → confident weekly meal plan
+  - Variety + confidence = key value proposition validated
+  - Steel thread complete: System used for actual weekly meal planning in production
+  - (discovered: production use week 3, 2025-12-21)
+
 - [x] **Recipe identity boundaries**: Pivots can break the pitch promise
   - Example problem: Pitch said "Beef Pot Roast (sirloin)", fleshed out used pork butt - NOT the same dish!
   - Three pivot boundaries that break identity:
@@ -206,6 +213,15 @@
   - Low priority barely above Pantry Staples (not worth tracking oats, flour, etc.)
   - User reaction: "Makes a lot of sense"
   - (discovered: ingredient-priority experiment, 2025-12-01)
+
+- [x] **Priority system gap for pantry items**: Time-to-spoil model incomplete
+  - Priority works great for CSA produce (freshness-based)
+  - Fails for pantry items: dried beans, canned goods technically low-priority but user wants them used
+  - User quote: "I don't want to artificially bump priority just to make it happen that week"
+  - Desired behavior: Pair pantry items with high-priority CSA ingredients naturally
+  - Gap reveals need for separate dimension: freshness vs. "want to use"
+  - Current workaround: Manual priority bumping or criteria creation (both feel wrong)
+  - (discovered: production use week 3, 2025-12-21)
 
 - [x] **Ingredient dimensions are orthogonal**: Priority, location, optionality are independent
   - Priority: How urgently should this be used (meal planning priority)
@@ -357,6 +373,23 @@
   - Recipe needs: "walnuts, roughly chopped" (how to prepare)
   - May need separation: ingredient base + preparation modifier
   - (discovered: store-based-claiming experiment, 2025-12-01)
+
+- [x] **Recipe editing/substitutions are essential cooking workflow**: Not post-MVP enhancement
+  - Real cooking involves on-the-fly decisions system must support
+  - Examples: White wine → rice wine, accidental ingredient prep (roasted broccoli → need spinach sub)
+  - Recipe-specific guidance needed: "Best way to sub sour cream for creme fraiche in THIS dish?"
+  - Impact on shopping list: Changes to recipe make shopping list inaccurate
+  - User needs "chat with recipe" capability for questions/modifications
+  - Not a nice-to-have: essential for real cooking workflow
+  - (discovered: production use week 3, 2025-12-21)
+
+- [x] **Recipe metadata unreliable**: Time estimates can be significantly off
+  - Example: Recipe showed "45 min active prep", reality was "70 min prep, 90 min to table"
+  - Affects meal planning decisions (weeknight vs. weekend, dinner timing)
+  - Creates trust issue with recipe generation
+  - User quote: "Thai curry tasted great but 45 minutes active prep was a dirty rotten lie"
+  - Opportunity: Capture actual time feedback to improve estimates and identify "greatest hits"
+  - (discovered: production use week 3, 2025-12-21)
 
 ### Things Simpler Than Expected
 - [x] **Single-page prototype goes far**: One page with progressive disclosure may be sufficient
