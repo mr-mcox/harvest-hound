@@ -102,6 +102,9 @@ _Validated discoveries about user behavior patterns and what works/doesn't work.
   - (discovered: store-based-claiming experiment, 2025-12-01)
 
 - [x] **Recipe editing/substitutions are essential cooking workflow**: Not post-MVP enhancement
+  - **REFINED (2026-07-25)**: "chat with recipe" is two interactions, not one — *editing*
+    (mutation, folds into durable recipe memory as final product only) and *asking*
+    (conversation, no persistence). See `docs/roadmap/pain-recipe-editing.md`.
   - Real cooking involves on-the-fly decisions system must support
   - Examples: White wine → rice wine, accidental ingredient prep (roasted broccoli → need spinach sub)
   - Recipe-specific guidance needed: "Best way to sub sour cream for creme fraiche in THIS dish?"
@@ -234,6 +237,10 @@ _Validated discoveries about user behavior patterns and what works/doesn't work.
   - (discovered: recipe-persistence experiment, 2025-12-01)
 
 - [x] **POINTER vs GENERATIVE pitch distinction**: Too complex for prototype/MVP
+  - **SUPERSEDED (2026-07-25)**: MVP complete; durable recipes with provenance are now the
+    spine of the current phase (`docs/roadmap/phase-recipe-memory.md`). The distinction
+    dissolves — pitches reference recipes; some recipes exist before the session.
+    Historical rationale kept below.
   - Mixed workflow (clipped recipes + generated recipes) is overengineered
   - Clipped recipe storage and retrieval adds complexity without validating core hypothesis
   - MVP: Focus only on GENERATIVE pitches from inventory

@@ -1,9 +1,15 @@
 # Recipe Feedback/Ratings
 
-**Status**: Later
+**Status**: Next (phase: Recipe Memory & Trust — the attention layer of the durable-recipe
+spine, see `phase-recipe-memory.md` Insight 4)
 **Impact**: Medium - Trust in metadata, "greatest hits" recall
 **Discovered**: 2025-12-21 (Week 3 production use)
-**Related**: None in current charter
+**Related**: `phase-recipe-memory.md`, `pain-saved-recipes.md`, `pain-pitch-time-mismatch.md`
+
+**Framing**: Rating and feedback are **attention signals for recipe memory** — resurfacing
+ranks candidates by recency-of-cooked and rating. Time-actuals feed the pitch-fidelity
+trust loop. Sequencing: after durable recipes v1 — capture at the existing "cooked"
+transition, consume during resurfacing.
 
 ## The Pain
 

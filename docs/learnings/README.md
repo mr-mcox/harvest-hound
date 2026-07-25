@@ -12,20 +12,23 @@ Validated discoveries from prototype, MVP build, and production use.
 
 ## How to Use
 
-**During `/frame-feature`**:
+(Phases refer to the pi-platform `coding-workflow` skill.)
+
+**During problem-space / solution-space (writing a brief)**:
 - Read `domain.md` for entity relationships and boundaries
 - Read `workflows.md` for validated user behavior patterns
 - Read `ux.md` for interaction patterns
 
-**During `/create-tip`**:
+**During implement**:
 - Read `technical.md` for BAML patterns and API shapes
 - Read `architectural.md` for patterns to follow
 - Read `domain.md` for modeling constraints
 
-**During `/end-session`**:
+**During compact**:
 - Add discoveries to appropriate category file
 - Use checkboxes `[x]` for validated learnings
 - Include discovery context and date
+- Annotate superseded entries in place (SUPERSEDED/REFINED + date) rather than deleting
 
 ## Cross-References by Topic
 

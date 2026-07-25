@@ -1,9 +1,15 @@
 # Recipe Editing/Substitutions
 
-**Status**: Next
+**Status**: Next (phase: Recipe Memory & Trust — third spine strand, see
+`phase-recipe-memory.md` Insight 4)
 **Impact**: Critical - Essential cooking workflow
 **Discovered**: 2025-12-21 (Week 3 production use)
-**Related**: Charter Priority 3 "Ingredient substitution preferences"
+**Related**: `phase-recipe-memory.md`, `pain-recipe-feedback.md`
+
+**Framing**: Two distinct interactions. *Editing* (mutation) changes the recipe and folds
+into durable recipe memory as the **final product only** — no edit history/changelog.
+*Asking* (conversation) is context-aware guidance that changes nothing; it has no
+persistence dependency and can ship independently.
 
 ## The Pain
 
@@ -36,7 +42,6 @@ This is multi-faceted - unpack piece by piece:
 - [ ] Basic ingredient swap UI (simplest value)
 - [ ] LLM-powered substitution guidance (recipe-specific advice)
 - [ ] Shopping list update on recipe changes (accuracy)
-- [ ] Recipe modification history/versioning (optional)
 
 ## Notes
 

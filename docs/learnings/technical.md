@@ -113,3 +113,15 @@ _Validated discoveries about BAML prompts, API patterns, and performance._
   - No need for batch operations, single-item is sufficient
   - (discovered: inventory-management experiment, 2025-11-29)
 
+### Performance & Streaming
+- [x] **Streaming value: Yes, but still slow**
+  - Seeing recipes one-at-a-time is better than waiting for all three
+  - But ~3-5 sec per recipe still feels long
+  - Suggests need for "recipe pitches" (faster, lighter) before full recipes
+  - (discovered: recipe-generation experiment, 2025-11-29)
+
+- [x] **Async BAML required for true streaming**
+  - Sync mode blocks entire loop, all results flush at once
+  - Async mode enables incremental SSE streaming
+  - (discovered: recipe-generation experiment, 2025-11-29)
+

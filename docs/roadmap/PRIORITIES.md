@@ -1,32 +1,37 @@
 # Current Priorities
 
-**Updated**: 2025-12-21
-**Status**: MVP steel thread complete (3 weeks production use), ongoing refinement
+**Updated**: 2026-07-25
+**Status**: Post-MVP. Current phase: **Recipe Memory & Trust** — read `phase-recipe-memory.md` first.
 
-## Now (This Week)
+## Now
 
-**Cleanup**:
-- Delete `/prototype` directory (nothing left to harvest)
-- Update commands that reference prototype
+- `pain-import-priority-adjustment` - Adjust LLM-inferred priorities in the parse-results
+  view before commit. Standalone (no domain change), user's top pick.
 
-**High-Impact Pain Point**:
-- `pain-priority-pairing` - Pantry items (dried beans, canned goods) not getting used
+## Next
 
-## Next (Queued)
+- `pain-saved-recipes` - Durable recipes v1: favorite + resurface. First pressure test of
+  the phase spine (recipes as durable memory with provenance).
+- `pain-pitch-time-mismatch` - Pitch fidelity v1. Independent of the spine; can run
+  before/parallel.
 
-- `pain-recipe-editing` - Critical cooking workflow gap (substitutions, shopping list accuracy)
-- `pain-recipe-formatting` - Flip back/forth friction while cooking
+## Next (after spine v1 exists)
 
-## Later (Backlog)
+- `pain-recipe-editing` - Third spine strand: *edits* fold into durable memory (final
+  product, no changelog); *asking* half is independent and can ship anytime.
+- `pain-recipe-feedback` - Attention layer: rating + cooked-recency rerank resurfacing;
+  time actuals feed pitch fidelity.
 
-- `pain-recipe-feedback` - Time estimate accuracy, ratings, "greatest hits" capture
-- `pain-saved-recipes` - Revisit successful dishes
+## Later
+
+- `pain-recipe-clipping` - URL clip → corpus. Extends the spine; sequence after saved-recipes.
+- `pain-repetitive-pitches` - Re-evaluate once a corpus exists; may partially fall out of spine work.
+- `pain-recipe-formatting` - Carried from December 2025 queue.
 
 ## Strategy
 
-**Focus progression**:
-1. Real cooking workflow friction (editing, formatting)
-2. Ingredient utilization (priority pairing for pantry)
-3. Learning loops (feedback, saved recipes)
-
-**Key insight**: Steel thread complete, most fidelity pass addressed. Now optimizing based on real-world usage patterns.
+**Phase spine**: recipes become durable, first-class, *living* objects with provenance and
+attention metadata. Saved, clipped, and edited recipes are incremental realizations of one
+concept; rating/recency govern how memory resurfaces. Trust (pitch fidelity) and
+review-at-inference are independent tracks. See `phase-recipe-memory.md` for insights,
+approach commitments, and superseded scope decisions.
