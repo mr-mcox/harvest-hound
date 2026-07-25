@@ -17,6 +17,8 @@
   let parsing = $state(false);
   let approving = $state(false);
   let error = $state<string | null>(null);
+  let editingPriorityIndex = $state<number | null>(null);
+  let editingPriority = $state<Priority>("Low");
 
   async function parseIngredients() {
     if (!freeText.trim()) return;
@@ -92,6 +94,22 @@
       case "Low":
         return "text-surface-500";
     }
+  }
+
+  function startEditingPriority(index: number, currentPriority: Priority) {
+    editingPriorityIndex = index;
+    editingPriority = currentPriority;
+  }
+
+  function cancelPriorityEditing() {
+    editingPriorityIndex = null;
+  }
+
+  function savePriority(index: number, newPriority: Priority) {
+    pendingItems = pendingItems.map((item, i) =>
+      i === index ? { ...item, priority: newPriority } : item
+    );
+    cancelPriorityEditing();
   }
 </script>
 
@@ -169,9 +187,28 @@
                     ({item.portion_size} portions)
                   {/if}
                 </span>
-                <span class={`ml-2 text-sm ${getPriorityColor(item.priority)}`}>
-                  {item.priority}
-                </span>
+                {#if editingPriorityIndex === index}
+                  <select
+                    class="ml-2 px-2 py-1 border border-primary-500 rounded text-sm"
+                    bind:value={editingPriority}
+                    onchange={() => savePriority(index, editingPriority)}
+                    onblur={cancelPriorityEditing}
+                    autofocus
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                {:else}
+                  <button
+                    type="button"
+                    class={`ml-2 text-sm hover:opacity-75 transition-opacity cursor-pointer ${getPriorityColor(item.priority)}`}
+                    onclick={() => startEditingPriority(index, item.priority)}
+                  >
+                    {item.priority}
+                  </button>
+                {/if}
               </div>
               <button
                 type="button"
