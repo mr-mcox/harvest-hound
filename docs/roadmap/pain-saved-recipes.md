@@ -1,9 +1,10 @@
 # Saved Recipes / "Greatest Hits"
 
-**Status**: Later
+**Status**: Next (phase: Recipe Memory & Trust — first pressure test of the durable-recipe
+spine, see `phase-recipe-memory.md`)
 **Impact**: Medium - Repeat successful dishes
 **Discovered**: 2025-12-21 (Week 3 production use)
-**Related**: Charter "Out of Scope" item "POINTER pitches (clipped/saved recipes)"
+**Related**: `phase-recipe-memory.md` Insight 1, `pain-recipe-clipping.md`, `pain-recipe-feedback.md`
 
 ## The Pain
 
@@ -26,10 +27,6 @@ Mechanism to:
 - Surface saved recipes during pitch generation (when ingredients match)
 - Browse saved recipe library
 
-## Relationship to Charter
-
-Charter explicitly listed "POINTER pitches (clipped/saved recipes)" as out of scope for MVP. Now surfacing from real use as desired post-MVP feature.
-
 ## Relationship to Recipe Feedback
 
 Overlaps with `pain-recipe-feedback` - recipes marked highly in feedback are natural candidates for saving/"greatest hits" status.
@@ -38,7 +35,3 @@ Could be implemented together:
 - Feedback identifies hits
 - Saved recipes preserves them
 - Pitch generation surfaces them when appropriate
-
-## Notes
-
-Charter called this "anticipated need" in "Possible post-MVP" section. User validation confirms the anticipation was correct.

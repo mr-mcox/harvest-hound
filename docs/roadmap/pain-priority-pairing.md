@@ -3,7 +3,7 @@
 **Status**: Now
 **Impact**: High - Pantry items not getting used
 **Discovered**: 2025-12-21 (Week 3 production use)
-**Related**: Charter Priority 1 "Pantry accuracy refinement"
+**Related**: `pain-import-priority-adjustment.md`, `phase-recipe-memory.md` (coverage invariant)
 
 ## The Pain
 

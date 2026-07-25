@@ -5,8 +5,8 @@ Agentic meal planning for CSA deliveries.
 ## Critical: Database Safety
 
 - `harvest.db` = **LIVE USER DATA** - Never modify directly
-- `dev.db` = Safe for testing (default for Claude Code)
-- **Claude Code must NEVER run `./run`** (uses harvest.db by default)
+- `dev.db` = Safe for testing (default)
+- **Never run `./run` during development** (uses harvest.db by default)
 
 ## Development
 
@@ -21,6 +21,12 @@ Agentic meal planning for CSA deliveries.
 - `/src` - Current MVP (see `src/backend/CLAUDE.md` and `src/frontend/CLAUDE.md`)
 - `/prototype` - Discovery phase (reference only)
 - `/old` - Archived over-engineered attempt
+
+## Orientation
+
+- `docs/README.md` - Documentation map and workflow
+- `docs/PROJECT.md` - Standing constraints, stack, architectural principles
+- `docs/roadmap/PRIORITIES.md` - Current focus; `docs/roadmap/phase-*.md` - phase strategy and tensions
 
 ## Code Quality
 

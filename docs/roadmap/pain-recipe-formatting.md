@@ -3,7 +3,7 @@
 **Status**: Later
 **Impact**: Minor - Some friction while cooking
 **Discovered**: 2025-12-21 (Week 3 production use), mentioned from tonight's cooking
-**Related**: Charter Priority 1 "Recipe formatting for cooking"
+**Related**: `pain-recipe-editing.md` (both are cooking-time ergonomics)
 
 ## The Pain
 
@@ -15,7 +15,7 @@ Cooking friction - not blocking, but could be smoother. Mentioned as "slight pai
 
 ## Solution Direction
 
-Charter anticipated this: "Reduce need to flip back/forth while cooking"
+Goal: reduce the need to flip back/forth while cooking
 
 Possible approaches:
 - Inline ingredients in instruction steps

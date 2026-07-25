@@ -18,6 +18,16 @@ _Validated discoveries about UI/UX patterns and interaction design._
   - Reduces visual noise while keeping sanity-check info accessible
   - (discovered: store-based-claiming experiment, 2025-12-01)
 
+- [x] **Single-page prototype goes far**: One page with progressive disclosure may be sufficient
+  - Surprising that we don't need complex navigation yet
+  - (discovered: recipe-generation experiment, 2025-11-29)
+
+- [x] **Ingredient source management**: Used but infrequent
+  - Deleted duplicate source (one-time cleanup)
+  - Edited Pantry Staples definition (refinement during setup)
+  - Suggests: Could be buried in configuration interface long-term, doesn't need prominent UI
+  - (discovered: inventory-management experiment, 2025-11-29)
+
 ### Interaction Patterns That Don't Work
 - [x] **Cycling badge UX in long sorted list**: Item disappears when clicked
   - Problem: Clicking priority badge cycles it, item re-sorts to new position (jumps down list)
