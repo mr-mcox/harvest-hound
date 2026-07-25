@@ -27,4 +27,4 @@ Possible approaches:
 
 Not critical urgency - steel thread works, this is polish. User assessment: "pretty much everything else has been addressed" from fidelity pass, this is a remaining item.
 
-Lower priority than recipe editing and priority pairing based on actual impact.
+Lower priority than recipe editing based on actual impact.

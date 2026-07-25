@@ -215,6 +215,10 @@ _Validated discoveries about entities, boundaries, and modeling decisions._
   - (discovered: ingredient-priority experiment, 2025-12-01)
 
 - [x] **Priority system gap for pantry items**: Time-to-spoil model incomplete
+  - **RESOLVED (2026-07-25)**: Fixed by data correction, not mechanism — frozen meat was
+    rated too high, crowding out pantry items; lowering it let pairing happen naturally.
+    The priority model itself was sound. Lesson: check priority calibration before
+    building coverage machinery.
   - Priority works great for CSA produce (freshness-based)
   - Fails for pantry items: dried beans, canned goods technically low-priority but user wants them used
   - User quote: "I don't want to artificially bump priority just to make it happen that week"

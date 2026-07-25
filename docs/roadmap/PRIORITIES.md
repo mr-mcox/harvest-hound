@@ -28,11 +28,6 @@
 - `pain-repetitive-pitches` - Re-evaluate once a corpus exists; may partially fall out of spine work.
 - `pain-recipe-formatting` - Carried from December 2025 queue.
 
-## In Flight
-
-- `priority-pairing` - Frame + TIP exist (`docs/implementation/`), test-harness scripts in
-  `src/backend/scripts/`. Orthogonal to the phase spine.
-
 ## Strategy
 
 **Phase spine**: recipes become durable, first-class, *living* objects with provenance and

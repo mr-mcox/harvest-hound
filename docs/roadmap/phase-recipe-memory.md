@@ -138,9 +138,9 @@ and escalation triggers.
   should be able to reuse it without rework.
 - **Slate ↔ item quality**: variety and priority coverage are set-level properties of the
   week; nothing built for a single pain should assume recipes are judged one at a time.
-- **Candidate sourcing ↔ coverage invariant**: corpus matches join generation as another
-  candidate source and must respect session-level priority coverage (the in-flight
-  priority-pairing work defines that invariant).
+- **Candidate sourcing ↔ inventory priorities**: corpus matches join generation as another
+  candidate source and must serve inventory priorities, not bypass them — a resurfaced
+  favorite that ignores the urgent produce defeats the core loop.
 
 ## Suggested ordering
 
@@ -160,9 +160,7 @@ and escalation triggers.
 7. `pain-repetitive-pitches` — re-evaluate once a corpus exists; may partially fall out of
    spine work. Deferred by user as prompt-tunable until then.
 
-**In flight, orthogonal**: priority-pairing (frame + TIP in `docs/implementation/`, test
-harness in `src/backend/scripts/`). Still carried from the December queue:
-`pain-recipe-formatting`.
+**Also queued**: `pain-recipe-formatting`.
 
 ## Scope Notes
 

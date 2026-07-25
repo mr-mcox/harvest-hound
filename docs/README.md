@@ -56,10 +56,6 @@ artifact (`agent-brief` skill for format).
   skill for format and phases)
 - `features/[feature-name]/decisions.md` - Running decision log during implementation
 
-**In flight** (conclude, then compact):
-- `implementation/frame-priority-pairing.md` + `tip-priority-pairing.md` - Active feature
-  docs. When concluded, distill to decisions/learnings and delete, per the compact phase.
-
 ---
 
 ## Compaction (end of a feature)
