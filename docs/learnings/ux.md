@@ -9,7 +9,8 @@ _Validated discoveries about UI/UX patterns and interaction design._
   - LLM provides smart defaults based on perishability
   - User adjusts when needed (but mostly accepts defaults)
   - Reduces data entry burden while maintaining control
-  - (discovered: ingredient-priority experiment, 2025-12-01)
+  - Now realized on /inventory page (post-commit) and /inventory/import parse-results view (pre-commit)
+  - (discovered: ingredient-priority experiment, 2025-12-01; import adjustment feature, 2025-07-25)
 
 - [x] **Progressive disclosure for recipe context**: Hide details until needed
   - Shopping list shows "2 onions - used in: Recipe A, Recipe B"
@@ -34,7 +35,8 @@ _Validated discoveries about UI/UX patterns and interaction design._
   - Confusing in long lists - user loses track of what they just changed
   - Better UX: Dropdown/menu that keeps item in place while changing priority
   - Or: Debounced re-sort so item stays visible briefly after change
-  - (discovered: ingredient-priority experiment, 2025-12-01)
+  - Not an issue on the import parse-results view (no priority sort = items stay in parse order)
+  - (discovered: ingredient-priority experiment, 2025-12-01; import adjustment feature, 2025-07-25)
 
 ### Emerging Needs
 - [x] **Different views for different contexts**: Single page getting cluttered
