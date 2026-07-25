@@ -40,7 +40,13 @@
       "mcp__baml_Docs__fetch_generic_url_content",
       "Bash(node -c:*)",
       "Bash(pre-commit run:*)",
-      "Bash(npm run format:*)"
+      "Bash(npm run format:*)",
+      "Bash(grep -o '\\\\*\\\\*[^*]*\\\\*\\\\*' docs/LEARNINGS.md | sort -u > /tmp/mono.txt && cat docs/learnings/*.md | grep -o '\\\\*\\\\*[^*]*\\\\*\\\\*' | sort -u > /tmp/split.txt && echo \"in monolith but NOT in split files:\" && comm -23 /tmp/mono.txt /tmp/split.txt)",
+      "Bash(git -C /Users/mcox/dev/harvest-hound ls-files docs/LEARNINGS.md docs/roadmap/context-handoff.md)",
+      "Read(//Users/mcox/dev/pi-platform/.pi/skills/profile-eval/**)",
+      "Read(//Users/mcox/dev/pi-platform/docs/**)",
+      "Bash(git checkout *)",
+      "Bash(git push *)"
     ],
     "deny": []
   }
